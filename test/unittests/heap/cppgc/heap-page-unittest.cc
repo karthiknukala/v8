@@ -55,15 +55,25 @@ TEST_F(PageTest, PredefinedSpaces) {
   {
     auto* gced = MakeGarbageCollected<GCed<1>>(GetAllocationHandle());
     BaseSpace& space = NormalPage::FromPayload(gced)->space();
+#if defined(__CHERI_PURE_CAPABILITY__)
+    EXPECT_EQ(heap.Space(SpaceType::kNormal2), &space);
+    EXPECT_EQ(1u, space.index());
+#else
     EXPECT_EQ(heap.Space(SpaceType::kNormal1), &space);
     EXPECT_EQ(0u, space.index());
+#endif
     EXPECT_FALSE(space.is_large());
   }
   {
     auto* gced = MakeGarbageCollected<GCed<32>>(GetAllocationHandle());
     BaseSpace& space = NormalPage::FromPayload(gced)->space();
+#if defined(__CHERI_PURE_CAPABILITY__)
+    EXPECT_EQ(heap.Space(SpaceType::kNormal3), &space);
+    EXPECT_EQ(2u, space.index());
+#else
     EXPECT_EQ(heap.Space(SpaceType::kNormal2), &space);
     EXPECT_EQ(1u, space.index());
+#endif
     EXPECT_FALSE(space.is_large());
   }
   {
