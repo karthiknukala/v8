@@ -1427,11 +1427,8 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
     constexpr ScaledInt alignment_mask = kDoubleAlignmentMask;
 #endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     Label next(this);
-    // XXX(cheri): Annoyingly, we have to cast to intptr_t here because
-    // IntPtrConstant takes an intptr_t, even though this is never a pointer. It
-    // will return a 64-bit word constant in a TNode<IntPtrT> type, so the
-    // codegen won't suffer, but it's still not great.
-    GotoIfNot(WordAnd(top, IntPtrConstant(alignment_mask)), &next);
+    GotoIfNot(Word32And(TruncateIntPtrToInt32(UncheckedCast<IntPtrT>(top)),
+                                        Uint32Constant(alignment_mask)), &next);
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     TNode<IntPtrT> rounded_top = IntPtrRoundUpToByteBoundary(
