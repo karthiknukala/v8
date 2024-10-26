@@ -287,6 +287,10 @@ TEST_F(WorkloadsTest, BasicFunctionality) {
   for (int i = 0; i < 1000; i++) {
     size_t size = 128 + i * 8;
     total += size;
+#if defined(__CHERI_PURE_CAPABILITY__)
+    size_t cheri_padding = size % kAllocationGranularity;
+    total += cheri_padding;
+#endif
     persistents[persistent_count++] = new Persistent<DynamicallySizedObject>(
         DynamicallySizedObject::Create(GetAllocationHandle(), size));
     // The allocations in the loop may trigger GC with lazy sweeping.
