@@ -635,7 +635,15 @@ bool OS::DecommitPages(void* address, size_t size) {
   // shall be removed, as if by an appropriate call to munmap(), before the new
   // mapping is established." As a consequence, the memory will be
   // zero-initialized on next access.
+#if defined(__CHERI_PURE_CAPABILITY__)
+  // XXX(cheri): When calling mmap() on decommiting pages, if prot_max is not
+  // set, it will become zero, therefore new allocations which try to mprotect
+  // to get read/write permissions will fail. We hardcode this here for now. A
+  // better solution is needed to preserve the prot_max from allocation.
+  void* ret = mmap(address, size, PROT_NONE | PROT_MAX(PROT_READ | PROT_WRITE),
+#else
   void* ret = mmap(address, size, PROT_NONE,
+#endif
                    MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
   if (V8_UNLIKELY(ret == MAP_FAILED)) {
     // Decommitting pages can fail if the limit of VMAs is exceeded.
