@@ -3039,7 +3039,7 @@ int Heap::GetFillToAlign(Address address, AllocationAlignment alignment) {
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
   if (alignment == kTaggedAligned &&
       (address & static_cast<size_t>(kTaggedAlignmentMask)) != 0) {
-    Address aligned_addr = AlignToCapSize(address);
+    Address aligned_addr = RoundUp(address, kSystemPointerSize);
     ptrdiff_t how_much = aligned_addr - address;
     return how_much > kTaggedSize ? how_much : how_much + kTaggedSize;
   }

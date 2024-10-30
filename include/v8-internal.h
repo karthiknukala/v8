@@ -14,7 +14,12 @@
 
 #include "v8-version.h"  // NOLINT(build/include_directory)
 #include "v8config.h"    // NOLINT(build/include_directory)
-#include "src/base/macros.h"
+
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#define AlignToCapSize(x) ((x) + 15) & (~15)
+#else
+#define AlignToCapSize(x) (x)
+#endif
 
 namespace v8 {
 
