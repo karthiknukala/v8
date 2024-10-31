@@ -1000,7 +1000,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
         // FIXME(ds815): This does not handle the case where the value we're
         // trying to add can't be encoded as an immediate, but it doesn't seem
         // to matter yet.
-        DCHECK(operand.shift() == LSL);
+        DCHECK_EQ(operand.shift(), LSL);
         UseScratchRegisterScope temps(this);
         Register temp = temps.AcquireX();
         Gcvalue(rn, temp);
