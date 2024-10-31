@@ -14,6 +14,9 @@
 #include "src/common/globals.h"
 #include "src/common/message-template.h"
 #include "src/compiler/code-assembler.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/compiler/node.h" // TODO(ds815): Drop.
+#endif  // __CHERI_PURE_CAPABILITY__
 #include "src/numbers/integer-literal.h"
 #include "src/objects/api-callbacks.h"
 #include "src/objects/arguments.h"

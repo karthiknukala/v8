@@ -93,11 +93,11 @@ struct ScheduleBuilder {
   }
   Node* IntPtrAdd(Node* a, Node* b) {
 #ifdef __CHERI_PURE_CAPABILITY__
-    return AddNode(machine.CapAdd(), {a, b});
-#else   // !__CHERI_PURE_CAPABILITY__
+    if (a->IsCapability()) return AddNode(machine.CapAdd(), {a, b});
+    if (b->IsCapability()) return AddNode(machine.CapAdd(), {b, a});
+#endif  // __CHERI_PURE_CAPABILITY__
     return AddNode(machine.Is64() ? machine.Int64Add() : machine.Int32Add(),
                    {a, b});
-#endif  // __CHERI_PURE_CAPABILITY__
   }
   Node* IntPtrShl(Node* a, Node* b) {
     // FIXME(ds815): This probably needs to be fixed for capabilities.

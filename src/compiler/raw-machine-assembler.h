@@ -617,7 +617,12 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   Node* CapAdd(Node* a, Node* b) {
-    return AddNode(machine()->CapAdd(), a, b);
+    return AddNode(machine()->CapAdd(), a, b)->MarkAsCapability();
+  }
+  Node* IntPtrAdd(Node* a, Node* b) {
+    if (a->IsCapability()) return CapAdd(a, b);
+    if (b->IsCapability()) return CapAdd(b, a);
+    return Int64Add(a, b);
   }
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 
@@ -627,7 +632,9 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
                                        : prefix##32##name(a, b); \
   }
 
+#ifndef __CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, Add)
+#endif  // !__CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, AddWithOverflow)
   INTPTR_BINOP(Int, Sub)
   INTPTR_BINOP(Int, SubWithOverflow)
@@ -783,7 +790,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 
   // Conversions.
   Node* BitcastTaggedToWord(Node* a) {
-      return AddNode(machine()->BitcastTaggedToWord(), a);
+    return AddNode(machine()->BitcastTaggedToWord(), a)->MarkAsCapability();
   }
   Node* BitcastTaggedToWordForTagAndSmiBits(Node* a) {
     return AddNode(machine()->BitcastTaggedToWordForTagAndSmiBits(), a);

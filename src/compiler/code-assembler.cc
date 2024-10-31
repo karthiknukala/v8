@@ -1620,8 +1620,20 @@ void CodeAssemblerLabel::UpdateVariablesAfterBind() {
       FATAL("%s", str.str().c_str());
     }
 #endif  // DEBUG
-    Node* phi = state_->raw_assembler_->Phi(
-        var.first->rep_, static_cast<int>(merge_count_), &(i->second[0]));
+    MachineRepresentation rep;
+    if (i->second[0]->IsCapability() &&
+        var.first->rep_ == MachineRepresentation::kWord64) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      // XXX(ds815): Need this ifdef because kCapability64 is only defined for
+      // CHERI.
+      rep = MachineRepresentation::kCapability64;
+#endif  // __CHERI_PURE_CAPABILITY__
+    } else {
+      rep = var.first->rep_;
+    }
+    Node* phi = state_->raw_assembler_->Phi(rep, static_cast<int>(merge_count_),
+                                            &(i->second[0]));
+    if (i->second[0]->IsCapability()) phi->MarkAsCapability();
     variable_phis_[var_impl] = phi;
   }
 

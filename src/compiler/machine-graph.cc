@@ -31,11 +31,15 @@ Node* MachineGraph::Int64Constant(int64_t value) {
 }
 #if defined(__CHERI_PURE_CAPABILITY__)
 Node* MachineGraph::Capability32Constant(intptr_t value) {
-  return graph()->NewNode(common()->Capability32Constant(value));
+  return graph()
+      ->NewNode(common()->Capability32Constant(value))
+      ->MarkAsCapability();
 }
 
 Node* MachineGraph::Capability64Constant(intptr_t value) {
-  return graph()->NewNode(common()->Capability64Constant(value));
+  return graph()
+      ->NewNode(common()->Capability64Constant(value))
+      ->MarkAsCapability();
 }
 #endif
 

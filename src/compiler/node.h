@@ -149,6 +149,17 @@ class V8_EXPORT_PRIVATE Node final {
   // Returns true if {owner1} and {owner2} are the only users of {this} node.
   bool OwnedBy(Node const* owner1, Node const* owner2) const;
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool IsCapability() const { return is_capability_; }
+  inline Node* MarkAsCapability() {
+    is_capability_ = true;
+    return this;
+  }
+#else   // !__CHERI_PURE_CAPABILITY__
+  bool IsCapability() const { return false; }
+  inline Node* MarkAsCapability() { return this; }
+#endif  // __CHERI_PURE_CAPABILITY__
+
   void Print() const { Print(1); }
   void Print(int depth) const;
   void Print(std::ostream&, int depth = 1) const;
@@ -299,6 +310,9 @@ class V8_EXPORT_PRIVATE Node final {
   Mark mark_;
   uint32_t bit_field_;
   ZoneUsePtr first_use_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool is_capability_ = false;
+#endif  // __CHERI_PURE_CAPABILITY__
 
   friend class Edge;
   friend class NodeMarkerBase;

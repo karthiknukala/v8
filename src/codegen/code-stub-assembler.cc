@@ -33,6 +33,9 @@
 #include "src/objects/property-cell.h"
 #include "src/objects/property-descriptor-object.h"
 #include "src/roots/roots.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/compiler/node.h"  // MarkAsCapability. TODO(ds815): Drop if possible.
+#endif // __CHERI_PURE_CAPABILITY__
 
 namespace v8 {
 namespace internal {
@@ -1523,6 +1526,11 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
   }
 
   BIND(&out);
+#ifdef __CHERI_PURE_CAPABILITY__
+  // Mark the node as a capability.
+  compiler::Node* result_node = result.value();
+  result_node->MarkAsCapability();
+#endif  // __CHERI_PURE_CAPABILITY__
   return UncheckedCast<HeapObject>(result.value());
 }
 
@@ -8499,6 +8507,19 @@ void CodeStubAssembler::DecrementCounter(StatsCounter* counter, int delta) {
 
 template <typename TIndex>
 void CodeStubAssembler::Increment(TVariable<TIndex>* variable, int value) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if constexpr (std::is_base_of<IntPtrT, TIndex>::value ||
+                std::is_base_of<UintPtrT, TIndex>::value) {
+    compiler::Node* var_node = variable->value();
+    if (var_node->IsCapability()) {
+      *variable =
+          IntPtrOrSmiAdd(variable->value(), IntPtrOrSmiConstant<TIndex>(value));
+      var_node = variable->value();
+      var_node->MarkAsCapability();
+      return;
+    }
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   *variable =
       IntPtrOrSmiAdd(variable->value(), IntPtrOrSmiConstant<TIndex>(value));
 }
