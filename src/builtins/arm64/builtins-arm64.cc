@@ -1105,7 +1105,7 @@ void Generate_JSEntryVariant(MacroAssembler* masm, StackFrame::Type type,
   Label non_outermost_js_2;
   {
 #if defined(__CHERI_PURE_CAPABILITY__)
-   Register c_entry_fp = c11;
+    Register c_entry_fp = c11;
     __ PeekPair(c10, c_entry_fp, 0);
     __ Cmp(c10, StackFrame::OUTERMOST_JSENTRY_FRAME);
     __ B(ne, &non_outermost_js_2);
