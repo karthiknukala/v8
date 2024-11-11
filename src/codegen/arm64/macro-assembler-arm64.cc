@@ -359,21 +359,13 @@ void MacroAssembler::Mov(const Register& rd, uint64_t imm) {
   DCHECK(!rd.IsZero());
 
 #if defined(__CHERI_PURE_CAPABILITY__)
-  // TODO(gcjenkinson): Does this actually make sense, I see
-  // a Mov of an immediate to a cap register but its hard to
-  // determine why or where it comes from.
+  // XXX(ds815): Verify with more confidence.
+  // This will only be generated in the cases where we're either working with
+  // Smis or some other kind of integer (non-capability) constant. All
+  // capability constants go through a pcrel load-literal.
   if (rd.IsC()) {
-    if (imm == 0) {
-      Mov(rd.X(), xzr);
-      return;
-    } else {
-      UseScratchRegisterScope temps(this);
-      Register t1 = temps.AcquireX();
-      Gcvalue(rd, t1);
-      Mov(t1, imm);
-      Scvalue(rd, rd, t1);
-      return;
-    }
+    Mov(rd.X(), imm);
+    return;
   }
 #endif   // __CHERI_PURE_CAPABILITY__
 

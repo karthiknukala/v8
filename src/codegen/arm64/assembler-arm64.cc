@@ -5165,7 +5165,6 @@ void PatchingAssembler::PatchAdrFar(int64_t target_offset) {
   int scratch_code = expected_movz->Rd();
 
   // Patch to load the correct address.
-  // TODO(gcjenkinson): rd should be a C register
 #ifdef __CHERI_PURE_CAPABILITY__
   Register rd = Register::CRegFromCode(rd_code);
 #else   // !__CHERI_PURE_CAPABILITY__
