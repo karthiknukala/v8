@@ -1647,8 +1647,12 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord64(node), VisitUint64Mod(node);
     case IrOpcode::kBitcastTaggedToWord:
     case IrOpcode::kBitcastTaggedToWordForTagAndSmiBits:
+#ifdef __CHERI_PURE_CAPABILITY__
+      return MarkAsWord64(node), VisitBitcastTaggedToWord(node);
+#else   // !__CHERI_PURE_CAPABILITY__
       return MarkAsRepresentation(MachineType::PointerRepresentation(), node),
              VisitBitcastTaggedToWord(node);
+#endif  // __CHERI_PURE_CAPABILITY__
     case IrOpcode::kBitcastWordToTagged:
       return MarkAsTagged(node), VisitBitcastWordToTagged(node);
     case IrOpcode::kBitcastWordToTaggedSigned:
