@@ -2296,6 +2296,9 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
                                 uint8_t* pc);
 
   void JumpHelper(int64_t offset, RelocInfo::Mode rmode, Condition cond = al);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void PrepareC64JumpHelper(const Register& cd, const Register& tempC);
+#endif
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
 };

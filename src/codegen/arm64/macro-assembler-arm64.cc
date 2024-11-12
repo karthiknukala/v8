@@ -313,12 +313,10 @@ void MacroAssembler::LogicalMacro(const Register& rd, const Register& rn,
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
-void MacroAssembler::PrepareC64Jump(const Register& cd) {
+void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& tempC) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
-  UseScratchRegisterScope temps(this);
   Label not_sentry, done;
-  Register tempC = temps.AcquireC();
   // Check if we need to set the C64 bit.
   Gcvalue(cd, tempC.X());
   And(tempC.X(), tempC.X(), 1);
@@ -345,6 +343,14 @@ void MacroAssembler::PrepareC64Jump(const Register& cd) {
   Orr(tempC.X(), tempC.X(), 0x1);
   Scvalue(cd, cd, tempC.X());
   bind(&done);
+}
+
+void MacroAssembler::PrepareC64Jump(const Register& cd) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(cd.IsC());
+  UseScratchRegisterScope temps(this);
+  Register tempC = temps.AcquireC();
+  PrepareC64JumpHelper(cd, tempC);
 }
 #endif
 
