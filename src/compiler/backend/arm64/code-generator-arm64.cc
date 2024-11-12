@@ -1136,9 +1136,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kArchComment:
 #if defined(__CHERI_PURE_CAPABILITY__)
-      // TODO(gcjenkinson) Fix cast to provenance-free integer type.
-      // Add InputCapability method.
-      __ RecordComment(reinterpret_cast<const char*>(i.InputInt64(0)));
+      __ RecordComment(reinterpret_cast<const char*>(i.InputCapability(0)));
 #else // defined(__CHERI_PURE_CAPABILITY__)
       __ RecordComment(reinterpret_cast<const char*>(i.InputInt64(0)));
 #endif // defined(__CHERI_PURE_CAPABILITY__)

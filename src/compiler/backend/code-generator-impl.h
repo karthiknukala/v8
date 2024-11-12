@@ -34,6 +34,10 @@ class InstructionOperandConverter {
   Register InputCapabilityRegister(size_t index) const {
     return ToCapabilityRegister(instr_->InputAt(index));
   }
+
+  intptr_t InputCapability(size_t index) {
+    return ToConstant(instr_->InputAt(index)).ToIntPtr();
+  }
 #endif  // __CHERI_PURE_CAPABILITY__
 
   FloatRegister InputFloatRegister(size_t index) {
