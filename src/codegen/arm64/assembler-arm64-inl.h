@@ -1157,11 +1157,7 @@ Instr Assembler::ExtendMode(Extend extend) {
 }
 
 Instr Assembler::ImmExtendShift(unsigned left_shift) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  DCHECK_LE(left_shift, 5);
-#else
   DCHECK_LE(left_shift, 4);
-#endif // __CHERI_PURE_CAPABILITY__
   return left_shift << ImmExtendShift_offset;
 }
 
