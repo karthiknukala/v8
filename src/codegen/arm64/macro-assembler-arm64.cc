@@ -906,6 +906,23 @@ Operand MacroAssembler::MoveImmediateForShiftedOp(const Register& dst,
   return Operand(dst);
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+void MacroAssembler::CheriSub(const Register& rd, const Register& rn,
+                              const Operand& operand, FlagsUpdate S) {
+  // We can't scvalue using the SP register, so we need an extra register in
+  // that case.
+  if (rd.IsSP()) {
+    UseScratchRegisterScope temps(this);
+    Register temp = temps.AcquireX();
+    AddSub(temp, rn.X(), operand, S, SUB);
+    Scvalue(rd, rn, temp);
+  } else {
+    AddSub(rd.X(), rn.X(), operand, S, SUB);
+    Scvalue(rd, rn, rd.X());
+  }
+}
+#endif // __CHERI_PURE_CAPABILITY__
+
 void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
                                  const Operand& operand, FlagsUpdate S,
                                  AddSubOp op) {
@@ -951,31 +968,16 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
       }
       Operand imm_operand =
           MoveImmediateForShiftedOp(temp, operand.ImmediateValue(), mode);
-      if (imm_operand.shift_amount() > 4 &&
-          IsImmAddSub(operand.ImmediateValue())) {
-        // Store the shift value to a temporary register and add the two
-        // registers together.
-        // XXX(ds815): Is this case also covered by the else case? Perhaps Mov
-        // is smart enough to actually generate this.
-        DCHECK(operand.shift() == LSL);
-        Gcvalue(rn, temp);
-        AddSub(temp, temp, operand, S, ADD);
-        Mov(rd, rn);
-        Scvalue(rd, rd, temp);
-      } else if (imm_operand.shift_amount() <= 4) {
-        // Use an extended arithmetic operation.
-        AddSub(rd, rn, imm_operand, S, op);
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (rd.IsC()) {
+        AddSub(rd.X(), rn.X(), imm_operand, S, op);
+        Scvalue(rd, rn, rd.X());
       } else {
-        // Store the immediate in the temporary register and add them together.
-        // XXX(ds815): Is this the correct way to do it...? We want
-        // movz temp, ...
-        // movk temp, ..., lsl 16
-        // movk temp, ..., lsl 32
-        // movk temp, ..., lsl 48
-        // Need to verify that this does the right thing.
-        Mov(temp, operand);
-        AddSub(rd, rn, temp, S, op);
+        AddSub(rd, rn, imm_operand, S, op);
       }
+#else   // !__CHERI_PURE_CAPABILITY__
+      AddSub(rd, rn, imm_operand, S, op);
+#endif  // !__CHERI_PURE_CAPABILITY__
     } else {
       Mov(temp, operand);
       AddSub(rd, rn, temp, S, op);
@@ -985,26 +987,14 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
     // The Morello ISA doesn't possess an instruction for subtracting an
     // extended register from a capability register.
     if (op == SUB_c) {
-      UseScratchRegisterScope temps(this);
-      Register temp = temps.AcquireX();
-      Gcvalue(rn, temp);
-      AddSub(temp, temp, operand, S, SUB);
-      Mov(rd, rn);
-      Scvalue(rd, rd, temp);
+      CheriSub(rd, rn, operand, S);
     } else {
       if (operand.shift_amount() > 4) {
         // We can only encode a shift of 4 in Morello. Generate a similar
         // sequence to SUB if we're trying to shift by more.
-        // FIXME(ds815): This does not handle the case where the value we're
-        // trying to add can't be encoded as an immediate, but it doesn't seem
-        // to matter yet.
         DCHECK_EQ(operand.shift(), LSL);
-        UseScratchRegisterScope temps(this);
-        Register temp = temps.AcquireX();
-        Gcvalue(rn, temp);
-        AddSub(temp, temp, operand, S, ADD);
-        Mov(rd, rn);
-        Scvalue(rd, rd, temp);
+        AddSub(rd.X(), rn.X(), operand, S, ADD);
+        Scvalue(rd, rn, rd.X());
       } else {
         DCHECK((operand.shift() == LSL) && (operand.shift_amount() <= 4));
         AddSub(rd, rn, Operand(operand.reg(), SXTW, operand.shift_amount()), S,
@@ -1015,12 +1005,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
     if (op == SUB_c) {
       // The Morello ISA doesn't possess an instruction for subtracting an
       // extended register from a capability register.
-      UseScratchRegisterScope temps(this);
-      Register temp = temps.AcquireX();
-      Gcvalue(rn, temp);
-      AddSub(temp, temp, operand, S, SUB);
-      Mov(rd, rn);
-      Scvalue(rd, rd, temp);
+      CheriSub(rd, rn, operand, S);
     } else {
       AddSub(rd, rn, operand, S, ADD_c);
     }
