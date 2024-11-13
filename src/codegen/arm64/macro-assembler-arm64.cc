@@ -936,7 +936,7 @@ void MacroAssembler::CheriSub(const Register& rd, const Register& rn,
                               const Operand& operand, FlagsUpdate S) {
   // We can't scvalue using the SP register, so we need an extra register in
   // that case.
-  if (rd.IsSP()) {
+  if (rd.IsSP() || rn.code() == rd.code()) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
     AddSub(temp, rn.X(), operand, S, SUB);
@@ -995,6 +995,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
           MoveImmediateForShiftedOp(temp, operand.ImmediateValue(), mode);
 #ifdef __CHERI_PURE_CAPABILITY__
       if (rd.IsC() && imm_operand.shift_amount() > 4) {
+        DCHECK_NE(rd.code(), rn.code());
         AddSub(rd.X(), rn.X(), imm_operand, S, op);
         Scvalue(rd, rn, rd.X());
       } else {
@@ -1018,8 +1019,15 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
         // We can only encode a shift of 4 in Morello. Generate a similar
         // sequence to SUB if we're trying to shift by more.
         DCHECK_EQ(operand.shift(), LSL);
-        AddSub(rd.X(), rn.X(), operand, S, ADD);
-        Scvalue(rd, rn, rd.X());
+        if (rn.code() == rd.code()) {
+          UseScratchRegisterScope temps(this);
+          Register temp = temps.AcquireX();
+          AddSub(temp, rn.X(), operand, S, ADD);
+          Scvalue(rd, rn, temp);
+        } else {
+          AddSub(rd.X(), rn.X(), operand, S, ADD);
+          Scvalue(rd, rn, rd.X());
+        }
       } else {
         DCHECK((operand.shift() == LSL) && (operand.shift_amount() <= 4));
         AddSub(rd, rn, Operand(operand.reg(), SXTW, operand.shift_amount()), S,
