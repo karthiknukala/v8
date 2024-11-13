@@ -232,6 +232,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   inline void InitializeRootRegister();
 
 #ifdef __CHERI_PURE_CAPABILITY__
+  void CheriSentryAdd(const Register& cd, const Register& cn,
+                      const Operand& operand);
   void PrepareC64Jump(const Register& cd);
 #endif  // __CHERI_PURE_CAPABILITY__
   void Mov(const Register& rd, const Operand& operand,

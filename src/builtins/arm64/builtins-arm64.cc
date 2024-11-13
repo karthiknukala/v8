@@ -2350,8 +2350,8 @@ static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
     UseScratchRegisterScope temps(masm);
 #if defined(__CHERI_PURE_CAPABILITY__)
     temps.Exclude(c17);
-    __ Add(c17, c1, Operand(interpreter_entry_return_pc_offset.value()));
-    __ PrepareC64Jump(c17);
+    __ CheriSentryAdd(c17, c1,
+                      Operand(interpreter_entry_return_pc_offset.value()));
     __ Br(c17);
 #else // defined(__CHERI_PURE_CAPABILITY__)
     temps.Exclude(x17);

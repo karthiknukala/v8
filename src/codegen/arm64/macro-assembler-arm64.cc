@@ -313,6 +313,31 @@ void MacroAssembler::LogicalMacro(const Register& rd, const Register& rn,
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
+void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
+                                    const Operand& operand) {
+  Label not_sentry, sentry_done;
+  Register xd = cd.X();
+  Register xn = cn.X();
+
+  Gcseal(cn, xd);
+  Cmp(xd, xzr);
+  B(eq, &not_sentry);
+  Add(xn, xn, operand);
+  Orr(xn, xn, 0x1);  // C64 bit
+  adr(cd, 0);
+  Scvalue(cd, cd, xn);
+  Seal(cd, cd, Cheri::kSealFormRb);
+  B(&sentry_done);
+
+  Bind(&not_sentry);
+  Add(cn, cn, operand);
+  Gcvalue(cn, xd);
+  Orr(xd, xd, 0x1); // C64 bit
+  Scvalue(cd, cn, xd);
+
+  Bind(&sentry_done);
+}
+
 void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& tempC) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
