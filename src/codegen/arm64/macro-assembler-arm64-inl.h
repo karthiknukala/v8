@@ -27,16 +27,17 @@ void MacroAssembler::And(const Register& rd, const Register& rn,
   DCHECK(!rd.IsZero());
 #if defined(__CHERI_PURE_CAPABILITY__)
   if (rn.IsC()) {
-    {
+    DCHECK(rd.IsC());
+    if (rd.code() != rn.code()) {
+      Gcvalue(rn, rd.X());
+      LogicalMacro(rd.X(), rd.X(), operand, AND);
+      Scvalue(rd, rn, rd.X());
+    } else {
       UseScratchRegisterScope temps(this);
       Register temp = temps.AcquireX();
       Gcvalue(rn, temp);
-      if (rd.IsC()) {
-        LogicalMacro(temp, temp, operand, AND);
-        Scvalue(rd, rd, temp);
-      } else {
-        LogicalMacro(rd, temp, operand, AND);
-      }
+      LogicalMacro(temp, temp, operand, AND);
+      Scvalue(rd, rn, temp);
     }
     return;
   }
@@ -51,11 +52,17 @@ void MacroAssembler::Ands(const Register& rd, const Register& rn,
 #if defined(__CHERI_PURE_CAPABILITY__)
   if (rn.IsC()) {
     DCHECK(rd.IsC());
-    UseScratchRegisterScope temps(this);
-    Register temp = temps.AcquireX();
-    Gcvalue(rn, temp);
-    LogicalMacro(temp, temp, operand, ANDS);
-    Scvalue(rd, rd, temp);
+    if (rd.code() != rn.code()) {
+      Gcvalue(rn, rd.X());
+      LogicalMacro(rd.X(), rd.X(), operand, ANDS);
+      Scvalue(rd, rn, rd.X());
+    } else {
+      UseScratchRegisterScope temps(this);
+      Register temp = temps.AcquireX();
+      Gcvalue(rn, temp);
+      LogicalMacro(temp, temp, operand, ANDS);
+      Scvalue(rd, rn, temp);
+    }
     return;
   }
 #endif // __CHERI_PURE_CAPABILITY__
