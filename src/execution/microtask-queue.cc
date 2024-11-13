@@ -28,7 +28,7 @@ const size_t MicrotaskQueue::kStartOffset = OFFSET_OF(MicrotaskQueue, start_);
 const size_t MicrotaskQueue::kFinishedMicrotaskCountOffset =
     OFFSET_OF(MicrotaskQueue, finished_microtask_count_);
 
-const intptr_t MicrotaskQueue::kMinimumCapacity = 8;
+const ScaledInt MicrotaskQueue::kMinimumCapacity = 8;
 
 // static
 void MicrotaskQueue::SetUpDefaultMicrotaskQueue(Isolate* isolate) {
@@ -101,7 +101,7 @@ void MicrotaskQueue::EnqueueMicrotask(Microtask microtask) {
   if (size_ == capacity_) {
     // Keep the capacity of |ring_buffer_| power of 2, so that the JIT
     // implementation can calculate the modulo easily.
-    intptr_t new_capacity = std::max(kMinimumCapacity, capacity_ << 1);
+    ScaledInt new_capacity = std::max(kMinimumCapacity, capacity_ << 1);
     ResizeBuffer(new_capacity);
   }
 
@@ -207,14 +207,14 @@ void MicrotaskQueue::IterateMicrotasks(RootVisitor* visitor) {
     visitor->VisitRootPointers(
         Root::kStrongRoots, nullptr, FullObjectSlot(ring_buffer_),
         FullObjectSlot(ring_buffer_ + std::max(start_ + size_ - capacity_,
-                                               static_cast<intptr_t>(0))));
+                                               static_cast<ScaledInt>(0))));
   }
 
   if (capacity_ <= kMinimumCapacity) {
     return;
   }
 
-  intptr_t new_capacity = capacity_;
+  ScaledInt new_capacity = capacity_;
   while (new_capacity > 2 * size_) {
     new_capacity >>= 1;
   }

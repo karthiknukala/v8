@@ -81,8 +81,13 @@ TNode<IntPtrT> MicrotaskQueueBuiltinsAssembler::GetMicrotaskQueueSize(
 
 void MicrotaskQueueBuiltinsAssembler::SetMicrotaskQueueSize(
     TNode<RawPtrT> microtask_queue, TNode<IntPtrT> new_size) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  StoreNoWriteBarrier(MachineRepresentation::kWord64, microtask_queue,
+                      IntPtrConstant(MicrotaskQueue::kSizeOffset), new_size);
+#else   // !__CHERI_PURE_CAPABILITY__
   StoreNoWriteBarrier(MachineType::PointerRepresentation(), microtask_queue,
                       IntPtrConstant(MicrotaskQueue::kSizeOffset), new_size);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 TNode<IntPtrT> MicrotaskQueueBuiltinsAssembler::GetMicrotaskQueueStart(
@@ -93,8 +98,13 @@ TNode<IntPtrT> MicrotaskQueueBuiltinsAssembler::GetMicrotaskQueueStart(
 
 void MicrotaskQueueBuiltinsAssembler::SetMicrotaskQueueStart(
     TNode<RawPtrT> microtask_queue, TNode<IntPtrT> new_start) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  StoreNoWriteBarrier(MachineRepresentation::kWord64, microtask_queue,
+                      IntPtrConstant(MicrotaskQueue::kStartOffset), new_start);
+#else   // !__CHERI_PURE_CAPABILITY__
   StoreNoWriteBarrier(MachineType::PointerRepresentation(), microtask_queue,
                       IntPtrConstant(MicrotaskQueue::kStartOffset), new_start);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 TNode<IntPtrT> MicrotaskQueueBuiltinsAssembler::CalculateRingBufferOffset(
@@ -348,9 +358,15 @@ void MicrotaskQueueBuiltinsAssembler::IncrementFinishedMicrotaskCount(
       microtask_queue,
       IntPtrConstant(MicrotaskQueue::kFinishedMicrotaskCountOffset));
   TNode<IntPtrT> new_count = IntPtrAdd(count, IntPtrConstant(1));
+#ifdef __CHERI_PURE_CAPABILITY__
+  StoreNoWriteBarrier(
+      MachineRepresentation::kWord64, microtask_queue,
+      IntPtrConstant(MicrotaskQueue::kFinishedMicrotaskCountOffset), new_count);
+#else   // !__CHERI_PURE_CAPABILITY__
   StoreNoWriteBarrier(
       MachineType::PointerRepresentation(), microtask_queue,
       IntPtrConstant(MicrotaskQueue::kFinishedMicrotaskCountOffset), new_count);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 TNode<Context> MicrotaskQueueBuiltinsAssembler::GetCurrentContext() {
@@ -407,8 +423,13 @@ void MicrotaskQueueBuiltinsAssembler::EnterMicrotaskContext(
                                   native_context);
 
     TNode<IntPtrT> new_size = IntPtrAdd(size, IntPtrConstant(1));
+#ifdef __CHERI_PURE_CAPABILITY__
+    StoreNoWriteBarrier(MachineRepresentation::kWord64, hsi, size_offset,
+                        new_size);
+#else   // !__CHERI_PURE_CAPABILITY__
     StoreNoWriteBarrier(MachineType::PointerRepresentation(), hsi, size_offset,
                         new_size);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     using FlagStack = DetachableVector<int8_t>;
     TNode<IntPtrT> flag_data_offset =
@@ -429,8 +450,13 @@ void MicrotaskQueueBuiltinsAssembler::EnterMicrotaskContext(
     TNode<RawPtrT> flag_data = Load<RawPtrT>(hsi, flag_data_offset);
     StoreNoWriteBarrier(MachineRepresentation::kWord8, flag_data, size,
                         BoolConstant(true));
+#ifdef __CHERI_PURE_CAPABILITY__
+    StoreNoWriteBarrier(MachineRepresentation::kWord64, hsi, flag_size_offset,
+                        new_size);
+#else   // !__CHERI_PURE_CAPABILITY__
     StoreNoWriteBarrier(MachineType::PointerRepresentation(), hsi,
                         flag_size_offset, new_size);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     Goto(&done);
   }
@@ -465,15 +491,28 @@ void MicrotaskQueueBuiltinsAssembler::RewindEnteredContext(
     CSA_CHECK(this, IntPtrLessThanOrEqual(saved_entered_context_count, size));
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  StoreNoWriteBarrier(MachineRepresentation::kWord64, hsi, size_offset,
+                      saved_entered_context_count);
+#else   // !__CHERI_PURE_CAPABILITY__
   StoreNoWriteBarrier(MachineType::PointerRepresentation(), hsi, size_offset,
                       saved_entered_context_count);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   using FlagStack = DetachableVector<int8_t>;
+#ifdef __CHERI_PURE_CAPABILITY__
+  StoreNoWriteBarrier(
+      MachineRepresentation::kWord64, hsi,
+      IntPtrConstant(HandleScopeImplementer::kIsMicrotaskContextOffset +
+                     FlagStack::kSizeOffset),
+      saved_entered_context_count);
+#else   // !__CHERI_PURE_CAPABILITY__
   StoreNoWriteBarrier(
       MachineType::PointerRepresentation(), hsi,
       IntPtrConstant(HandleScopeImplementer::kIsMicrotaskContextOffset +
                      FlagStack::kSizeOffset),
       saved_entered_context_count);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void MicrotaskQueueBuiltinsAssembler::RunAllPromiseHooks(
@@ -559,12 +598,21 @@ TF_BUILTIN(EnqueueMicrotask, MicrotaskQueueBuiltinsAssembler) {
 
   // |microtask_queue| has an unused slot to store |microtask|.
   {
+#ifdef __CHERI_PURE_CAPABILITY__
+    StoreNoWriteBarrier(MachineRepresentation::kWord64, ring_buffer,
+                        CalculateRingBufferOffset(capacity, start, size),
+                        BitcastTaggedToWord(microtask));
+    StoreNoWriteBarrier(MachineRepresentation::kWord64, microtask_queue,
+                        IntPtrConstant(MicrotaskQueue::kSizeOffset),
+                        IntPtrAdd(size, IntPtrConstant(1)));
+#else   // !__CHERI_PURE_CAPABILITY__
     StoreNoWriteBarrier(MachineType::PointerRepresentation(), ring_buffer,
                         CalculateRingBufferOffset(capacity, start, size),
                         BitcastTaggedToWord(microtask));
     StoreNoWriteBarrier(MachineType::PointerRepresentation(), microtask_queue,
                         IntPtrConstant(MicrotaskQueue::kSizeOffset),
                         IntPtrAdd(size, IntPtrConstant(1)));
+#endif  // __CHERI_PURE_CAPABILITY__
     Return(UndefinedConstant());
   }
 

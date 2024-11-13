@@ -13,6 +13,7 @@
 #include "include/v8-internal.h"  // For Address.
 #include "include/v8-microtask-queue.h"
 #include "src/base/macros.h"
+#include "src/common/globals.h"
 
 namespace v8 {
 namespace internal {
@@ -96,9 +97,9 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
   }
   v8::MicrotasksPolicy microtasks_policy() const { return microtasks_policy_; }
 
-  intptr_t capacity() const { return capacity_; }
-  intptr_t size() const { return size_; }
-  intptr_t start() const { return start_; }
+  ScaledInt capacity() const { return capacity_; }
+  ScaledInt size() const { return size_; }
+  ScaledInt start() const { return start_; }
 
   Microtask get(intptr_t index) const;
 
@@ -111,7 +112,7 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
   static const size_t kStartOffset;
   static const size_t kFinishedMicrotaskCountOffset;
 
-  static const intptr_t kMinimumCapacity;
+  static const ScaledInt kMinimumCapacity;
 
  private:
   void PerformCheckpointInternal(v8::Isolate* v8_isolate);
@@ -124,9 +125,9 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
   // A ring buffer to hold Microtask instances.
   // ring_buffer_[(start_ + i) % capacity_] contains |i|th Microtask for each
   // |i| in [0, size_).
-  intptr_t size_ = 0;
-  intptr_t capacity_ = 0;
-  intptr_t start_ = 0;
+  ScaledInt size_ = 0;
+  ScaledInt capacity_ = 0;
+  ScaledInt start_ = 0;
   Address* ring_buffer_ = nullptr;
 
   // The number of finished microtask.
