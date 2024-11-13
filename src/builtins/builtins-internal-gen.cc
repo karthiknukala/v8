@@ -143,9 +143,15 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
 
   TNode<BoolT> IsPageFlagSet(TNode<IntPtrT> object, int mask) {
     TNode<IntPtrT> page = PageFromAddress(object);
+#ifdef __CHERI_PURE_CAPABILITY__
+    TNode<IntPtrT> flags = UncheckedCast<IntPtrT>(
+        Load(MachineType::Int64(), page,
+             IntPtrConstant(BasicMemoryChunk::kFlagsOffset)));
+#else   // !__CHERI_PURE_CAPABILITY__
     TNode<IntPtrT> flags = UncheckedCast<IntPtrT>(
         Load(MachineType::Pointer(), page,
              IntPtrConstant(BasicMemoryChunk::kFlagsOffset)));
+#endif  // __CHERI_PURE_CAPABILITY__
     return WordNotEqual(WordAnd(flags, IntPtrConstant(mask)),
                         IntPtrConstant(0));
   }
