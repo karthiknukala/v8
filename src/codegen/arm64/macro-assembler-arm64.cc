@@ -1967,8 +1967,13 @@ void MacroAssembler::AssertConstructor(Register object) {
 #endif  // !__CHERI_PURE_CAPABILITY__
 
   LoadMap(temp, object);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Ldrb(temp.X(), FieldMemOperand(temp, Map::kBitFieldOffset));
+  Tst(temp.X(), Operand(Map::Bits1::IsConstructorBit::kMask));
+#else   // !__CHERI_PURE_CAPABILITY__
   Ldrb(temp, FieldMemOperand(temp, Map::kBitFieldOffset));
   Tst(temp, Operand(Map::Bits1::IsConstructorBit::kMask));
+#endif  // __CHERI_PURE_CAPABILITY__
 
   Check(ne, AbortReason::kOperandIsNotAConstructor);
 }
