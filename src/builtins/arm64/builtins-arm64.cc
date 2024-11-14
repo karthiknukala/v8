@@ -6346,7 +6346,11 @@ void Builtins::Generate_CallApiCallback(MacroAssembler* masm) {
   //  -- sp[(argc) * 8]      : last argument
   // -----------------------------------
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register function_callback_info_arg = carg_reg_1;
+#else   // !__CHERI_PURE_CAPABILITY__
   Register function_callback_info_arg = arg_reg_1;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   Register api_function_address = c1;
@@ -6491,7 +6495,11 @@ void Builtins::Generate_CallApiCallback(MacroAssembler* masm) {
 
   __ RecordComment("v8::FunctionCallback's argument.");
   // function_callback_info_arg = v8::FunctionCallbackInfo&
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ add(function_callback_info_arg, csp, Operand(1 * kSystemPointerSize));
+#else // !__CHERI_PURE_CAPABILITY__
   __ add(function_callback_info_arg, sp, Operand(1 * kSystemPointerSize));
+#endif // __CHERI_PURE_CAPABILITY__
 
   DCHECK(!AreAliased(api_function_address, function_callback_info_arg));
 
