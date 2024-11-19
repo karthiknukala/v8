@@ -23,6 +23,7 @@
 #include "src/codegen/machine-type.h"
 #include "src/codegen/source-position.h"
 #include "src/codegen/tnode.h"
+#include "src/compiler/node.h"
 #include "src/heap/heap.h"
 #include "src/objects/object-type.h"
 #include "src/objects/objects.h"
@@ -463,6 +464,13 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                            code_assembler_->StringConstant(location_)));
       }
 #endif
+#ifndef V8_COMPRESS_POINTERS
+      // XXX(ds815): This is a messy hack.
+      if constexpr (std::is_base_of<RawPtrT, A>::value ||
+                    is_valid_type_tag<A>::value) {
+        node_->MarkAsCapability();
+      }
+#endif  // !V8_COMPRESS_POINTERS
       return TNode<A>::UncheckedCast(node_);
     }
 
