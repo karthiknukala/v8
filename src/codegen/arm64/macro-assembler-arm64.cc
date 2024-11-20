@@ -1012,7 +1012,10 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
   } else if (rd.IsC() && operand.IsShiftedRegister()) {
     // The Morello ISA doesn't possess an instruction for subtracting an
     // extended register from a capability register.
-    if (op == SUB_c) {
+    // FIXME(ds815): Once we don't see a SUB here anymore (i.e. everything is
+    // marked as a capability and generating SUB_c, drop the || in the
+    // condition.
+    if (op == SUB_c || op == SUB) {
       CheriSub(rd, rn, operand, S);
     } else {
       if (operand.shift_amount() > 4) {
@@ -1029,6 +1032,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
           Scvalue(rd, rn, rd.X());
         }
       } else {
+        DCHECK_EQ(op, ADD_c);
         DCHECK((operand.shift() == LSL) && (operand.shift_amount() <= 4));
         AddSub(rd, rn, Operand(operand.reg(), SXTW, operand.shift_amount()), S,
                ADD_c);
@@ -1040,6 +1044,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
       // extended register from a capability register.
       CheriSub(rd, rn, operand, S);
     } else {
+      DCHECK_EQ(op, ADD_c);
       AddSub(rd, rn, operand, S, ADD_c);
     }
 #endif   // __CHERI_PURE_CAPABILITY__
