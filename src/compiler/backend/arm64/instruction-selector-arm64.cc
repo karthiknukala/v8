@@ -1811,17 +1811,11 @@ void InstructionSelector::VisitInt64Add(Node* node) {
 
 #if defined(__CHERI_PURE_CAPABILITY__)
 void InstructionSelector::VisitCapAdd(Node* node) {
-  Arm64OperandGenerator g(this);
-  Int64BinopMatcher m(node);
-  if (m.right().HasResolvedValue() && (m.right().ResolvedValue() < 0) &&
-      (m.right().ResolvedValue() > std::numeric_limits<int>::min()) &&
-      g.CanBeImmediate(-m.right().ResolvedValue(), kArithmeticImm)) {
-    Emit(kArm64SubCap, g.DefineAsRegister(node),
-         g.UseRegister(m.left().node()),
-         g.TempImmediate(static_cast<int32_t>(-m.right().ResolvedValue())));
-  } else {
-    VisitBinop<Int64BinopMatcher>(this, node, kArm64AddCap, kArithmeticImm);
-  }
+  VisitAddSub<Int64BinopMatcher>(this, node, kArm64AddCap, kArm64SubCap);
+}
+
+void InstructionSelector::VisitCapSub(Node* node) {
+  VisitAddSub<Int64BinopMatcher>(this, node, kArm64SubCap, kArm64AddCap);
 }
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 

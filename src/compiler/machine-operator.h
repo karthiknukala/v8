@@ -1227,6 +1227,7 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   const Operator* CapAdd();
+  const Operator* CapSub();
 #endif // __CHERI_PURE_CAPABILITY__
 
   // Target machine word-size assumed by this builder.

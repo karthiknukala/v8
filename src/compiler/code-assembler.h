@@ -296,8 +296,9 @@ class CodeAssemblerParameterizedLabel;
   V(Word64Sar, Word64T, Word64T, Word64T)
 
 #if defined(__CHERI_PURE_CAPABILITY__)
-#define CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(V)                        \
-  V(CapAdd, WordT, WordT, IntPtrT)
+#define CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(V) \
+  V(CapAdd, WordT, WordT, IntPtrT)               \
+  V(CapSub, WordT, WordT, IntPtrT)
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 
 TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);

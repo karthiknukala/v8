@@ -185,6 +185,7 @@ class MachineRepresentationInferrer {
             break;
 #if defined(__CHERI_PURE_CAPABILITY__)
           case IrOpcode::kCapAdd:
+          case IrOpcode::kCapSub:
           case IrOpcode::kCapability32Constant:
           case IrOpcode::kCapability64Constant:
           case IrOpcode::kRelocatableCapability64Constant:

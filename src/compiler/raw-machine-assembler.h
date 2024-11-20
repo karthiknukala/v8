@@ -619,6 +619,9 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* CapAdd(Node* a, Node* b) {
     return AddNode(machine()->CapAdd(), a, b)->MarkAsCapability();
   }
+  Node* CapSub(Node* a, Node* b) {
+    return AddNode(machine()->CapSub(), a, b)->MarkAsCapability();
+  }
   Node* IntPtrAdd(Node* a, Node* b) {
     if (a->IsCapability()) return CapAdd(a, b);
     if (b->IsCapability()) return CapAdd(b, a);
