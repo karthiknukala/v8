@@ -33,9 +33,6 @@
 #include "src/objects/property-cell.h"
 #include "src/objects/property-descriptor-object.h"
 #include "src/roots/roots.h"
-#ifdef __CHERI_PURE_CAPABILITY__
-#include "src/compiler/node.h"  // MarkAsCapability. TODO(ds815): Drop if possible.
-#endif // __CHERI_PURE_CAPABILITY__
 
 namespace v8 {
 namespace internal {
@@ -1526,12 +1523,7 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
   }
 
   BIND(&out);
-#ifdef __CHERI_PURE_CAPABILITY__
-  // Mark the node as a capability.
-  compiler::Node* result_node = result.value();
-  result_node->MarkAsCapability();
-#endif  // __CHERI_PURE_CAPABILITY__
-  return UncheckedCast<HeapObject>(result.value());
+  return UncheckedCast<HeapObject>(MarkNodeAsCapability(result.value()));
 }
 
 TNode<HeapObject> CodeStubAssembler::AllocateRawUnaligned(
@@ -2519,6 +2511,10 @@ TNode<TValue> CodeStubAssembler::LoadArrayElement(TNode<Array> array,
   CSA_DCHECK(this, IsOffsetInBounds(offset, LoadArrayLength(array),
                                     array_header_size));
   constexpr MachineType machine_type = MachineTypeOf<TValue>::value;
+  if constexpr (is_capability<TValue>::value) {
+    return MarkNodeAsCapability(
+        UncheckedCast<TValue>(LoadFromObject(machine_type, array, offset)));
+  }
   return UncheckedCast<TValue>(LoadFromObject(machine_type, array, offset));
 }
 
@@ -7703,6 +7699,7 @@ TNode<RawPtrT> ToDirectStringAssembler::TryToSequential(
     TNode<RawPtrT> result =
         ReinterpretCast<RawPtrT>(BitcastTaggedToWord(var_string_.value()));
     if (ptr_kind == PTR_TO_DATA) {
+      // Provenance inherited from result.
       result = RawPtrAdd(result, IntPtrConstant(SeqOneByteString::kHeaderSize -
                                                 kHeapObjectTag));
     }
@@ -7718,6 +7715,7 @@ TNode<RawPtrT> ToDirectStringAssembler::TryToSequential(
     TNode<String> string = var_string_.value();
     TNode<RawPtrT> result = LoadExternalStringResourceDataPtr(CAST(string));
     if (ptr_kind == PTR_TO_STRING) {
+      // Provenance inherited from result.
       result = RawPtrSub(result, IntPtrConstant(SeqOneByteString::kHeaderSize -
                                                 kHeapObjectTag));
     }
@@ -8510,12 +8508,10 @@ void CodeStubAssembler::Increment(TVariable<TIndex>* variable, int value) {
 #ifdef __CHERI_PURE_CAPABILITY__
   if constexpr (std::is_base_of<IntPtrT, TIndex>::value ||
                 std::is_base_of<UintPtrT, TIndex>::value) {
-    compiler::Node* var_node = variable->value();
-    if (var_node->IsCapability()) {
+    if (NodeIsCapability(variable->value())) {
       *variable =
           IntPtrOrSmiAdd(variable->value(), IntPtrOrSmiConstant<TIndex>(value));
-      var_node = variable->value();
-      var_node->MarkAsCapability();
+      MarkNodeAsCapability(variable->value());
       return;
     }
   }
@@ -11177,6 +11173,9 @@ TNode<IntPtrT> CodeStubAssembler::ElementOffsetFromIndex(
                            IntPtrConstant(element_size_shift))
                  : WordSar(intptr_index_node,
                            IntPtrConstant(-element_size_shift)));
+
+  // Provenance will be inherited from the shifted_index node since base_size
+  // won't be tagged.
   return IntPtrAdd(IntPtrConstant(base_size), Signed(shifted_index));
 }
 

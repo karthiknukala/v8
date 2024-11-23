@@ -617,6 +617,16 @@ TNode<IntPtrT> CodeAssembler::ChangeInt32ToIntPtr(TNode<Word32T> value) {
   return ReinterpretCast<IntPtrT>(value);
 }
 
+TNode<WordT> CodeAssembler::UncheckedCastCapabilityToAddress(Node* node) {
+  return UncheckedCast<WordT>(
+      raw_assembler()->BitcastCapabilityToAddress(node));
+}
+
+TNode<WordT> CodeAssembler::UncheckedCastAddressToCapability(Node* node) {
+  return UncheckedCast<WordT>(
+      raw_assembler()->BitcastAddressToCapability(node));
+}
+
 TNode<IntPtrT> CodeAssembler::ChangeFloat64ToIntPtr(TNode<Float64T> value) {
   if (raw_assembler()->machine()->Is64()) {
     return UncheckedCast<IntPtrT>(raw_assembler()->ChangeFloat64ToInt64(value));
@@ -661,10 +671,14 @@ CODE_ASSEMBLER_UNARY_OP_LIST(DEFINE_CODE_ASSEMBLER_UNARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_UNARY_OP
 
 Node* CodeAssembler::Load(MachineType type, Node* base) {
+  if (type == MachineType::Pointer())
+    return raw_assembler()->Load(type, base)->MarkAsCapability();
   return raw_assembler()->Load(type, base);
 }
 
 Node* CodeAssembler::Load(MachineType type, Node* base, Node* offset) {
+  if (type == MachineType::Pointer())
+    return raw_assembler()->Load(type, base, offset)->MarkAsCapability();
   return raw_assembler()->Load(type, base, offset);
 }
 

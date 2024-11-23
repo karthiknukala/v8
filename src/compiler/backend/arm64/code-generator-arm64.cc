@@ -1411,7 +1411,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 #if defined(__CHERI_PURE_CAPABILITY__)
     case kArm64AddCap:
       DCHECK(instr->OutputAt(0)->IsCapabilityRegister());
-      DCHECK(instr->InputAt(0)->IsCapabilityRegister());
       //TODO(gcjenkinson): Confirm whether this is required.
       if (FlagsModeField::decode(opcode) != kFlags_none) {
         __ Adds(i.OutputRegisterCapability(),

@@ -467,9 +467,11 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #endif
 #ifndef V8_COMPRESS_POINTERS
       // XXX(ds815): This is a messy hack.
-      if constexpr (std::is_base_of<RawPtrT, A>::value ||
-                    is_valid_type_tag<A>::value) {
+      if constexpr (is_capability<A>::value) {
         node_->MarkAsCapability();
+      } else if constexpr (!std::is_base_of<IntPtrT, A>::value &&
+                           !std::is_base_of<UintPtrT, A>::value) {
+        node_->MarkAsInteger();
       }
 #endif  // !V8_COMPRESS_POINTERS
       return TNode<A>::UncheckedCast(node_);
@@ -493,6 +495,9 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<T> UncheckedCast(TNode<U> value) {
     static_assert(types_have_common_values<T, U>::value,
                   "Incompatible types: this cast can never succeed.");
+    if constexpr (is_capability<T>::value) {
+      return MarkNodeAsCapability(TNode<T>::UncheckedCast(value));
+    }
     return TNode<T>::UncheckedCast(value);
   }
 
@@ -590,16 +595,31 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   bool IsUndefinedConstant(TNode<Object> node);
   bool IsNullConstant(TNode<Object> node);
 
-  TNode<Int32T> Signed(TNode<Word32T> x) { return UncheckedCast<Int32T>(x); }
-  TNode<Int64T> Signed(TNode<Word64T> x) { return UncheckedCast<Int64T>(x); }
-  TNode<IntPtrT> Signed(TNode<WordT> x) { return UncheckedCast<IntPtrT>(x); }
+  TNode<Int32T> Signed(TNode<Word32T> x) {
+    DCHECK(!NodeIsCapability(x));
+    return UncheckedCast<Int32T>(x);
+  }
+  TNode<Int64T> Signed(TNode<Word64T> x) {
+    DCHECK(!NodeIsCapability(x));
+    return UncheckedCast<Int64T>(x);
+  }
+  TNode<IntPtrT> Signed(TNode<WordT> x) {
+    if (NodeIsCapability(x)) {
+      return MarkNodeAsCapability(UncheckedCast<IntPtrT>(x));
+    }
+    return UncheckedCast<IntPtrT>(x);
+  }
   TNode<Uint32T> Unsigned(TNode<Word32T> x) {
+    DCHECK(!NodeIsCapability(x));
     return UncheckedCast<Uint32T>(x);
   }
   TNode<Uint64T> Unsigned(TNode<Word64T> x) {
+    DCHECK(!NodeIsCapability(x));
     return UncheckedCast<Uint64T>(x);
   }
   TNode<UintPtrT> Unsigned(TNode<WordT> x) {
+    if (NodeIsCapability(x))
+      return MarkNodeAsCapability(UncheckedCast<UintPtrT>(x));
     return UncheckedCast<UintPtrT>(x);
   }
 
@@ -747,22 +767,40 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<Type> Load(MachineType type, TNode<RawPtr<Type>> base) {
     DCHECK(
         IsSubtype(type.representation(), MachineRepresentationOf<Type>::value));
-    return UncheckedCast<Type>(Load(type, static_cast<Node*>(base)));
+    auto tnode = UncheckedCast<Type>(Load(type, static_cast<Node*>(base)));
+    if constexpr (is_capability<Type>::value) {
+      DCHECK(type == MachineType::Pointer());
+      return MarkNodeAsCapability(tnode);
+    }
+    return MarkNodeAsInteger(tnode);
   }
   Node* Load(MachineType type, Node* base, Node* offset);
   template <class Type>
   TNode<Type> Load(Node* base) {
-    return UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base));
+    auto tnode = UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base));
+    if constexpr (is_capability<Type>::value) {
+      return MarkNodeAsCapability(tnode);
+    }
+    return MarkNodeAsInteger(tnode);
   }
   template <class Type>
   TNode<Type> Load(Node* base, TNode<WordT> offset) {
-    return UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base, offset));
+    auto tnode =
+        UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base, offset));
+    if constexpr (is_capability<Type>::value) {
+      return MarkNodeAsCapability(tnode);
+    }
+    return MarkNodeAsInteger(tnode);
   }
   template <class Type>
   TNode<Type> AtomicLoad(AtomicMemoryOrder order, TNode<RawPtrT> base,
                          TNode<WordT> offset) {
-    return UncheckedCast<Type>(
+    auto tnode = UncheckedCast<Type>(
         AtomicLoad(MachineTypeOf<Type>::value, order, base, offset));
+    if constexpr (is_capability<Type>::value) {
+      return MarkNodeAsCapability(tnode);
+    }
+    return MarkNodeAsInteger(tnode);
   }
   template <class Type>
   TNode<Type> AtomicLoad64(AtomicMemoryOrder order, TNode<RawPtrT> base,
@@ -902,15 +940,31 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #undef DECLARE_CODE_ASSEMBLER_BINARY_OP
 
   TNode<UintPtrT> WordShr(TNode<UintPtrT> left, TNode<IntegralT> right) {
+    if (NodeIsCapability(left)) {
+      return MarkNodeAsCapability(
+          Unsigned(WordShr(static_cast<TNode<WordT>>(left), right)));
+    }
     return Unsigned(WordShr(static_cast<TNode<WordT>>(left), right));
   }
   TNode<IntPtrT> WordSar(TNode<IntPtrT> left, TNode<IntegralT> right) {
+    if (NodeIsCapability(left)) {
+      return MarkNodeAsCapability(
+          Signed(WordSar(static_cast<TNode<WordT>>(left), right)));
+    }
     return Signed(WordSar(static_cast<TNode<WordT>>(left), right));
   }
   TNode<IntPtrT> WordShl(TNode<IntPtrT> left, TNode<IntegralT> right) {
+    if (NodeIsCapability(left)) {
+      return MarkNodeAsCapability(
+          Signed(WordShl(static_cast<TNode<WordT>>(left), right)));
+    }
     return Signed(WordShl(static_cast<TNode<WordT>>(left), right));
   }
   TNode<UintPtrT> WordShl(TNode<UintPtrT> left, TNode<IntegralT> right) {
+    if (NodeIsCapability(left)) {
+      return MarkNodeAsCapability(
+          Unsigned(WordShl(static_cast<TNode<WordT>>(left), right)));
+    }
     return Unsigned(WordShl(static_cast<TNode<WordT>>(left), right));
   }
 
@@ -962,12 +1016,22 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   }
 
   TNode<IntPtrT> WordAnd(TNode<IntPtrT> left, TNode<IntPtrT> right) {
-    return Signed(WordAnd(static_cast<TNode<WordT>>(left),
-                          static_cast<TNode<WordT>>(right)));
+    auto tnode = Signed(WordAnd(static_cast<TNode<WordT>>(left),
+                                static_cast<TNode<WordT>>(right)));
+    // XXX(ds815): What about provenance from the right node?
+    if (NodeIsCapability(left)) {
+      return MarkNodeAsCapability(tnode);
+    }
+    return tnode;
   }
   TNode<UintPtrT> WordAnd(TNode<UintPtrT> left, TNode<UintPtrT> right) {
-    return Unsigned(WordAnd(static_cast<TNode<WordT>>(left),
-                            static_cast<TNode<WordT>>(right)));
+    auto tnode = Unsigned(WordAnd(static_cast<TNode<WordT>>(left),
+                                  static_cast<TNode<WordT>>(right)));
+    // XXX(ds815): What about provenance from the right node?
+    if (NodeIsCapability(left)) {
+      return MarkNodeAsCapability(tnode);
+    }
+    return tnode;
   }
 
   TNode<Int32T> Word32And(TNode<Int32T> left, TNode<Int32T> right) {
@@ -1105,9 +1169,17 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<WordT> WordShr(TNode<WordT> value, int shift);
   TNode<WordT> WordSar(TNode<WordT> value, int shift);
   TNode<IntPtrT> WordShr(TNode<IntPtrT> value, int shift) {
+    if (NodeIsCapability(value)) {
+      return MarkNodeAsCapability(
+          UncheckedCast<IntPtrT>(WordShr(TNode<WordT>(value), shift)));
+    }
     return UncheckedCast<IntPtrT>(WordShr(TNode<WordT>(value), shift));
   }
   TNode<IntPtrT> WordSar(TNode<IntPtrT> value, int shift) {
+    if (NodeIsCapability(value)) {
+      return MarkNodeAsCapability(
+          UncheckedCast<IntPtrT>(WordSar(TNode<WordT>(value), shift)));
+    }
     return UncheckedCast<IntPtrT>(WordSar(TNode<WordT>(value), shift));
   }
   TNode<Word32T> Word32Shr(TNode<Word32T> value, int shift);
@@ -1137,6 +1209,39 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<IntPtrT> BitcastTaggedToWord(TNode<Smi> node) {
     static_assert(sizeof(Dummy) < 0,
                   "Should use BitcastTaggedToWordForTagAndSmiBits instead.");
+  }
+
+  // Capability operations.
+  TNode<WordT> UncheckedCastCapabilityToAddress(Node* node);
+  TNode<WordT> UncheckedCastAddressToCapability(Node* node);
+  bool NodeIsCapability(Node* node) { return node->IsCapability(); }
+
+  template <class T>
+  TNode<T> MarkNodeAsCapability(TNode<T> node) {
+    Node* n = node;
+    n->MarkAsCapability();
+    DCHECK(NodeIsCapability(node));
+    return node;
+  }
+
+  template <class T>
+  TNode<T> MarkNodeAsInteger(TNode<T> node) {
+    Node* n = node;
+    n->MarkAsInteger();
+    DCHECK(!NodeIsCapability(node));
+    return node;
+  }
+
+  template <class A, class P>
+  TNode<A> BitcastCapabilityToAddress(TNode<P> node) {
+    static_assert(is_capability<P>::maybe_tagged);
+    return UncheckedCast<A>(UncheckedCastCapabilityToAddress(node));
+  }
+
+  template <class P, class A>
+  TNode<P> BitcastAddressToCapability(TNode<A> node) {
+    static_assert(is_capability<P>::maybe_tagged);
+    return UncheckedCast<P>(UncheckedCastAddressToCapability(node));
   }
 
   // Changes a double to an inptr_t for pointer arithmetic outside of Smi range.

@@ -236,6 +236,65 @@ struct is_valid_type_tag<PairT<T1, T2>> {
   static const bool is_tagged = false;
 };
 
+template <class T>
+struct is_integer {
+  static const bool value =
+      std::is_same<Word64T, T>::value || std::is_same<Word32T, T>::value ||
+      std::is_same<Int64T, T>::value || std::is_same<Int32T, T>::value ||
+      std::is_same<Int16T, T>::value || std::is_same<Int8T, T>::value ||
+      std::is_same<Uint64T, T>::value || std::is_same<Uint32T, T>::value ||
+      std::is_same<Uint16T, T>::value || std::is_same<Uint8T, T>::value ||
+      std::is_same<BoolT, T>::value || std::is_same<Smi, T>::value;
+};
+
+template <class T>
+struct is_float {
+  static const bool value =
+      std::is_same<Float64T, T>::value || std::is_same<Float32T, T>::value;
+};
+
+template <class T>
+struct is_machine_vector {
+  static const bool value =
+      std::is_same<Simd128T, T>::value || std::is_same<I8x16T, T>::value ||
+      std::is_same<I16x8T, T>::value || std::is_same<I32x2T, T>::value;
+};
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#ifdef V8_COMPRESS_POINTERS
+template <class T>
+struct is_capability {
+  static const bool value = (std::is_same<RawPtrT, T>::value ||
+                             std::is_same<ExternalReference, T>::value) &&
+                            !std::is_same<IntPtrT, T>::value &&
+                            !std::is_same<UintPtrT, T>::value;
+  static const bool maybe_tagged =
+      is_capability<T>::value || std::is_same<IntPtrT, T>::value ||
+      std::is_same<UintPtrT, T>::value || std::is_same<WordT, T>::value;
+};
+#else  // !V8_COMPRESS_POINTERS
+template <class T>
+struct is_capability {
+  static const bool value =
+      (std::is_same<RawPtrT, T>::value || std::is_base_of<Object, T>::value ||
+       std::is_base_of<MaybeObject, T>::value ||
+       std::is_same<ExternalReference, T>::value) &&
+      !std::is_same<IntPtrT, T>::value && !std::is_same<UintPtrT, T>::value &&
+      !is_integer<T>::value && !is_float<T>::value &&
+      !is_machine_vector<T>::value;
+  static const bool maybe_tagged =
+      is_capability<T>::value || std::is_same<IntPtrT, T>::value ||
+      std::is_same<UintPtrT, T>::value || std::is_same<WordT, T>::value;
+};
+#endif  // V8_COMPRESS_POINTERS
+#else   // !__CHERI_PURE_CAPABILITY__
+template <class T>
+struct is_capability {
+  static const bool value = false;
+  static const bool maybe_tagged = false;
+};
+#endif  // __CHERI_PURE_CAPABILITY__
+
 template <class T1, class T2>
 struct UnionT;
 

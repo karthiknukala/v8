@@ -155,9 +155,14 @@ class V8_EXPORT_PRIVATE Node final {
     is_capability_ = true;
     return this;
   }
+  inline Node* MarkAsInteger() {
+    is_capability_ = false;
+    return this;
+  }
 #else   // !__CHERI_PURE_CAPABILITY__
   bool IsCapability() const { return false; }
   inline Node* MarkAsCapability() { return this; }
+  inline Node* MarkAsInteger() { return this; }
 #endif  // __CHERI_PURE_CAPABILITY__
 
   void Print() const { Print(1); }

@@ -168,7 +168,8 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
                   TNode<IntPtrT>* mask) {
     TNode<IntPtrT> page = PageFromAddress(object);
     TNode<IntPtrT> bitmap =
-        IntPtrAdd(page, IntPtrConstant(MemoryChunk::kMarkingBitmapOffset));
+        IntPtrAdd(BitcastCapabilityToAddress<IntPtrT>(page),
+                  IntPtrConstant(MemoryChunk::kMarkingBitmapOffset));
 
     {
       // Temp variable to calculate cell offset in bitmap.
@@ -200,7 +201,13 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
 
     // Load address of SlotSet
     TNode<IntPtrT> slot_set = LoadSlotSet(page, &slow_path);
+#ifdef __CHERI_PURE_CAPABILITY__
+    TNode<WordT> slot_offset =
+        IntPtrSub(BitcastCapabilityToAddress<WordT>(slot),
+                  BitcastCapabilityToAddress<WordT>(page));
+#else   // !__CHERI_PURE_CAPABILITY__
     TNode<IntPtrT> slot_offset = IntPtrSub(slot, page);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     // Load bucket
     TNode<IntPtrT> bucket = LoadBucket(slot_set, slot_offset, &slow_path);
@@ -249,6 +256,7 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
                                  SlotSet::kCellSizeBytesLog2),
         IntPtrConstant((SlotSet::kCellsPerBucket - 1)
                        << SlotSet::kCellSizeBytesLog2));
+    // Provenance inherited from bucket.
     TNode<IntPtrT> cell_address =
         UncheckedCast<IntPtrT>(IntPtrAdd(bucket, cell_offset));
     TNode<IntPtrT> old_cell_value =
@@ -268,8 +276,8 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
   void WriteBarrier(SaveFPRegsMode fp_mode) {
     Label marking_is_on(this), marking_is_off(this), next(this);
 
-    auto slot =
-        UncheckedParameter<IntPtrT>(WriteBarrierDescriptor::kSlotAddress);
+    auto slot = MarkNodeAsCapability(
+        UncheckedParameter<IntPtrT>(WriteBarrierDescriptor::kSlotAddress));
     Branch(IsMarking(), &marking_is_on, &marking_is_off);
 
     BIND(&marking_is_off);

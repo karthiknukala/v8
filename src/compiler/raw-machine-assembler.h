@@ -617,15 +617,21 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   Node* CapAdd(Node* a, Node* b) {
+    DCHECK(a->IsCapability());
     return AddNode(machine()->CapAdd(), a, b)->MarkAsCapability();
   }
   Node* CapSub(Node* a, Node* b) {
+    DCHECK(a->IsCapability());
     return AddNode(machine()->CapSub(), a, b)->MarkAsCapability();
   }
   Node* IntPtrAdd(Node* a, Node* b) {
     if (a->IsCapability()) return CapAdd(a, b);
     if (b->IsCapability()) return CapAdd(b, a);
     return Int64Add(a, b);
+  }
+  Node* IntPtrSub(Node* a, Node* b) {
+    if (a->IsCapability()) return CapSub(a, b);
+    return Int64Sub(a, b);
   }
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 
@@ -639,7 +645,6 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   INTPTR_BINOP(Int, Add)
 #endif  // !__CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, AddWithOverflow)
-  INTPTR_BINOP(Int, Sub)
   INTPTR_BINOP(Int, SubWithOverflow)
   INTPTR_BINOP(Int, Mul)
   INTPTR_BINOP(Int, MulHigh)
@@ -793,19 +798,43 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 
   // Conversions.
   Node* BitcastTaggedToWord(Node* a) {
-    return AddNode(machine()->BitcastTaggedToWord(), a)->MarkAsCapability();
+    if (a->IsCapability())
+      return AddNode(machine()->BitcastTaggedToWord(), a)->MarkAsCapability();
+    return AddNode(machine()->BitcastTaggedToWord(), a);
+  }
+  Node* BitcastCapabilityToAddress(Node* a) {
+    // The call to MarkAsInteger is not strictly necessary, but making it
+    // explicit here.
+    return AddNode(machine()->BitcastTaggedToWord(), a)->MarkAsInteger();
+  }
+  Node* BitcastAddressToCapability(Node* a) {
+    // Integer to pointer cast. This will likely result in a missing tag, but it
+    // is needed in order to perform operations such as IntPtrAdd(addr,
+    // offset).
+    return AddNode(machine()->BitcastWordToTagged(), a)->MarkAsCapability();
   }
   Node* BitcastTaggedToWordForTagAndSmiBits(Node* a) {
+    if (a->IsCapability())
+      return AddNode(machine()->BitcastTaggedToWordForTagAndSmiBits(), a)
+          ->MarkAsCapability();
     return AddNode(machine()->BitcastTaggedToWordForTagAndSmiBits(), a);
   }
   Node* BitcastMaybeObjectToWord(Node* a) {
-      return AddNode(machine()->BitcastMaybeObjectToWord(), a);
+    if (a->IsCapability())
+      return AddNode(machine()->BitcastMaybeObjectToWord(), a)
+          ->MarkAsCapability();
+    return AddNode(machine()->BitcastMaybeObjectToWord(), a);
   }
   Node* BitcastWordToTagged(Node* a) {
+    if (a->IsCapability())
+      return AddNode(machine()->BitcastWordToTagged(), a)->MarkAsCapability();
     return AddNode(machine()->BitcastWordToTagged(), a);
   }
   Node* BitcastWordToTaggedSigned(Node* a) {
-      return AddNode(machine()->BitcastWordToTaggedSigned(), a);
+    if (a->IsCapability())
+      return AddNode(machine()->BitcastWordToTaggedSigned(), a)
+          ->MarkAsCapability();
+    return AddNode(machine()->BitcastWordToTaggedSigned(), a);
   }
   Node* TruncateFloat64ToWord32(Node* a) {
     return AddNode(machine()->TruncateFloat64ToWord32(), a);

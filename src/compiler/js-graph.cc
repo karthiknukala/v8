@@ -90,7 +90,7 @@ Node* JSGraph::NumberConstant(double value) {
 Node* JSGraph::HeapConstant(Handle<HeapObject> value) {
   Node** loc = cache_.FindHeapConstant(value);
   if (*loc == nullptr) {
-    *loc = graph()->NewNode(common()->HeapConstant(value));
+    *loc = graph()->NewNode(common()->HeapConstant(value))->MarkAsCapability();
   }
   return *loc;
 }

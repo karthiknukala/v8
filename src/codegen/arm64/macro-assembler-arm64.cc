@@ -957,6 +957,9 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
     return;
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(rd.IsC(), rn.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   if (operand.NeedsRelocation(this)) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireSameSizeAs(rn);
@@ -1018,10 +1021,10 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
     if (op == SUB_c || op == SUB) {
       CheriSub(rd, rn, operand, S);
     } else {
-      if (operand.shift_amount() > 4) {
-        // We can only encode a shift of 4 in Morello. Generate a similar
-        // sequence to SUB if we're trying to shift by more.
-        DCHECK_EQ(operand.shift(), LSL);
+      if (operand.shift_amount() > 4 || operand.shift() != LSL) {
+        // We can only encode a shift of 4 in Morello and extended register adds
+        // only support LSL. For any other shifted register, generate a similar
+        // sequence to SUB.
         if (rn.code() == rd.code()) {
           UseScratchRegisterScope temps(this);
           Register temp = temps.AcquireX();
