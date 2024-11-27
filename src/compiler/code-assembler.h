@@ -971,49 +971,63 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   }
 
   TNode<Int32T> Word32Shl(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word32Shl(static_cast<TNode<Word32T>>(left), right));
   }
   TNode<Uint32T> Word32Shl(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word32Shl(static_cast<TNode<Word32T>>(left), right));
   }
   TNode<Uint32T> Word32Shr(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word32Shr(static_cast<TNode<Word32T>>(left), right));
   }
   TNode<Int32T> Word32Sar(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word32Sar(static_cast<TNode<Word32T>>(left), right));
   }
 
   TNode<Int64T> Word64Shl(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word64Shl(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64Shl(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word64Shl(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64Shr(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word64Shr(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Int64T> Word64Sar(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word64Sar(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Word64And(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word64And(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64And(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word64And(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Word64Xor(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word64Xor(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64Xor(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word64Xor(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Word64Not(TNode<Int64T> value) {
+    DCHECK(!NodeIsCapability(value));
     return Signed(Word64Not(static_cast<TNode<Word64T>>(value)));
   }
   TNode<Uint64T> Word64Not(TNode<Uint64T> value) {
+    DCHECK(!NodeIsCapability(value));
     return Unsigned(Word64Not(static_cast<TNode<Word64T>>(value)));
   }
 
@@ -1037,10 +1051,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   }
 
   TNode<Int32T> Word32And(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word32And(static_cast<TNode<Word32T>>(left),
                             static_cast<TNode<Word32T>>(right)));
   }
   TNode<Uint32T> Word32And(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word32And(static_cast<TNode<Word32T>>(left),
                               static_cast<TNode<Word32T>>(right)));
   }
@@ -1051,10 +1067,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   }
 
   TNode<Int32T> Word32Or(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Word32Or(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
   TNode<Uint32T> Word32Or(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Word32Or(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
@@ -1068,71 +1086,89 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<BoolT> Word64NotEqual(TNode<Word64T> left, TNode<Word64T> right);
 
   TNode<IntPtrT> WordNot(TNode<IntPtrT> a) {
+    // No point in marking this as a capability because inverting the bits of a
+    // valid capability will likely cause it to get untagged. This operation
+    // makes no sense.
     return Signed(WordNot(static_cast<TNode<WordT>>(a)));
   }
   TNode<Int32T> Word32BitwiseNot(TNode<Int32T> a) {
+    DCHECK(!NodeIsCapability(a));
     return Signed(Word32BitwiseNot(static_cast<TNode<Word32T>>(a)));
   }
   TNode<BoolT> Word32Or(TNode<BoolT> left, TNode<BoolT> right) {
+    DCHECK(!NodeIsCapability(left));
     return UncheckedCast<BoolT>(Word32Or(static_cast<TNode<Word32T>>(left),
                                          static_cast<TNode<Word32T>>(right)));
   }
   TNode<BoolT> Word32And(TNode<BoolT> left, TNode<BoolT> right) {
+    DCHECK(!NodeIsCapability(left));
     return UncheckedCast<BoolT>(Word32And(static_cast<TNode<Word32T>>(left),
                                           static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int32T> Int32Add(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Int32Add(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Uint32T> Uint32Add(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Int32Add(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Uint32T> Uint32Sub(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Int32Sub(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int32T> Int32Sub(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Int32Sub(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int32T> Int32Mul(TNode<Int32T> left, TNode<Int32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Int32Mul(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Uint32T> Uint32Mul(TNode<Uint32T> left, TNode<Uint32T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Int32Mul(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int64T> Int64Add(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Int64Add(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Uint64T> Uint64Add(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Int64Add(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Int64Sub(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Int64Sub(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Uint64T> Uint64Sub(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Int64Sub(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Int64Mul(TNode<Int64T> left, TNode<Int64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Signed(Int64Mul(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Uint64T> Uint64Mul(TNode<Uint64T> left, TNode<Uint64T> right) {
+    DCHECK(!NodeIsCapability(left));
     return Unsigned(Int64Mul(static_cast<TNode<Word64T>>(left), right));
   }
 
@@ -1216,10 +1252,10 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   // Capability operations.
   TNode<WordT> UncheckedCastCapabilityToAddress(Node* node);
   TNode<WordT> UncheckedCastAddressToCapability(Node* node);
-  bool NodeIsCapability(Node* node) { return node->IsCapability(); }
+  static bool NodeIsCapability(Node* node) { return node->IsCapability(); }
 
   template <class T>
-  TNode<T> MarkNodeAsCapability(TNode<T> node) {
+  static const TNode<T> MarkNodeAsCapability(TNode<T> node) {
     Node* n = node;
     n->MarkAsCapability();
     DCHECK(NodeIsCapability(node));
@@ -1227,7 +1263,7 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   }
 
   template <class T>
-  TNode<T> MarkNodeAsInteger(TNode<T> node) {
+  static const TNode<T> MarkNodeAsInteger(TNode<T> node) {
     Node* n = node;
     n->MarkAsInteger();
     DCHECK(!NodeIsCapability(node));

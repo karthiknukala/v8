@@ -362,20 +362,34 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* WordAnd(Node* a, Node* b) {
     return AddNode(machine()->WordAnd(), a, b);
   }
-  Node* WordOr(Node* a, Node* b) { return AddNode(machine()->WordOr(), a, b); }
+  Node* WordOr(Node* a, Node* b) {
+    if (a->IsCapability())
+      return AddNode(machine()->WordOr(), a, b)->MarkAsCapability();
+    return AddNode(machine()->WordOr(), a, b);
+  }
   Node* WordXor(Node* a, Node* b) {
+    if (a->IsCapability())
+      return AddNode(machine()->WordXor(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordXor(), a, b);
   }
   Node* WordShl(Node* a, Node* b) {
+    if (a->IsCapability())
+      return AddNode(machine()->WordShl(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordShl(), a, b);
   }
   Node* WordShr(Node* a, Node* b) {
+    if (a->IsCapability())
+      return AddNode(machine()->WordShr(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordShr(), a, b);
   }
   Node* WordSar(Node* a, Node* b) {
+    if (a->IsCapability())
+      return AddNode(machine()->WordSar(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordSar(), a, b);
   }
   Node* WordSarShiftOutZeros(Node* a, Node* b) {
+    // XXX(cheri): This returns an IntegralT, probably shouldn't carry
+    // the tag through.
     return AddNode(machine()->WordSarShiftOutZeros(), a, b);
   }
   Node* WordRor(Node* a, Node* b) {
@@ -643,6 +657,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 
 #ifndef __CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, Add)
+  INTPTR_BINOP(Int, Sub)
 #endif  // !__CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, AddWithOverflow)
   INTPTR_BINOP(Int, SubWithOverflow)
