@@ -66,10 +66,20 @@ namespace internal {
   V(Stlrh, stlrh)             \
   V(Stlr, stlr)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define LDA_STL_CAP_MACRO_LIST(V) \
+  V(Ldar_C, ldar_c)               \
+  V(Ldaxr_C, ldaxr_c)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define STLX_MACRO_LIST(V) \
   V(Stlxrb, stlxrb)        \
   V(Stlxrh, stlxrh)        \
   V(Stlxr, stlxr)
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define STLX_CAP_MACRO_LIST(V) V(Stlxr_C, stlxr_c)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define CAS_SINGLE_MACRO_LIST(V) \
   V(Cas, cas)                    \
@@ -84,6 +94,14 @@ namespace internal {
   V(Casah, casah)                \
   V(Caslh, caslh)                \
   V(Casalh, casalh)
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define CAS_SINGLE_CAP_MACRO_LIST(V) \
+  V(Cas_C, cas_c)                    \
+  V(Casa_C, casa_c)                  \
+  V(Casl_C, casl_c)                  \
+  V(Casal_C, casal_c)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define CAS_PAIR_MACRO_LIST(V) \
   V(Casp, casp)                \
@@ -1453,10 +1471,24 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   LDA_STL_MACRO_LIST(DECLARE_FUNCTION)
 #undef DECLARE_FUNCTION
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DECLARE_FUNCTION(FN, OP) \
+  inline void FN(const Register& ct, const Register& cn);
+  LDA_STL_CAP_MACRO_LIST(DECLARE_FUNCTION)
+#undef DECLARE_FUNCTION
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define DECLARE_FUNCTION(FN, OP) \
   inline void FN(const Register& rs, const Register& rt, const MemOperand& src);
   CAS_SINGLE_MACRO_LIST(DECLARE_FUNCTION)
 #undef DECLARE_FUNCTION
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DECLARE_FUNCTION(FN, OP) \
+  inline void FN(const Register& cs, const Register& ct, const MemOperand& src);
+  CAS_SINGLE_CAP_MACRO_LIST(DECLARE_FUNCTION)
+#undef DECLARE_FUNCTION
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define DECLARE_FUNCTION(FN, OP)                                              \
   inline void FN(const Register& rs, const Register& rs2, const Register& rt, \
@@ -1478,6 +1510,10 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   inline void FN(const Register& rs, const Register& rt, const MemOperand& src);
 
   ATOMIC_MEMORY_LOAD_MACRO_MODES(DECLARE_SWP_FUNCTION, Swp, swp)
+#ifdef __CHERI_PURE_CAPABILITY__
+  DECLARE_SWP_FUNCTION(Swp_C, swp_c)
+  DECLARE_SWP_FUNCTION(Swpa_C, swpa_c)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #undef DECLARE_LOAD_FUNCTION
 #undef DECLARE_STORE_FUNCTION
@@ -1655,6 +1691,13 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   inline void FN(const Register& rs, const Register& rt, const Register& rn);
   STLX_MACRO_LIST(DECLARE_FUNCTION)
 #undef DECLARE_FUNCTION
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DECLARE_FUNCTION(FN, OP) \
+  inline void FN(const Register& rs, const Register& ct, const Register& cn);
+  STLX_CAP_MACRO_LIST(DECLARE_FUNCTION)
+#undef DECLARE_FUNCTION
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Branch type inversion relies on these relations.
   static_assert((reg_zero == (reg_not_zero ^ 1)) &&

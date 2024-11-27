@@ -513,6 +513,9 @@ LSPAIR_MACRO_LIST(DEFINE_FUNCTION)
     OP(rt, rn);                                                     \
   }
 LDA_STL_MACRO_LIST(DEFINE_FUNCTION)
+#ifdef __CHERI_PURE_CAPABILITY__
+LDA_STL_CAP_MACRO_LIST(DEFINE_FUNCTION)
+#endif  // __CHERI_PURE_CAPABILITY__
 #undef DEFINE_FUNCTION
 
 #define DEFINE_FUNCTION(FN, OP)                                   \
@@ -522,6 +525,9 @@ LDA_STL_MACRO_LIST(DEFINE_FUNCTION)
     OP(rs, rt, rn);                                               \
   }
 STLX_MACRO_LIST(DEFINE_FUNCTION)
+#ifdef __CHERI_PURE_CAPABILITY__
+STLX_CAP_MACRO_LIST(DEFINE_FUNCTION)
+#endif  // __CHERI_PURE_CAPABILITY__
 #undef DEFINE_FUNCTION
 
 #define DEFINE_FUNCTION(FN, OP)                                   \
@@ -531,6 +537,9 @@ STLX_MACRO_LIST(DEFINE_FUNCTION)
     OP(rs, rt, src);                                              \
   }
 CAS_SINGLE_MACRO_LIST(DEFINE_FUNCTION)
+#ifdef __CHERI_PURE_CAPABILITY__
+CAS_SINGLE_CAP_MACRO_LIST(DEFINE_FUNCTION)
+#endif  // __CHERI_PURE_CAPABILITY__
 #undef DEFINE_FUNCTION
 
 #define DEFINE_FUNCTION(FN, OP)                                    \
@@ -568,6 +577,10 @@ ATOMIC_MEMORY_SIMPLE_MACRO_LIST(ATOMIC_MEMORY_STORE_MACRO_MODES,
   }
 
 ATOMIC_MEMORY_LOAD_MACRO_MODES(DEFINE_SWP_FUNCTION, Swp, swp)
+#ifdef __CHERI_PURE_CAPABILITY__
+DEFINE_SWP_FUNCTION(Swp_C, swpa_c)
+DEFINE_SWP_FUNCTION(Swpa_C, swp_c)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 void MacroAssembler::Asr(const Register& rd, const Register& rn,
                          unsigned shift) {

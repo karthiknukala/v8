@@ -891,15 +891,27 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Load-acquire word.
   void ldar(const Register& rt, const Register& rn);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void ldar_c(const Register& ct, const Register& rn);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Load-acquire exclusive word.
   void ldaxr(const Register& rt, const Register& rn);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void ldaxr_c(const Register& ct, const Register& cn);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Store-release word.
   void stlr(const Register& rt, const Register& rn);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void stlr_c(const Register& ct, const Register& cn);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Store-release exclusive word.
   void stlxr(const Register& rs, const Register& rt, const Register& rn);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void stlxr_c(const Register& rs, const Register& ct, const Register& cn);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Load-acquire byte.
   void ldarb(const Register& rt, const Register& rn);
@@ -927,18 +939,30 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Compare and Swap word or doubleword in memory [Armv8.1].
   void cas(const Register& rs, const Register& rt, const MemOperand& src);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void cas_c(const Register& cs, const Register& ct, const MemOperand& src);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Compare and Swap word or doubleword in memory, with Load-acquire semantics
   // [Armv8.1].
   void casa(const Register& rs, const Register& rt, const MemOperand& src);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void casa_c(const Register& cs, const Register& ct, const MemOperand& src);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Compare and Swap word or doubleword in memory, with Store-release semantics
   // [Armv8.1].
   void casl(const Register& rs, const Register& rt, const MemOperand& src);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void casl_c(const Register& cs, const Register& ct, const MemOperand& src);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Compare and Swap word or doubleword in memory, with Load-acquire and
   // Store-release semantics [Armv8.1].
   void casal(const Register& rs, const Register& rt, const MemOperand& src);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void casal_c(const Register& cs, const Register& ct, const MemOperand& src);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Compare and Swap byte in memory [Armv8.1].
   void casb(const Register& rs, const Register& rt, const MemOperand& src);
@@ -1523,6 +1547,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // [Armv8.1]
   void swpalb(const Register& rs, const Register& rt, const MemOperand& src);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  void swpa_c(const Register& cs, const Register& ct, const MemOperand& src);
+#endif  // __CHERI_PURE_CAPABILITY__
+
   // Swap halfword in memory [Armv8.1]
   void swph(const Register& rs, const Register& rt, const MemOperand& src);
 
@@ -1548,6 +1576,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // Swap word or doubleword in memory, with Load-acquire and Store-release
   // semantics [Armv8.1]
   void swpal(const Register& rs, const Register& rt, const MemOperand& src);
+
+#ifdef __CHERI_PURE_CAPABILITY__
+  void swp_c(const Register& cs, const Register& ct, const MemOperand& src);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Move instructions. The default shift of -1 indicates that the move
   // instruction will calculate an appropriate 16-bit immediate and left shift
@@ -2868,6 +2900,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static Instr Ct2(CPURegister ct) {
     DCHECK_NE(ct.code(), kSPRegInternalCode);
     return ct.code() << Ct2_offset;
+  }
+
+  static Instr Cs(CPURegister cs) {
+    DCHECK_NE(cs.code(), kSPRegInternalCode);
+    return cs.code() << Cs_offset;
   }
 #endif // __CHERI_PURE_CAPABILITY__
 

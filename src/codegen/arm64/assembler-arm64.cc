@@ -1600,17 +1600,38 @@ void Assembler::ldar(const Register& rt, const Register& rn) {
   Emit(op | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+void Assembler::ldar_c(const Register& ct, const Register& cn) {
+  DCHECK(cn.IsC());
+  Emit(LDAR_c | Cs(c31) | Ct2(c31) | CnCSP(cn) | Ct(ct));
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 void Assembler::ldaxr(const Register& rt, const Register& rn) {
   DCHECK(rn.Is64Bits());
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? LDAXR_w : LDAXR_x;
   Emit(op | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+void Assembler::ldaxr_c(const Register& ct, const Register& cn) {
+  DCHECK(cn.IsC());
+  Emit(LDAXR_c | Cs(c31) | Ct2(c31) | CnCSP(cn) | Ct(ct));
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 void Assembler::stlr(const Register& rt, const Register& rn) {
   DCHECK(rn.Is64Bits());
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? STLR_w : STLR_x;
   Emit(op | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
 }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+void Assembler::stlr_c(const Register& ct, const Register& cn) {
+  DCHECK(cn.IsC());
+  Emit(STLR_c | Cs(c31) | Ct2(c31) | CnCSP(cn) | Ct(ct));
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 void Assembler::stlxr(const Register& rs, const Register& rt,
                       const Register& rn) {
@@ -1619,6 +1640,15 @@ void Assembler::stlxr(const Register& rs, const Register& rt,
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? STLXR_w : STLXR_x;
   Emit(op | Rs(rs) | Rt2(x31) | RnSP(rn) | Rt(rt));
 }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+void Assembler::stlxr_c(const Register& rs, const Register& ct,
+                        const Register& cn) {
+  DCHECK(cn.IsC());
+  DCHECK(rs.code() != ct.code() && rs.code() != cn.code());
+  Emit(STLXR_c | Rs(rs) | Ct2(c31) | CnCSP(cn) | Ct(ct));
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 void Assembler::ldarb(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
@@ -1733,6 +1763,22 @@ COMPARE_AND_SWAP_W_LIST(DEFINE_ASM_FUNC)
 COMPARE_AND_SWAP_PAIR_LIST(DEFINE_ASM_FUNC)
 #undef DEFINE_ASM_FUNC
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define COMPARE_AND_SWAP_CAPABILITY_LIST(V) \
+  V(cas_c, CAS_c)                           \
+  V(casa_c, CASA_c)                         \
+  V(casl_c, CASL_c)                         \
+  V(casal_c, CASAL_c)
+#define DEFINE_ASM_FUNC(FN, OP)                              \
+  void Assembler::FN(const Register& cs, const Register& ct, \
+                     const MemOperand& src) {                \
+    DCHECK(IsEnabled(LSE));                                  \
+    DCHECK(src.IsImmediateOffset() && (src.offset() == 0));  \
+    Emit(OP | Cs(cs) | Ct(ct) | CnCSP(src.base()));          \
+  }
+COMPARE_AND_SWAP_CAPABILITY_LIST(DEFINE_ASM_FUNC)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 // These macros generate all the variations of the atomic memory operations,
 // e.g. ldadd, ldadda, ldaddb, staddl, etc.
 // For a full list of the methods with comments, see the assembler header file.
@@ -1793,6 +1839,26 @@ ATOMIC_MEMORY_SIMPLE_OPERATION_LIST(ATOMIC_MEMORY_STORE_MODES,
   }
 
 ATOMIC_MEMORY_LOAD_MODES(DEFINE_ASM_SWP_FUNC, swp, SWP)
+
+#ifdef __CHERI_PURE_CAPABILITY__
+void Assembler::swp_c(const Register& cs, const Register& ct,
+                      const MemOperand& src) {
+  DCHECK(IsEnabled(LSE));
+  DCHECK(src.IsImmediateOffset() && (src.offset() == 0));
+  DCHECK(cs.IsC());
+  DCHECK(ct.IsC());
+  Emit(SWP_c | Cs(cs) | Ct(ct) | CnCSP(src.base()));
+}
+
+void Assembler::swpa_c(const Register& cs, const Register& ct,
+                       const MemOperand& src) {
+  DCHECK(IsEnabled(LSE));
+  DCHECK(src.IsImmediateOffset() && (src.offset() == 0));
+  DCHECK(cs.IsC());
+  DCHECK(ct.IsC());
+  Emit(SWPA_c | Cs(cs) | Ct(ct) | CnCSP(src.base()));
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #undef DEFINE_ASM_LOAD_FUNC
 #undef DEFINE_ASM_STORE_FUNC

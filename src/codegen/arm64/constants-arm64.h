@@ -286,6 +286,7 @@ using float16 = uint16_t;
   V_(Cm, 20, 16, Bits)  /* Second source register.   */            \
   V_(Ct, 4, 0, Bits)    /* Load dest / store source. */            \
   V_(Ct2, 14, 10, Bits) /* Load second dest /        */            \
+  V_(Cs, 20, 16, Bits)  /* Store-exclusive status    */            \
                                                                    \
   /* Morello add/subtract capability immediate */                  \
   V_(ImmAddSubCapability, 21, 10, Bits)                            \
@@ -1455,6 +1456,17 @@ constexpr LoadStoreAcquireReleaseOp STLR_x =
     LoadStoreAcquireReleaseFixed | 0xC0808000;
 constexpr LoadStoreAcquireReleaseOp LDAR_x =
     LoadStoreAcquireReleaseFixed | 0xC0C08000;
+#ifdef __CHERI_PURE_CAPABILITY__
+constexpr LoadStoreAcquireReleaseOp LoadStoreAcquireReleaseFixed_c = 0x0200FC00;
+constexpr LoadStoreAcquireReleaseOp LDAR_c =
+    LoadStoreAcquireReleaseFixed_c | 0x405F0000;
+constexpr LoadStoreAcquireReleaseOp STLR_c =
+    LoadStoreAcquireReleaseFixed_c | 0x401F0000;
+constexpr LoadStoreAcquireReleaseOp LDAXR_c =
+    LoadStoreAcquireReleaseFixed_c | 0x205F0000;
+constexpr LoadStoreAcquireReleaseOp STLXR_c =
+    LoadStoreAcquireReleaseFixed_c | 0x20000000;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // Compare and swap acquire/release [Armv8.1].
 constexpr LoadStoreAcquireReleaseOp LSEBit_l = 0x00400000;
@@ -1494,6 +1506,13 @@ constexpr LoadStoreAcquireReleaseOp CASPL_x = CASPFixed | LSEBit_o0 | LSEBit_sz;
 constexpr LoadStoreAcquireReleaseOp CASPAL_w = CASPFixed | LSEBit_l | LSEBit_o0;
 constexpr LoadStoreAcquireReleaseOp CASPAL_x =
     CASPFixed | LSEBit_l | LSEBit_o0 | LSEBit_sz;
+#ifdef __CHERI_PURE_CAPABILITY__
+constexpr LoadStoreAcquireReleaseOp CASFixed_c = 0xA2A07C00;
+constexpr LoadStoreAcquireReleaseOp CAS_c = CASFixed_c;
+constexpr LoadStoreAcquireReleaseOp CASA_c = CASFixed_c | 0x00400000;
+constexpr LoadStoreAcquireReleaseOp CASL_c = CASFixed_c | 0x00008000;
+constexpr LoadStoreAcquireReleaseOp CASAL_c = CASFixed_c | 0x00408000;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define ATOMIC_MEMORY_SIMPLE_OPC_LIST(V) \
   V(LDADD, 0x00000000);                  \
@@ -1526,6 +1545,12 @@ constexpr AtomicMemoryOp SWP_x = AtomicMemoryFixed | 0xC0008000;
 constexpr AtomicMemoryOp SWPA_x = AtomicMemoryFixed | 0xC0808000;
 constexpr AtomicMemoryOp SWPL_x = AtomicMemoryFixed | 0xC0408000;
 constexpr AtomicMemoryOp SWPAL_x = AtomicMemoryFixed | 0xC0C08000;
+
+#ifdef __CHERI_PURE_CAPABILITY__
+constexpr AtomicMemoryOp AtomicCapabilityMemoryFixed = 0xA2208000;
+constexpr AtomicMemoryOp SWP_c = AtomicCapabilityMemoryFixed;
+constexpr AtomicMemoryOp SWPA_c = AtomicCapabilityMemoryFixed | 0x00800000;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 constexpr AtomicMemoryOp AtomicMemorySimpleFMask = 0x3B208C00;
 constexpr AtomicMemoryOp AtomicMemorySimpleOpMask = 0x00007000;
