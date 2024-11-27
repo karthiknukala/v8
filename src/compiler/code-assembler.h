@@ -1270,6 +1270,26 @@ class V8_EXPORT_PRIVATE CodeAssembler {
     return node;
   }
 
+  template <class T>
+  static const TVariable<T>& MarkVariableAsCapability(
+      const TVariable<T>& variable) {
+    if (variable.IsBound()) MarkNodeAsCapability(variable.value());
+    return variable;
+  }
+
+  template <class T>
+  static const TVariable<T>& MarkVariableAsInteger(
+      const TVariable<T>& variable) {
+    if (variable.IsBound()) MarkNodeAsInteger(variable.value());
+    return variable;
+  }
+
+  template <class T>
+  static bool VariableIsCapability(const TVariable<T>& variable) {
+    if (variable.IsBound()) return NodeIsCapability(variable.value());
+    return false;
+  }
+
   template <class A, class P>
   TNode<A> BitcastCapabilityToAddress(TNode<P> node) {
     static_assert(is_capability<P>::maybe_tagged);
@@ -1623,7 +1643,18 @@ class TypedCodeAssemblerVariable : public CodeAssemblerVariable {
  public:
   TypedCodeAssemblerVariable(TNode<T> initial_value, CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, PhiMachineRepresentationOf<T>,
-                              initial_value) {}
+                              initial_value) {
+    if constexpr (is_capability<T>::value) {
+      CodeAssembler::MarkVariableAsCapability(*this);
+    } else if constexpr (is_capability<T>::maybe_tagged) {
+      static_assert(std::is_same<T, IntPtrT>::value ||
+                    std::is_same<T, UintPtrT>::value);
+    } else {
+      static_assert(
+          !IsMachineRepresentationOf<T>(MachineType::PointerRepresentation()));
+      CodeAssembler::MarkVariableAsInteger(*this);
+    }
+  }
   explicit TypedCodeAssemblerVariable(CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, PhiMachineRepresentationOf<T>) {}
 #if DEBUG
@@ -1631,10 +1662,22 @@ class TypedCodeAssemblerVariable : public CodeAssemblerVariable {
                              CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, debug_info,
                               PhiMachineRepresentationOf<T>) {}
+
   TypedCodeAssemblerVariable(AssemblerDebugInfo debug_info,
                              TNode<T> initial_value, CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, debug_info,
-                              PhiMachineRepresentationOf<T>, initial_value) {}
+                              PhiMachineRepresentationOf<T>, initial_value) {
+    if constexpr (is_capability<T>::value) {
+      CodeAssembler::MarkVariableAsCapability(*this);
+    } else if constexpr (is_capability<T>::maybe_tagged) {
+      static_assert(std::is_same<T, IntPtrT>::value ||
+                    std::is_same<T, UintPtrT>::value);
+    } else {
+      static_assert(
+          !IsMachineRepresentationOf<T>(MachineType::PointerRepresentation()));
+      CodeAssembler::MarkVariableAsInteger(*this);
+    }
+  }
 #endif  // DEBUG
 
   TNode<T> value() const {
