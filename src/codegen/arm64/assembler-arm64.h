@@ -2870,7 +2870,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     // Torque/CSA code to take in a JSAny value, cast it to an Smi and generate
     // adds through this path where the source register value is zero. An
     // example of this is Math.ceil(0).
-#if !defined(__CHERI_PURE_CAPABILITY__)
+#if defined(V8_COMPRESS_POINTERS)
     DCHECK(!cn.IsZero());
 #endif
     return (cn.code() & kRegCodeMask) << Cn_offset;
