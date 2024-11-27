@@ -497,8 +497,10 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                   "Incompatible types: this cast can never succeed.");
     if constexpr (is_capability<T>::value) {
       return MarkNodeAsCapability(TNode<T>::UncheckedCast(value));
+    } else if constexpr (is_capability<T>::maybe_tagged) {
+      return TNode<T>::UncheckedCast(value);
     }
-    return TNode<T>::UncheckedCast(value);
+    return MarkNodeAsInteger(TNode<T>::UncheckedCast(value));
   }
 
   // ReinterpretCast<T>(v) has the power to cast even when the type of v is
