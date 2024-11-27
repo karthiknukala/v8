@@ -683,14 +683,14 @@ Node* CodeAssembler::Load(MachineType type, Node* base, Node* offset) {
 }
 
 TNode<Object> CodeAssembler::LoadFullTagged(Node* base) {
-  return BitcastWordToTagged(Load<RawPtrT>(base));
+  return MarkNodeAsCapability(BitcastWordToTagged(Load<RawPtrT>(base)));
 }
 
 TNode<Object> CodeAssembler::LoadFullTagged(Node* base, TNode<IntPtrT> offset) {
   // Please use LoadFromObject(MachineType::MapInHeader(), object,
   // IntPtrConstant(-kHeapObjectTag)) instead.
   DCHECK(!raw_assembler()->IsMapOffsetConstantMinusTag(offset));
-  return BitcastWordToTagged(Load<RawPtrT>(base, offset));
+  return MarkNodeAsCapability(BitcastWordToTagged(Load<RawPtrT>(base, offset)));
 }
 
 Node* CodeAssembler::AtomicLoad(MachineType type, AtomicMemoryOrder order,
