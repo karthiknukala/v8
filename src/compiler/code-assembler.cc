@@ -894,6 +894,19 @@ void CodeAssembler::AtomicStore64(AtomicMemoryOrder order, TNode<RawPtrT> base,
       base, offset, value, value_high);
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+void CodeAssembler::AtomicStoreCapability(AtomicMemoryOrder order,
+                                          TNode<RawPtrT> base,
+                                          TNode<WordT> offset,
+                                          TNode<UintPtrT> value) {
+  DCHECK(NodeIsCapability(value));
+  raw_assembler()->AtomicStoreCapability(
+      AtomicStoreParameters(MachineType::PointerRepresentation(),
+                            WriteBarrierKind::kNoWriteBarrier, order),
+      base, offset, value);
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ATOMIC_FUNCTION(name)                                                 \
   TNode<Word32T> CodeAssembler::Atomic##name(                                 \
       MachineType type, TNode<RawPtrT> base, TNode<UintPtrT> offset,          \
@@ -913,7 +926,14 @@ void CodeAssembler::AtomicStore64(AtomicMemoryOrder order, TNode<RawPtrT> base,
        TNode<UintPtrT> value_high);                                           \
   template TNode<AtomicUint64> CodeAssembler::Atomic##name##64 <              \
       AtomicUint64 > (TNode<RawPtrT> base, TNode<UintPtrT> offset,            \
-                      TNode<UintPtrT> value, TNode<UintPtrT> value_high);
+                      TNode<UintPtrT> value, TNode<UintPtrT> value_high);     \
+  template <class Type>                                                       \
+  TNode<Type> CodeAssembler::Atomic##name##Capability(                        \
+      TNode<RawPtrT> base, TNode<UintPtrT> offset, TNode<UintPtrT> value) {   \
+    static_assert(is_capability<Type>::maybe_tagged);                         \
+    return UncheckedCas<Type>(                                                \
+        raw_assembler()->Atomic##name##Capability(base, offset, value));      \
+  }
 ATOMIC_FUNCTION(Add)
 ATOMIC_FUNCTION(Sub)
 ATOMIC_FUNCTION(And)
@@ -952,6 +972,18 @@ CodeAssembler::AtomicCompareExchange64<AtomicUint64>(
     TNode<RawPtrT> base, TNode<WordT> offset, TNode<UintPtrT> old_value,
     TNode<UintPtrT> new_value, TNode<UintPtrT> old_value_high,
     TNode<UintPtrT> new_value_high);
+
+#ifdef __CHERI_PURE_CAPABILITY__
+template <class Type>
+TNode<Type> CodeAssembler::AtomicCompareExchangeCapability(
+    TNode<RawPtrT> base, TNode<WordT> offset, TNode<UintPtrT> old_value,
+    TNode<UintPtrT> new_value) {
+  static_assert(is_capability<Type>::maybe_tagged);
+  DCHECK(NodeIsCapability(old_value) && NodeIsCapability(new_value));
+  return UncheckedCast<Type>(raw_assembler()->AtomicCompareExchange(
+      MachineType::Pointer(), base, offset, old_value, new_value));
+}
+#endif
 
 void CodeAssembler::MemoryBarrier(AtomicMemoryOrder order) {
   raw_assembler()->MemoryBarrier(order);

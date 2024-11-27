@@ -727,6 +727,23 @@
   V(Float64Mod)                       \
   V(Float64Pow)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define MACHINE_CAPABILITY_ATOMIC_OP_LIST(V) \
+  V(CapabilityAtomicLoad)                    \
+  V(CapabilityAtomicStore)                   \
+  V(CapabilityAtomicExchange)                \
+  V(CapabilityAtomicCompareExchange)         \
+  V(CapabilityAtomicAdd)                     \
+  V(CapabilityAtomicSub)                     \
+  V(CapabilityAtomicAnd)                     \
+  V(CapabilityAtomicOr)                      \
+  V(CapabilityAtomicXor)                     \
+  V(CapabilityAtomicPairExchange)            \
+  V(CapabilityAtomicPairCompareExchange)
+#else  // !__CHERI_PURE_CAPABILITY__
+#define MACHINE_CAPABILITY_ATOMIC_OP_LIST(V)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define MACHINE_ATOMIC_OP_LIST(V)    \
   V(Word32AtomicLoad)                \
   V(Word32AtomicStore)               \
@@ -754,7 +771,8 @@
   V(Word64AtomicOr)                  \
   V(Word64AtomicXor)                 \
   V(Word64AtomicExchange)            \
-  V(Word64AtomicCompareExchange)
+  V(Word64AtomicCompareExchange)     \
+  MACHINE_CAPABILITY_ATOMIC_OP_LIST(V)
 
 #define MACHINE_OP_LIST(V)               \
   MACHINE_UNOP_32_LIST(V)                \

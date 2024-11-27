@@ -1228,6 +1228,17 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
 #if defined(__CHERI_PURE_CAPABILITY__)
   const Operator* CapAdd();
   const Operator* CapSub();
+
+  // Capability atomic operations.
+  const Operator* CapabilityAtomicLoad(AtomicLoadParameters params);
+  const Operator* CapabilityAtomicStore(AtomicStoreParameters params);
+  const Operator* CapabilityAtomicAdd(AtomicOpParameters params);
+  const Operator* CapabilityAtomicSub(AtomicOpParameters params);
+  const Operator* CapabilityAtomicAnd(AtomicOpParameters params);
+  const Operator* CapabilityAtomicOr(AtomicOpParameters params);
+  const Operator* CapabilityAtomicXor(AtomicOpParameters params);
+  const Operator* CapabilityAtomicExchange(AtomicOpParameters params);
+  const Operator* CapabilityAtomicCompareExchange(AtomicOpParameters params);
 #endif // __CHERI_PURE_CAPABILITY__
 
   // Target machine word-size assumed by this builder.

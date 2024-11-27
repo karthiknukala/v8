@@ -797,12 +797,13 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   template <class Type>
   TNode<Type> AtomicLoad(AtomicMemoryOrder order, TNode<RawPtrT> base,
                          TNode<WordT> offset) {
-    auto tnode = UncheckedCast<Type>(
-        AtomicLoad(MachineTypeOf<Type>::value, order, base, offset));
     if constexpr (is_capability<Type>::value) {
-      return MarkNodeAsCapability(tnode);
+      DCHECK_EQ(MachineTypeOf<Type>::value, MachineType::Pointer());
+      return UncheckedCast<Type>(AtomicLoadCapability(
+          MachineTypeOf<Type>::value, order, base, offset));
     }
-    return MarkNodeAsInteger(tnode);
+    return UncheckedCast<Type>(
+        AtomicLoad(MachineTypeOf<Type>::value, order, base, offset));
   }
   template <class Type>
   TNode<Type> AtomicLoad64(AtomicMemoryOrder order, TNode<RawPtrT> base,
@@ -875,36 +876,64 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void AtomicStore64(AtomicMemoryOrder order, TNode<RawPtrT> base,
                      TNode<WordT> offset, TNode<UintPtrT> value,
                      TNode<UintPtrT> value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  void AtomicStoreCapability(AtomicMemoryOrder order, TNode<RawPtrT> base,
+                             TNode<WordT> offset, TNode<UintPtrT> value);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   TNode<Word32T> AtomicAdd(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicAdd64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
-
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicAddCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
+                                  TNode<UintPtrT> value);
+#endif // __CHERI_PURE_CAPABILITY__
   TNode<Word32T> AtomicSub(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicSub64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicSubCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
+                                  TNode<UintPtrT> value);
+#endif // __CHERI_PURE_CAPABILITY__
 
   TNode<Word32T> AtomicAnd(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicAnd64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicAndCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
+                                  TNode<UintPtrT> value);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   TNode<Word32T> AtomicOr(MachineType type, TNode<RawPtrT> base,
                           TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicOr64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                          TNode<UintPtrT> value, TNode<UintPtrT> value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicOrCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
+                                 TNode<UintPtrT> value);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   TNode<Word32T> AtomicXor(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicXor64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicXorCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
+                                  TNode<UintPtrT> value);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Exchange value at raw memory location
   TNode<Word32T> AtomicExchange(MachineType type, TNode<RawPtrT> base,
@@ -913,6 +942,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<Type> AtomicExchange64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                TNode<UintPtrT> value,
                                TNode<UintPtrT> value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicExchangeCapability(TNode<RawPtrT> base,
+                                       TNode<UintPtrT> offset,
+                                       TNode<UintPtrT> value);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Compare and Exchange value at raw memory location
   TNode<Word32T> AtomicCompareExchange(MachineType type, TNode<RawPtrT> base,
@@ -926,6 +961,13 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                                       TNode<UintPtrT> new_value,
                                       TNode<UintPtrT> old_value_high,
                                       TNode<UintPtrT> new_value_high);
+#ifdef __CHERI_PURE_CAPABILITY__
+  template <class Type>
+  TNode<Type> AtomicCompareExchangeCapability(TNode<RawPtrT> base,
+                                              TNode<WordT> offset,
+                                              TNode<UintPtrT> old_value,
+                                              TNode<UintPtrT> new_value);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   void MemoryBarrier(AtomicMemoryOrder order);
 

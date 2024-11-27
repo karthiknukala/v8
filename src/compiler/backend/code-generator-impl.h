@@ -114,9 +114,21 @@ class InstructionOperandConverter {
     return ToRegister(instr_->OutputAt(index));
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register OutputCapabilityRegister(size_t index = 0) const {
+    return ToCapabilityRegister(instr_->OutputAt(index));
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
+
   Register TempRegister(size_t index) {
     return ToRegister(instr_->TempAt(index));
   }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register TempCapabilityRegister(size_t index) {
+    return ToCapabilityRegister(instr_->TempAt(index));
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   FloatRegister OutputFloatRegister() {
     return ToFloatRegister(instr_->Output());

@@ -274,6 +274,21 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     }
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  Node* AtomicLoadCapability(AtomicLoadParameters rep, Node* base,
+                             Node* index) {
+    DCHECK_EQ(rep.representation().representation(),
+              MachineType::PointerRepresentation());
+    return AddNode(machine()->CapabilityAtomicLoad(rep), base, index)
+        ->MarkAsCapability();
+  }
+#else   // !__CHERI_PURE_CAPABILITY__
+  [[noreturn]] Node* AtomicLoadCapability(AtomicLoadParameters rep, Node* base,
+                                          Node* index) {
+    CHECK_WITH_MSG(false, "This code path is not supported on non-CHERI.");
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #if defined(V8_TARGET_BIG_ENDIAN)
 #define VALUE_HALVES value_high, value
 #else
@@ -301,6 +316,17 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     }
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  Node* AtomicStoreCapability(AtomicStoreParameters params, Node* base,
+                              Node* index, Node* value) {
+    DCHECK(!IsMapOffsetConstantMinusTag(index));
+    DCHECK_EQ(params.representation(), MachineType::PointerRepresentation());
+    DCHECK(value->IsCapability());
+    return AddNode(machine()->CapabilityAtomicStore(params), base, index,
+                   value);
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ATOMIC_FUNCTION(name)                                                  \
   Node* Atomic##name(MachineType type, Node* base, Node* index, Node* value) { \
     DCHECK_NE(type.representation(), MachineRepresentation::kWord64);          \
@@ -319,6 +345,11 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
       return AddNode(machine()->Word32AtomicPair##name(), base, index,         \
                      VALUE_HALVES);                                            \
     }                                                                          \
+  }                                                                            \
+  Node* Atomic##name##Capability(Node* base, Node* index, Node* value) {       \
+    return AddNode(machine()->CapabilityAtomic##name(MachineType::Pointer()),  \
+                   base, index, value)                                         \
+        ->MarkAsCapability();                                                  \
   }
   ATOMIC_FUNCTION(Exchange)
   ATOMIC_FUNCTION(Add)
@@ -332,6 +363,11 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* AtomicCompareExchange(MachineType type, Node* base, Node* index,
                               Node* old_value, Node* new_value) {
     DCHECK_NE(type.representation(), MachineRepresentation::kWord64);
+    if (old_value->IsCapability() && new_value->IsCapability()) {
+      DCHECK_EQ(type.representation(), MachineType::PointerRepresentation());
+      return AddNode(machine()->CapabilityAtomicCompareExchange(type), base,
+                     index, old_value, new_value);
+    }
     return AddNode(machine()->Word32AtomicCompareExchange(type), base, index,
                    old_value, new_value);
   }

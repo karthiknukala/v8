@@ -993,6 +993,10 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 
 #if TAGGED_SIZE_8_BYTES
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#error "CHERI is not supported with tagged size of 8 bytes"
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ATOMIC_TAGGED_TYPE_LIST(V)
 
 #define ATOMIC64_TAGGED_TYPE_LIST(V) \
@@ -1004,12 +1008,29 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 
 #else
 
+#ifdef V8_COMPRESS_POINTERS
 #define ATOMIC_TAGGED_TYPE_LIST(V) \
   V(TaggedSigned)                  \
   V(TaggedPointer)                 \
   V(AnyTagged)                     \
   V(CompressedPointer)             \
   V(AnyCompressed)
+
+#define ATOMIC_CAPABILITY_TYPE_LIST(V) V(Pointer)
+#else  // !V8_COMPRESS_POINTERS
+#ifndef __CHERI_PURE_CAPABILITY__
+#error "This configuration is only supported with purecap"
+#endif  // !__CHERI_PURE_CAPABILITY__
+
+#define ATOMIC_TAGGED_TYPE_LIST(V) \
+  V(TaggedSigned)                  \
+  V(TaggedPointer)                 \
+  V(AnyTagged)
+
+#define ATOMIC_CAPABILITY_TYPE_LIST(V) \
+  ATOMIC_TAGGED_TYPE_LIST(V)           \
+  V(Pointer)
+#endif  // V8_COMPRESS_POINTERS
 
 #define ATOMIC64_TAGGED_TYPE_LIST(V)
 
@@ -1032,6 +1053,10 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 
 #if TAGGED_SIZE_8_BYTES
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#error "CHERI is not supported with tagged size of 8 bytes"
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ATOMIC_TAGGED_REPRESENTATION_LIST(V)
 
 #define ATOMIC64_TAGGED_REPRESENTATION_LIST(V) \
@@ -1041,12 +1066,32 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 
 #else
 
+#ifdef V8_COMPRESS_POINTERS
 #define ATOMIC_TAGGED_REPRESENTATION_LIST(V) \
   V(kTaggedSigned)                           \
   V(kTaggedPointer)                          \
   V(kTagged)                                 \
   V(kCompressedPointer)                      \
   V(kCompressed)
+
+#define ATOMIC_CAPABILITY_REPRESENTATION_LIST(V) \
+  V(kCapability32)                               \
+  V(kCapability64)
+#else  // !V8_COMPRESS_POINTERS
+#ifndef __CHERI_PURE_CAPABILITY__
+#error "This configuration is only supported with purecap"
+#endif  // !__CHERI_PURE_CAPABILITY__
+
+#define ATOMIC_TAGGED_REPRESENTATION_LIST(V) \
+  V(kTaggedSigned)                           \
+  V(kTaggedPointer)                          \
+  V(kTagged)
+
+#define ATOMIC_CAPABILITY_REPRESENTATION_LIST(V) \
+  ATOMIC_TAGGED_REPRESENTATION_LIST(V)           \
+  V(kCapability32)                               \
+  V(kCapability64)
+#endif  // V8_COMPRESS_POINTERS
 
 #define ATOMIC64_TAGGED_REPRESENTATION_LIST(V)
 
@@ -1466,6 +1511,27 @@ struct MachineOperatorGlobalCache {
 #undef ATOMIC_LOAD_WITH_KIND
 #undef ATOMIC_LOAD
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ATOMIC_LOAD_WITH_KIND(Type, Kind)                               \
+  struct CapabilitySeqCstLoad##Type##Kind##Operator                     \
+      : public Operator1<AtomicLoadParameters> {                        \
+    CapabilitySeqCstLoad##Type##Kind##Operator()                        \
+        : Operator1<AtomicLoadParameters>(                              \
+              IrOpcode::kCapabilityAtomicLoad, Operator::kNoProperties, \
+              "CapabilityAtomicLoad", 2, 1, 1, 1, 1, 0,                 \
+              AtomicLoadParameters(MachineType::Type(),                 \
+                                   AtomicMemoryOrder::kSeqCst,          \
+                                   MemoryAccessKind::k##Kind)) {}       \
+  };                                                                    \
+  CapabilitySeqCstLoad##Type##Kind##Operator kCapabilitySeqCstLoad##Type##Kind;
+#define ATOMIC_LOAD(Type)             \
+  ATOMIC_LOAD_WITH_KIND(Type, Normal) \
+  ATOMIC_LOAD_WITH_KIND(Type, Protected)
+  ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_LOAD)
+#undef ATOMIC_LOAD_WITH_KIND
+#undef ATOMIC_LOAD
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ATOMIC_STORE_WITH_KIND(Type, Kind)                                 \
   struct Word32SeqCstStore##Type##Kind##Operator                           \
       : public Operator1<AtomicStoreParameters> {                          \
@@ -1508,6 +1574,29 @@ struct MachineOperatorGlobalCache {
 #undef ATOMIC_STORE_WITH_KIND
 #undef ATOMIC_STORE
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ATOMIC_STORE_WITH_KIND(Type, Kind)                                   \
+  struct CapabilitySeqCstStore##Type##Kind##Operator                         \
+      : public Operator1<AtomicStoreParameters> {                            \
+    CapabilitySeqCstStore##Type##Kind##Operator()                            \
+        : Operator1<AtomicStoreParameters>(                                  \
+              IrOpcode::kCapabilityAtomicStore,                              \
+              Operator::kNoDeopt | Operator::kNoRead | Operator::kNoThrow,   \
+              "CapabilityAtomicStore", 3, 1, 1, 0, 1, 0,                     \
+              AtomicStoreParameters(                                         \
+                  MachineRepresentation::Type, kNoWriteBarrier,              \
+                  AtomicMemoryOrder::kSeqCst, MemoryAccessKind::k##Kind)) {} \
+  };                                                                         \
+  CapabilitySeqCstStore##Type##Kind##Operator                                \
+      kCapabilitySeqCstStore##Type##Kind;
+#define ATOMIC_STORE(Type)             \
+  ATOMIC_STORE_WITH_KIND(Type, Normal) \
+  ATOMIC_STORE_WITH_KIND(Type, Protected)
+  ATOMIC_CAPABILITY_REPRESENTATION_LIST(ATOMIC_STORE)
+#undef ATOMIC_STORE_WITH_KIND
+#undef ATOMIC_STORE
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ATOMIC_OP(op, type, kind)                                              \
   struct op##type##kind##Operator : public Operator1<AtomicOpParameters> {     \
     op##type##kind##Operator()                                                 \
@@ -1545,6 +1634,21 @@ struct MachineOperatorGlobalCache {
   ATOMIC_U64_TYPE_LIST(ATOMIC64_OP_LIST)
 #undef ATOMIC64_OP_LIST_WITH_KIND
 #undef ATOMIC64_OP_LIST
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, kind) \
+  ATOMIC_OP(CapabilityAtomicAdd, type, kind)            \
+  ATOMIC_OP(CapabilityAtomicSub, type, kind)            \
+  ATOMIC_OP(CapabilityAtomicAnd, type, kind)            \
+  ATOMIC_OP(CapabilityAtomicOr, type, kind)             \
+  ATOMIC_OP(CapabilityAtomicXor, type, kind)            \
+  ATOMIC_OP(CapabilityAtomicExchange, type, kind)
+#define ATOMIC_CAPABILITY_OP_LIST(type)             \
+  ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, Normal) \
+  ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, Protected)
+  ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_CAPABILITY_OP_LIST)
+#undef ATOMIC_CAPABILITY_OP_LIST_WITH_KIND
+#undef ATOMIC_CAPABILITY_OP_LIST
+#endif  // __CHERI_PURE_CAPABILITY__
 #undef ATOMIC_OP
 
 #define ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Kind)                          \
@@ -1590,6 +1694,28 @@ struct MachineOperatorGlobalCache {
   ATOMIC_U64_TYPE_LIST(ATOMIC_COMPARE_EXCHANGE)
 #undef ATOMIC_COMPARE_EXCHANGE_WITH_KIND
 #undef ATOMIC_COMPARE_EXCHANGE
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Kind)              \
+  struct CapabilityAtomicCompareExchange##Type##Kind##Operator     \
+      : public Operator1<AtomicOpParameters> {                     \
+    CapabilityAtomicCompareExchange##Type##Kind##Operator()        \
+        : Operator1<AtomicOpParameters>(                           \
+              IrOpcode::kCapabilityAtomicCompareExchange,          \
+              Operator::kNoDeopt | Operator::kNoThrow,             \
+              "CapabilityAtomicCompareExchange", 4, 1, 1, 1, 1, 0, \
+              AtomicOpParameters(MachineType::Type(),              \
+                                 MemoryAccessKind::k##Kind)) {}    \
+  };                                                               \
+  CapabilityAtomicCompareExchange##Type##Kind##Operator            \
+      kCapabilityAtomicCompareExchange##Type##Kind;
+#define ATOMIC_COMPARE_EXCHANGE(Type)             \
+  ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Normal) \
+  ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Protected)
+  ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_COMPARE_EXCHANGE)
+#undef ATOMIC_COMPARE_EXCHANGE_WITH_KIND
+#undef ATOMIC_COMPARE_EXCHANGE
+#endif  // __CHERI_PURE_CAPABILITY__
 
   struct Word32SeqCstPairLoadOperator : public Operator1<AtomicMemoryOrder> {
     Word32SeqCstPairLoadOperator()
@@ -2339,6 +2465,35 @@ const Operator* MachineOperatorBuilder::Word64AtomicLoad(
   UNREACHABLE();
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+const Operator* MachineOperatorBuilder::CapabilityAtomicLoad(
+    AtomicLoadParameters params) {
+#define CACHED_LOAD_WITH_KIND(Type, Kind)               \
+  if (params.representation() == MachineType::Type() && \
+      params.order() == AtomicMemoryOrder::kSeqCst &&   \
+      params.kind() == MemoryAccessKind::k##Kind) {     \
+    return &cache_.kCapabilitySeqCstLoad##Type##Kind;   \
+  }
+#define CACHED_LOAD(Type)             \
+  CACHED_LOAD_WITH_KIND(Type, Normal) \
+  CACHED_LOAD_WITH_KIND(Type, Protected)
+  ATOMIC_CAPABILITY_TYPE_LIST(CACHED_LOAD)
+#undef CACHED_LOAD_WITH_KIND
+#undef CACHED_LOAD
+
+#define LOAD(Type)                                                \
+  if (params.representation() == MachineType::Type()) {           \
+    return zone_->New<Operator1<AtomicLoadParameters>>(           \
+        IrOpcode::kCapabilityAtomicLoad, Operator::kNoProperties, \
+        "CapabilityAtomicLoad", 2, 1, 1, 1, 1, 0, params);        \
+  }
+  ATOMIC_CAPABILITY_TYPE_LIST(LOAD)
+#undef LOAD
+
+  UNREACHABLE();
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 const Operator* MachineOperatorBuilder::Word64AtomicStore(
     AtomicStoreParameters params) {
 #define CACHED_STORE_WITH_KIND(kRep, Kind)                      \
@@ -2367,6 +2522,36 @@ const Operator* MachineOperatorBuilder::Word64AtomicStore(
 
   UNREACHABLE();
 }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+const Operator* MachineOperatorBuilder::CapabilityAtomicStore(
+    AtomicStoreParameters params) {
+#define CACHED_STORE_WITH_KIND(kRep, Kind)                      \
+  if (params.representation() == MachineRepresentation::kRep && \
+      params.order() == AtomicMemoryOrder::kSeqCst &&           \
+      params.kind() == MemoryAccessKind::k##Kind) {             \
+    return &cache_.kCapabilitySeqCstStore##kRep##Kind;          \
+  }
+#define CACHED_STORE(kRep)            \
+  CACHED_STORE_WITH_KIND(kRep, Normal) \
+  CACHED_STORE_WITH_KIND(kRep, Protected)
+  ATOMIC_CAPABILITY_REPRESENTATION_LIST(CACHED_STORE)
+#undef CACHED_STORE_WITH_KIND
+#undef CACHED_STORE
+
+#define STORE(kRep)                                                  \
+  if (params.representation() == MachineRepresentation::kRep) {      \
+    return zone_->New<Operator1<AtomicStoreParameters>>(             \
+        IrOpcode::kCapabilityAtomicStore,                            \
+        Operator::kNoDeopt | Operator::kNoRead | Operator::kNoThrow, \
+        "CapabilityAtomicStore", 3, 1, 1, 0, 1, 0, params);          \
+  }
+  ATOMIC_CAPABILITY_REPRESENTATION_LIST(STORE)
+#undef STORE
+
+  UNREACHABLE();
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 const Operator* MachineOperatorBuilder::Word64AtomicAdd(
     AtomicOpParameters params) {
@@ -2479,6 +2664,24 @@ const Operator* MachineOperatorBuilder::Word64AtomicCompareExchange(
 #undef OP
   UNREACHABLE();
 }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+const Operator* MachineOperatorBuilder::CapabilityAtomicCompareExchange(
+    AtomicOpParameters params) {
+#define OP_WITH_KIND(kType, Kind)                             \
+  if (params.type() == MachineType::kType()                   \
+      && params.kind() == MemoryAccessKind::k##Kind) {        \
+    return &cache_.kCapabilityAtomicCompareExchange##kType##Kind; \
+  }
+#define OP(kType)             \
+  OP_WITH_KIND(kType, Normal) \
+  OP_WITH_KIND(kType, Protected)
+  ATOMIC_CAPABILITY_TYPE_LIST(OP)
+#undef OP_WITH_KIND
+#undef OP
+  UNREACHABLE();
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 const Operator* MachineOperatorBuilder::Word32AtomicPairLoad(
     AtomicMemoryOrder order) {

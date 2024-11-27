@@ -732,6 +732,23 @@ void EmitFpOrNeonUnop(MacroAssembler* masm, Fn fn, Instruction* instr,
     }                                                                          \
   } while (0)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ASSEMBLE_CAPABILITY_ATOMIC_BINOP(bin_instr)                         \
+  do {                                                                      \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),       \
+           i.InputCapabilityRegister(1));                                   \
+    Label binop;                                                            \
+    __ Bind(&binop);                                                        \
+    EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());       \
+    __ ldaxr(i.OutputCapabilityRegister(), i.TempCapabilityRegister(0));    \
+    __ bin_instr(i.TempCapabilityRegister(1), i.OutputCapabilityRegister(), \
+                 Operand(i.InputCapabilityRegister(2)));                    \
+    __ stlxr(i.TempRegister32(2), i.TempCapabilityRegister(1),              \
+             i.TempCapabilityRegister(0));                                  \
+    __ Cbnz(i.TempRegister32(2), &binop);                                   \
+  } while (0)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ASSEMBLE_IEEE754_BINOP(name)                                        \
   do {                                                                      \
     FrameScope scope(masm(), StackFrame::MANUAL);                           \
@@ -2576,6 +2593,71 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 #undef ASSEMBLE_ATOMIC_BINOP
 #undef ASSEMBLE_IEEE754_BINOP
 #undef ASSEMBLE_IEEE754_UNOP
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ATOMIC_BINOP_CASE(op, inst)         \
+  case kArm64CapabilityAtomic##op:          \
+    ASSEMBLE_CAPABILITY_ATOMIC_BINOP(inst); \
+    break;
+      ATOMIC_BINOP_CASE(Add, Add)
+      ATOMIC_BINOP_CASE(Sub, Sub)
+      ATOMIC_BINOP_CASE(Or, Orr)
+      ATOMIC_BINOP_CASE(Xor, Eor)
+      ATOMIC_BINOP_CASE(And, And)
+#undef ATOMIC_BINOP_CASE
+    case kArm64CapabilityAtomicLoad:
+      __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),
+             i.InputCapabilityRegister(1));
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
+      __ Ldar(i.OutputCapabilityRegister(), i.TempCapabilityRegister(0));
+      break;
+    case kArm64CapabilityAtomicStore:
+      __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),
+             i.InputCapabilityRegister(1));
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
+      __ Stlr(i.InputCapabilityRegister(2), i.TempCapabilityRegister(0));
+      break;
+    case kArm64CapabilityAtomicExchange:
+      __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0), i.InputCapabilityRegister(1));
+      if (CpuFeatures::IsSupported(LSE)) {
+        CpuFeatureScope scope(masm(), LSE);
+        EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
+        __ Swpa_C(i.InputCapabilityRegister(2), i.OutputCapabilityRegister(),
+                  MemOperand(i.TempCapabilityRegister(0)));
+      } else {
+        Label exchange;
+        __ Bind(&exchange);
+        EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
+        __ ldaxr(i.OutputCapabilityRegister(), i.TempCapabilityRegister(0));
+        __ stlxr(i.TempRegister32(1), i.InputCapabilityRegister(2),
+                 i.TempCapabilityRegister(0));
+        __ Cbnz(i.TempRegister32(1), &exchange);
+      }
+      break;
+    case kArm64CapabilityAtomicCompareExchange:
+      __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),
+             i.InputCapabilityRegister(1));
+      if (CpuFeatures::IsSupported(LSE)) {
+        DCHECK_EQ(i.OutputCapabilityRegister(), i.InputCapabilityRegister(2));
+        CpuFeatureScope scope(masm(), LSE);
+        EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
+        __ Casal_C(i.OutputCapabilityRegister(), i.InputCapabilityRegister(3),
+                   MemOperand(i.TempCapabilityRegister(0)));
+      } else {
+        Label compareExchange;
+        Label exit;
+        __ Bind(&compareExchange);
+        EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
+        __ ldaxr(i.OutputCapabilityRegister(), i.TempCapabilityRegister(0));
+        __ Cmp(i.OutputCapabilityRegister(),
+               Operand(i.InputCapabilityRegister(2), UXTX));
+        __ B(ne, &exit);
+        __ stlxr(i.TempRegister32(1), i.InputCapabilityRegister(3),
+                 i.TempCapabilityRegister(0));
+        __ Cbnz(i.TempRegister32(1), &compareExchange);
+        __ Bind(&exit);
+      }
+      break;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define SIMD_UNOP_CASE(Op, Instr, FORMAT)            \
   case Op:                                           \

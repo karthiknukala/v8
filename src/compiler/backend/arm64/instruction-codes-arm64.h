@@ -20,7 +20,9 @@ namespace compiler {
   V(Arm64LdrCapability)                                    \
   V(Arm64StrPairCapability)                                \
   V(Arm64AddCap)                                           \
-  V(Arm64SubCap)
+  V(Arm64SubCap)                                           \
+  V(Arm64CapabilityAtomicLoad)                             \
+  V(Arm64CapabilityAtomicStore)
 #else
 #define TARGET_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V)  \
   ARM64_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V)
@@ -62,8 +64,22 @@ namespace compiler {
   V(Arm64Word64AtomicLoadUint64)                           \
   V(Arm64Word64AtomicStoreWord64)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define TARGET_ARCH_OPCODE_PURECAP_LIST(V) \
+  V(Arm64CapabilityAtomicAdd)              \
+  V(Arm64CapabilityAtomicSub)              \
+  V(Arm64CapabilityAtomicAnd)              \
+  V(Arm64CapabilityAtomicOr)               \
+  V(Arm64CapabilityAtomicXor)              \
+  V(Arm64CapabilityAtomicExchange)         \
+  V(Arm64CapabilityAtomicCompareExchange)
+#else   // !__CHERI_PURE_CAPABILITY__
+#define TARGET_ARCH_OPCODE_PURECAP_LIST(V)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define TARGET_ARCH_OPCODE_LIST(V)                   \
   TARGET_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V) \
+  TARGET_ARCH_OPCODE_PURECAP_LIST(V)                 \
   V(Arm64Add)                                        \
   V(Arm64Add32)                                      \
   V(Arm64And)                                        \
