@@ -11,16 +11,44 @@
 #include "src/base/compiler-specific.h"
 #include "src/base/logging.h"
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 #define _CHERI_DIAGNOSTIC_PRAGMA(d) _Pragma(#d)
 #define CheriDiagnosticOff(d)      \
   _Pragma("clang diagnostic push") \
   _CHERI_DIAGNOSTIC_PRAGMA(clang diagnostic ignored d)
 #define CheriDiagnosticPop _Pragma("clang diagnostic pop")
-#else
+
+// CHERI helper macros/functions.
+
+#define V8_CHERI_BASE_GET(cap) __builtin_cheri_base_get(cap)
+#define V8_CHERI_TAG_GET(cap) __builtin_cheri_tag_get(cap)
+#define V8_CHERI_LENGTH_GET(cap) __builtin_cheri_length_get(cap)
+#define V8_CHERI_SEALED(cap) __builtin_cheri_sealed_get(cap)
+#define V8_CHERI_PERMS(cap) __builtin_cheri_perms_get(cap)
+#define V8_CHERI_ADDR_GET(cap) __builtin_cheri_address_get(cap)
+#define V8_CHERI_ADDR_SET(cap, addr) __builtin_cheri_address_set(cap, addr)
+
+// Get the top of a capability
+#define V8_CHERI_TOP_GET(cap)                        \
+  __extension__({                                    \
+    __typeof__(cap) c = (cap);                       \
+    (V8_CHERI_BASE_GET(c) + V8_CHERI_LENGTH_GET(c)); \
+  })
+
+// Check if the address is between cap.base and cap.top, i.e. in bounds
+#define V8_CHERI_INBOUNDS(cap, addr) \
+  (addr >= V8_CHERI_BASE_GET(cap) && addr < V8_CHERI_TOP_GET(cap))
+
+#define V8_CHERI_IS_SUBSET_OF(parent, ptr)                \
+  (V8_CHERI_TAG_GET(parent) == V8_CHERI_TAG_GET(ptr) &&   \
+   V8_CHERI_BASE_GET(ptr) >= V8_CHERI_BASE_GET(parent) && \
+   V8_CHERI_TOP_GET(ptr) <= V8_CHERI_TOP_GET(parent) &&   \
+   (V8_CHERI_PERMS(ptr) & V8_CHERI_PERMS(parent)) == V8_CHERI_PERMS(ptr))
+
+#else  // !__CHERI_PURE_CAPABILITY__
 #define CheriDiagnosticOff(...)
 #define CheriDiagnosticPop
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
 #define AlignToCapSize(x) ((x) + 15) & (~15)
