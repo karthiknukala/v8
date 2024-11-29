@@ -65,7 +65,7 @@ class V8_EXPORT_PRIVATE MacroAssemblerBase : public Assembler {
 
   // Corresponds to: destination = kRootRegister + offset.
   virtual void LoadRootRegisterOffset(Register destination,
-                                      intptr_t offset) = 0;
+                                      ScaledInt offset) = 0;
 
   // Corresponds to: destination = [kRootRegister + offset].
   virtual void LoadRootRelative(Register destination, int32_t offset) = 0;
