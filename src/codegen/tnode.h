@@ -264,10 +264,13 @@ struct is_machine_vector {
 #ifdef V8_COMPRESS_POINTERS
 template <class T>
 struct is_capability {
-  static const bool value = (std::is_same<RawPtrT, T>::value ||
-                             std::is_same<ExternalReference, T>::value) &&
-                            !std::is_same<IntPtrT, T>::value &&
-                            !std::is_same<UintPtrT, T>::value;
+  static const bool value =
+      (std::is_same<RawPtrT, T>::value ||
+       std::is_same<ExternalReference, T>::value) &&
+      !std::is_same<IntPtrT, T>::value && !std::is_same<UintPtrT, T>::value &&
+      !std::is_base_of<Object, T>::value &&
+      !std::is_base_of<MaybeObject, T>::value && !is_integer<T>::value &&
+      !is_float<T>::value && !is_machine_vector<T>::value;
   static const bool maybe_tagged =
       is_capability<T>::value || std::is_same<IntPtrT, T>::value ||
       std::is_same<UintPtrT, T>::value || std::is_same<WordT, T>::value;
