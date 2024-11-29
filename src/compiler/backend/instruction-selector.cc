@@ -446,7 +446,14 @@ bool InstructionSelector::CanAddressRelativeToRootsRegister(
   //    execution?
   const bool all_root_relative_offsets_are_constant =
       (enable_roots_relative_addressing_ == kEnableRootsRelativeAddressing);
+#ifndef __CHERI_PURE_CAPABILITY__
+  // XXX(cheri): We don't run this check because kRootRegister isn't guaranteed
+  // to have a capability that spans *all* the data. Notably, any external
+  // reference to something inside the Debug class will not be reachable via the
+  // kRootRegister, so we have to disable this check in ordet to correctly
+  // generate the IR opcodes.
   if (all_root_relative_offsets_are_constant) return true;
+#endif  // !__CHERI_PURE_CAPABILITY__
 
   // 3. IsAddressableThroughRootRegister: Is the target address guaranteed to
   //    have a fixed root-relative offset? If so, we can ignore 2.

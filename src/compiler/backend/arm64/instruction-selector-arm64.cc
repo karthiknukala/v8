@@ -651,6 +651,7 @@ void EmitLoad(InstructionSelector* selector, Node* node, InstructionCode opcode,
   outputs[0] = g.DefineAsRegister(output == nullptr ? node : output);
 
   ExternalReferenceMatcher m(base);
+  // XXX(cheri): This might need additional checks in the future.
   if (m.HasResolvedValue() && g.IsIntegerConstant(index) &&
       selector->CanAddressRelativeToRootsRegister(m.ResolvedValue())) {
     ptrdiff_t const delta =

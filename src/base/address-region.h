@@ -40,13 +40,27 @@ class AddressRegion {
 
   bool contains(Address address) const {
     static_assert(std::is_unsigned<Address>::value);
+#ifdef __CHERI_PURE_CAPABILITY__
+    // We do an inbounds check on CHERI because anything else will result in
+    // runtime crashes.
+    return V8_CHERI_INBOUNDS(begin(), address);
+#else   // !__CHERI_PURE_CAPABILITY__
     return (address - begin()) < size();
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   bool contains(Address address, size_t size) const {
     static_assert(std::is_unsigned<Address>::value);
+#ifdef __CHERI_PURE_CAPABILITY__
+    // We do an inbounds check on CHERI because anything else will result in
+    // runtime crashes.
+    ptraddr_t addr = V8_CHERI_ADDR_GET(address);
+    return V8_CHERI_INBOUNDS(begin(), addr) &&
+           V8_CHERI_INBOUNDS(begin(), addr + size);
+#else   // !__CHERI_PURE_CAPABILITY__
     Address offset = address - begin();
     return (offset < size_) && (offset + size <= size_);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   bool contains(AddressRegion region) const {
