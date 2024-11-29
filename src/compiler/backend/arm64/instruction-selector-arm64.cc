@@ -1035,14 +1035,14 @@ void InstructionSelector::VisitStore(Node* node) {
 #ifdef V8_COMPRESS_POINTERS
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 2);
           opcode = kArm64StrWPair;
-#else
+#else  // !V8_COMPRESS_POINTERS
 #ifdef __CHERI_PURE_CAPABILITY__
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 4);
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 3);
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
           opcode = kArm64StrPair;
-#endif
+#endif  // V8_COMPRESS_POINTERS
         } else {
           opcode = kArm64StrCompressTagged;
         }
@@ -1074,9 +1074,9 @@ void InstructionSelector::VisitStore(Node* node) {
         if (paired) {
 #ifdef V8_COMPRESS_POINTERS
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 2);
-#else
+#else   // !V8_COMPRESS_POINTERS
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 4);
-#endif
+#endif  // V8_COMPRESS_POINTERS
           opcode = kArm64StrPairCapability;
         } else {
           opcode = kArm64StrCapability;
