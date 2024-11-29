@@ -54,14 +54,18 @@ class AddressRegion {
   }
 
   base::AddressRegion GetOverlap(AddressRegion region) const {
+    // FIXME(ds815): There is no way this works, but we don't do wasm yet (which
+    // is the only caller of this). Avoid addressing it now to avoid upstream
+    // diffs, which could change the behaviour of this. For now, we just keep
+    // this ifdef to stop a compile-time error on CHERI.
     Address overlap_start = std::max(begin(), region.begin());
     Address overlap_end =
         std::max(overlap_start, std::min(end(), region.end()));
 #if defined(__CHERI_PURE_CAPABILITY__)
     return {overlap_start, static_cast<size_t>(overlap_end - overlap_start)};
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // defined(__CHERI_PURE_CAPABILITY__)
     return {overlap_start, overlap_end - overlap_start};
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // defined(__CHERI_PURE_CAPABILITY__)
   }
 
   bool operator==(AddressRegion other) const {
