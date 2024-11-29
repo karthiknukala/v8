@@ -2617,7 +2617,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Stlr(i.InputCapabilityRegister(2), i.TempCapabilityRegister(0));
       break;
     case kArm64CapabilityAtomicExchange:
-      __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0), i.InputCapabilityRegister(1));
+      __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),
+             i.InputCapabilityRegister(1));
       if (CpuFeatures::IsSupported(LSE)) {
         CpuFeatureScope scope(masm(), LSE);
         EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());
