@@ -33,6 +33,9 @@ Handle<AccessorInfo> Accessors::MakeAccessor(
   Handle<AccessorInfo> info = factory->NewAccessorInfo();
   {
     DisallowGarbageCollection no_gc;
+    // FIXME(cheri): set_setter/set_getter are implemented in a way where they
+    // will create a pointer that can't be dereferenced if not using a sandbox,
+    // but using pointer compression.
     auto raw = *info;
     raw.set_all_can_read(false);
     raw.set_all_can_write(false);
