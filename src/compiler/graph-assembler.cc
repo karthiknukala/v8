@@ -101,7 +101,7 @@ Node* GraphAssembler::Float64Constant(double value) {
 
 TNode<HeapObject> JSGraphAssembler::HeapConstant(Handle<HeapObject> object) {
   return TNode<HeapObject>::UncheckedCast(
-      AddClonedNode(jsgraph()->HeapConstant(object))->MarkAsCapability());
+      AddClonedNode(jsgraph()->HeapConstant(object)));
 }
 
 TNode<Object> JSGraphAssembler::Constant(ObjectRef ref) {
@@ -959,21 +959,11 @@ Node* GraphAssembler::Retain(Node* buffer) {
 }
 
 Node* GraphAssembler::IntPtrAdd(Node* a, Node* b) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  if (a->IsCapability())
-    return AddNode(graph()->NewNode(machine()->CapAdd(), a, b));
-  if (b->IsCapability())
-    return AddNode(graph()->NewNode(machine()->CapAdd(), b, a));
-#endif // __CHERI_PURE_CAPABILITY__
   return AddNode(graph()->NewNode(
       machine()->Is64() ? machine()->Int64Add() : machine()->Int32Add(), a, b));
 }
 
 Node* GraphAssembler::IntPtrSub(Node* a, Node* b) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  if (a->IsCapability())
-    return AddNode(graph()->NewNode(machine()->CapSub(), a, b));
-#endif  // __CHERI_PURE_CAPABILITY__
   return AddNode(graph()->NewNode(
       machine()->Is64() ? machine()->Int64Sub() : machine()->Int32Sub(), a, b));
 }
@@ -995,21 +985,11 @@ Node* GraphAssembler::BitcastWordToTagged(Node* value) {
 }
 
 Node* GraphAssembler::BitcastTaggedToWord(Node* value) {
-  // XXX(ds815): We really want to strip the capability mark here, but
-  // unfortunately this is sometimes used to cast to IntPtrT and UintPtrT.
-  if (value->IsCapability())
-    return AddNode(graph()->NewNode(machine()->BitcastTaggedToWord(), value,
-                                    effect(), control()))
-        ->MarkAsCapability();
   return AddNode(graph()->NewNode(machine()->BitcastTaggedToWord(), value,
                                   effect(), control()));
 }
 
 Node* GraphAssembler::BitcastTaggedToWordForTagAndSmiBits(Node* value) {
-  if (value->IsCapability())
-    return AddNode(graph()->NewNode(
-                       machine()->BitcastTaggedToWordForTagAndSmiBits(), value))
-        ->MarkAsCapability();
   return AddNode(graph()->NewNode(
       machine()->BitcastTaggedToWordForTagAndSmiBits(), value));
 }

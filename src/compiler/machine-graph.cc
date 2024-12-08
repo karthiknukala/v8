@@ -29,19 +29,15 @@ Node* MachineGraph::Int64Constant(int64_t value) {
   }
   return *loc;
 }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 Node* MachineGraph::Capability32Constant(intptr_t value) {
-  return graph()
-      ->NewNode(common()->Capability32Constant(value))
-      ->MarkAsCapability();
+  return graph()->NewNode(common()->Capability32Constant(value));
 }
 
 Node* MachineGraph::Capability64Constant(intptr_t value) {
-  return graph()
-      ->NewNode(common()->Capability64Constant(value))
-      ->MarkAsCapability();
+  return graph()->NewNode(common()->Capability64Constant(value));
 }
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
 
 Node* MachineGraph::IntPtrConstant(intptr_t value) {
 #ifdef __CHERI_PURE_CAPABILITY__

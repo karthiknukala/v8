@@ -277,8 +277,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
                              Node* index) {
     DCHECK_EQ(rep.representation().representation(),
               MachineType::PointerRepresentation());
-    return AddNode(machine()->CapabilityAtomicLoad(rep), base, index)
-        ->MarkAsCapability();
+    return AddNode(machine()->CapabilityAtomicLoad(rep), base, index);
   }
 #else   // !__CHERI_PURE_CAPABILITY__
   [[noreturn]] Node* AtomicLoadCapability(AtomicLoadParameters rep, Node* base,
@@ -319,7 +318,6 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
                               Node* index, Node* value) {
     DCHECK(!IsMapOffsetConstantMinusTag(index));
     DCHECK_EQ(params.representation(), MachineType::PointerRepresentation());
-    DCHECK(value->IsCapability());
     return AddNode(machine()->CapabilityAtomicStore(params), base, index,
                    value);
   }
@@ -346,8 +344,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   }                                                                            \
   Node* Atomic##name##Capability(Node* base, Node* index, Node* value) {       \
     return AddNode(machine()->CapabilityAtomic##name(MachineType::Pointer()),  \
-                   base, index, value)                                         \
-        ->MarkAsCapability();                                                  \
+                   base, index, value);                                        \
   }
   ATOMIC_FUNCTION(Exchange)
   ATOMIC_FUNCTION(Add)
@@ -361,11 +358,6 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* AtomicCompareExchange(MachineType type, Node* base, Node* index,
                               Node* old_value, Node* new_value) {
     DCHECK_NE(type.representation(), MachineRepresentation::kWord64);
-    if (old_value->IsCapability() && new_value->IsCapability()) {
-      DCHECK_EQ(type.representation(), MachineType::PointerRepresentation());
-      return AddNode(machine()->CapabilityAtomicCompareExchange(type), base,
-                     index, old_value, new_value);
-    }
     return AddNode(machine()->Word32AtomicCompareExchange(type), base, index,
                    old_value, new_value);
   }
@@ -397,28 +389,18 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->WordAnd(), a, b);
   }
   Node* WordOr(Node* a, Node* b) {
-    if (a->IsCapability())
-      return AddNode(machine()->WordOr(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordOr(), a, b);
   }
   Node* WordXor(Node* a, Node* b) {
-    if (a->IsCapability())
-      return AddNode(machine()->WordXor(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordXor(), a, b);
   }
   Node* WordShl(Node* a, Node* b) {
-    if (a->IsCapability())
-      return AddNode(machine()->WordShl(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordShl(), a, b);
   }
   Node* WordShr(Node* a, Node* b) {
-    if (a->IsCapability())
-      return AddNode(machine()->WordShr(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordShr(), a, b);
   }
   Node* WordSar(Node* a, Node* b) {
-    if (a->IsCapability())
-      return AddNode(machine()->WordSar(), a, b)->MarkAsCapability();
     return AddNode(machine()->WordSar(), a, b);
   }
   Node* WordSarShiftOutZeros(Node* a, Node* b) {
@@ -663,25 +645,14 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
         value);
   }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   Node* CapAdd(Node* a, Node* b) {
-    DCHECK(a->IsCapability());
-    return AddNode(machine()->CapAdd(), a, b)->MarkAsCapability();
+    return AddNode(machine()->CapAdd(), a, b);
   }
   Node* CapSub(Node* a, Node* b) {
-    DCHECK(a->IsCapability());
-    return AddNode(machine()->CapSub(), a, b)->MarkAsCapability();
+    return AddNode(machine()->CapSub(), a, b);
   }
-  Node* IntPtrAdd(Node* a, Node* b) {
-    if (a->IsCapability()) return CapAdd(a, b);
-    if (b->IsCapability()) return CapAdd(b, a);
-    return Int64Add(a, b);
-  }
-  Node* IntPtrSub(Node* a, Node* b) {
-    if (a->IsCapability()) return CapSub(a, b);
-    return Int64Sub(a, b);
-  }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define INTPTR_BINOP(prefix, name)                           \
   Node* IntPtr##name(Node* a, Node* b) {                     \
@@ -689,11 +660,9 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
                                        : prefix##32##name(a, b); \
   }
 
-#ifndef __CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, Add)
-  INTPTR_BINOP(Int, Sub)
-#endif  // !__CHERI_PURE_CAPABILITY__
   INTPTR_BINOP(Int, AddWithOverflow)
+  INTPTR_BINOP(Int, Sub)
   INTPTR_BINOP(Int, SubWithOverflow)
   INTPTR_BINOP(Int, Mul)
   INTPTR_BINOP(Int, MulHigh)
@@ -847,42 +816,18 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 
   // Conversions.
   Node* BitcastTaggedToWord(Node* a) {
-    if (a->IsCapability())
-      return AddNode(machine()->BitcastTaggedToWord(), a)->MarkAsCapability();
     return AddNode(machine()->BitcastTaggedToWord(), a);
   }
-  Node* BitcastCapabilityToAddress(Node* a) {
-    // The call to MarkAsInteger is not strictly necessary, but making it
-    // explicit here.
-    return AddNode(machine()->BitcastTaggedToWord(), a)->MarkAsInteger();
-  }
-  Node* BitcastAddressToCapability(Node* a) {
-    // Integer to pointer cast. This will likely result in a missing tag, but it
-    // is needed in order to perform operations such as IntPtrAdd(addr,
-    // offset).
-    return AddNode(machine()->BitcastWordToTagged(), a)->MarkAsCapability();
-  }
   Node* BitcastTaggedToWordForTagAndSmiBits(Node* a) {
-    if (a->IsCapability())
-      return AddNode(machine()->BitcastTaggedToWordForTagAndSmiBits(), a)
-          ->MarkAsCapability();
     return AddNode(machine()->BitcastTaggedToWordForTagAndSmiBits(), a);
   }
   Node* BitcastMaybeObjectToWord(Node* a) {
-    if (a->IsCapability())
-      return AddNode(machine()->BitcastMaybeObjectToWord(), a)
-          ->MarkAsCapability();
     return AddNode(machine()->BitcastMaybeObjectToWord(), a);
   }
   Node* BitcastWordToTagged(Node* a) {
-    if (a->IsCapability())
-      return AddNode(machine()->BitcastWordToTagged(), a)->MarkAsCapability();
     return AddNode(machine()->BitcastWordToTagged(), a);
   }
   Node* BitcastWordToTaggedSigned(Node* a) {
-    if (a->IsCapability())
-      return AddNode(machine()->BitcastWordToTaggedSigned(), a)
-          ->MarkAsCapability();
     return AddNode(machine()->BitcastWordToTaggedSigned(), a);
   }
   Node* TruncateFloat64ToWord32(Node* a) {

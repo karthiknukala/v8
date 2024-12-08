@@ -236,6 +236,29 @@ struct is_valid_type_tag<PairT<T1, T2>> {
   static const bool is_tagged = false;
 };
 
+template <class T1, class T2>
+struct UnionT;
+
+template <class T1, class T2>
+struct is_valid_type_tag<UnionT<T1, T2>> {
+  static const bool is_tagged =
+      is_valid_type_tag<T1>::is_tagged && is_valid_type_tag<T2>::is_tagged;
+  static const bool value = is_tagged;
+};
+
+template <class T1, class T2>
+struct UnionT {
+  static constexpr MachineType kMachineType =
+      CommonMachineType(MachineTypeOf<T1>::value, MachineTypeOf<T2>::value);
+  static const MachineRepresentation kMachineRepresentation =
+      kMachineType.representation();
+  static_assert(kMachineRepresentation != MachineRepresentation::kNone,
+                "no common representation");
+  static_assert(is_valid_type_tag<T1>::is_tagged &&
+                    is_valid_type_tag<T2>::is_tagged,
+                "union types are only possible for tagged values");
+};
+
 template <class T>
 struct is_integer {
   static const bool value =
@@ -297,29 +320,21 @@ struct is_capability {
   static const bool maybe_tagged = false;
 };
 #endif  // __CHERI_PURE_CAPABILITY__
-
 template <class T1, class T2>
-struct UnionT;
-
+struct is_capability<PairT<T1, T2>> {
+  static const bool value =
+      is_capability<T1>::value && is_capability<T2>::value;
+  static const bool maybe_tagged =
+      is_capability<T1>::maybe_tagged && is_capability<T2>::maybe_tagged;
+};
 template <class T1, class T2>
-struct is_valid_type_tag<UnionT<T1, T2>> {
-  static const bool is_tagged =
-      is_valid_type_tag<T1>::is_tagged && is_valid_type_tag<T2>::is_tagged;
-  static const bool value = is_tagged;
+struct is_capability<UnionT<T1, T2>> {
+  static const bool value =
+      is_capability<T1>::value || is_capability<T2>::value;
+  static const bool maybe_tagged =
+      is_capability<T1>::maybe_tagged || is_capability<T2>::maybe_tagged;
 };
 
-template <class T1, class T2>
-struct UnionT {
-  static constexpr MachineType kMachineType =
-      CommonMachineType(MachineTypeOf<T1>::value, MachineTypeOf<T2>::value);
-  static const MachineRepresentation kMachineRepresentation =
-      kMachineType.representation();
-  static_assert(kMachineRepresentation != MachineRepresentation::kNone,
-                "no common representation");
-  static_assert(is_valid_type_tag<T1>::is_tagged &&
-                    is_valid_type_tag<T2>::is_tagged,
-                "union types are only possible for tagged values");
-};
 
 using AnyTaggedT = UnionT<Object, MaybeObject>;
 using Number = UnionT<Smi, HeapNumber>;
@@ -425,13 +440,28 @@ class TNode {
             typename std::enable_if<is_subtype<U, T>::value, int>::type = 0>
   TNode(const TNode<U>& other) V8_NOEXCEPT : node_(other) {
     LazyTemplateChecks();
+    if constexpr (is_capability<T>::value) {
+      MarkAsCapability();
+    } else if constexpr (is_capability<T>::maybe_tagged) {
+      if (other.IsCapability()) MarkAsCapability();
+    } else {
+      MarkAsInteger();
+    }
   }
-  TNode(const TNode& other) V8_NOEXCEPT : node_(other) { LazyTemplateChecks(); }
+  TNode(const TNode& other) V8_NOEXCEPT : node_(other)
+#ifdef __CHERI_PURE_CAPABILITY__
+      ,
+                                          is_capability_(other.is_capability_)
+#endif  // __CHERI_PURE_CAPABILITY__
+  {
+    LazyTemplateChecks();
+  }
   TNode() : TNode(nullptr) {}
 
   TNode operator=(TNode other) {
     DCHECK_NOT_NULL(other.node_);
     node_ = other.node_;
+    is_capability_ = other.is_capability_;
     return *this;
   }
 
@@ -439,14 +469,38 @@ class TNode {
 
   static TNode UncheckedCast(compiler::Node* node) { return TNode(node); }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  TNode& MarkAsCapability() {
+    is_capability_ = true;
+    return *this;
+  }
+  TNode& MarkAsInteger() {
+    is_capability_ = false;
+    return *this;
+  }
+  bool IsCapability() const { return is_capability_; }
+#else   // !__CHERI_PURE_CAPABILITY__
+  TNode& MarkAsCapability() { return *this; }
+  TNode& MarkAsInteger() { return *this; }
+  bool IsCapability() const { return false; }
+#endif  // __CHERI_PURE_CAPABILITY__
+
  protected:
-  explicit TNode(compiler::Node* node) : node_(node) { LazyTemplateChecks(); }
+  explicit TNode(compiler::Node* node) : node_(node) {
+    LazyTemplateChecks();
+    if constexpr (is_capability<T>::value) {
+      MarkAsCapability();
+    }
+  }
   // These checks shouldn't be checked before TNode is actually used.
   void LazyTemplateChecks() {
     static_assert(is_valid_type_tag<T>::value, "invalid type tag");
   }
 
   compiler::Node* node_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool is_capability_ = false;
+#endif  // __CHERI_PURE_CAPABILITY__
 };
 
 // SloppyTNode<T> is a variant of TNode<T> and allows implicit casts from

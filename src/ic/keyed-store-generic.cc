@@ -457,6 +457,9 @@ void KeyedStoreGenericAssembler::StoreElementWithCapacity(
         TryChangeToHoleyMap(receiver, receiver_map, elements_kind, context,
                             PACKED_ELEMENTS, slow);
       }
+#ifndef V8_COMPRESS_POINTERS
+      DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
       Store(elements, offset, value);
       MaybeUpdateLengthAndReturn(receiver, index, value, update_length);
 
@@ -501,6 +504,9 @@ void KeyedStoreGenericAssembler::StoreElementWithCapacity(
                            PACKED_SMI_ELEMENTS, target_kind, slow);
         // The elements backing store didn't change, no reload necessary.
         CSA_DCHECK(this, TaggedEqual(elements, LoadElements(receiver)));
+#ifndef V8_COMPRESS_POINTERS
+        DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
         Store(elements, offset, value);
         MaybeUpdateLengthAndReturn(receiver, index, value, update_length);
       }
@@ -565,6 +571,9 @@ void KeyedStoreGenericAssembler::StoreElementWithCapacity(
       TNode<FixedArrayBase> fast_elements = LoadElements(receiver);
       TNode<IntPtrT> fast_offset =
           ElementOffsetFromIndex(index, PACKED_ELEMENTS, kHeaderSize);
+#ifndef V8_COMPRESS_POINTERS
+      DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
       Store(fast_elements, fast_offset, value);
       MaybeUpdateLengthAndReturn(receiver, index, value, update_length);
     }

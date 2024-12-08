@@ -87,7 +87,7 @@ Node* RawMachineAssembler::OptimizedAllocate(
     AllowLargeObjects allow_large_objects) {
   return AddNode(
       simplified()->AllocateRaw(Type::Any(), allocation, allow_large_objects),
-      size)->MarkAsCapability();
+      size);
 }
 
 Schedule* RawMachineAssembler::ExportForTest() {
@@ -846,10 +846,7 @@ Node* RawMachineAssembler::Phi(MachineRepresentation rep, int input_count,
   Node** buffer = zone()->NewArray<Node*>(input_count + 1);
   std::copy(inputs, inputs + input_count, buffer);
   buffer[input_count] = graph()->start();
-  if (rep == MachineType::PointerRepresentation() ||
-      rep == MachineType::TaggedRepresentation())
-    return AddNode(common()->Phi(rep, input_count), input_count + 1, buffer)
-        ->MarkAsCapability();
+  // XXX(cheri): We don't preserve any capability markings here.
   return AddNode(common()->Phi(rep, input_count), input_count + 1, buffer);
 }
 

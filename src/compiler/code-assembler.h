@@ -230,6 +230,77 @@ class CodeAssemblerParameterizedLabel;
   V(UintPtrGreaterThan, BoolT, WordT, WordT)              \
   V(UintPtrGreaterThanOrEqual, BoolT, WordT, WordT)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(V) \
+  V(CapAdd, WordT, WordT, WordT)                 \
+  V(CapSub, WordT, WordT, WordT)
+
+#define CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(V)                          \
+  V(IntPtrSub, WordT, WordT, WordT)                                     \
+  V(WordOr, WordT, WordT, WordT)                                        \
+  V(WordAnd, WordT, WordT, WordT)                                       \
+  V(WordXor, WordT, WordT, WordT)                                       \
+  V(WordRor, WordT, WordT, IntegralT)                                   \
+  V(WordShl, WordT, WordT, IntegralT)                                   \
+  V(WordShr, WordT, WordT, IntegralT)                                   \
+  V(WordSar, WordT, WordT, IntegralT)
+
+#define CODE_ASSEMBLER_BINARY_OP_LIST(V)                                \
+  CODE_ASSEMBLER_COMPARE_BINARY_OP_LIST(V)                              \
+  V(Float64Add, Float64T, Float64T, Float64T)                           \
+  V(Float64Sub, Float64T, Float64T, Float64T)                           \
+  V(Float64Mul, Float64T, Float64T, Float64T)                           \
+  V(Float64Div, Float64T, Float64T, Float64T)                           \
+  V(Float64Mod, Float64T, Float64T, Float64T)                           \
+  V(Float64Atan2, Float64T, Float64T, Float64T)                         \
+  V(Float64Pow, Float64T, Float64T, Float64T)                           \
+  V(Float64Max, Float64T, Float64T, Float64T)                           \
+  V(Float64Min, Float64T, Float64T, Float64T)                           \
+  V(Float64InsertLowWord32, Float64T, Float64T, Word32T)                \
+  V(Float64InsertHighWord32, Float64T, Float64T, Word32T)               \
+  V(I8x16Eq, I8x16T, I8x16T, I8x16T)                                    \
+  V(IntPtrMul, WordT, WordT, WordT)                                     \
+  V(IntPtrMulHigh, IntPtrT, IntPtrT, IntPtrT)                           \
+  V(UintPtrMulHigh, UintPtrT, UintPtrT, UintPtrT)                       \
+  V(IntPtrDiv, IntPtrT, IntPtrT, IntPtrT)                               \
+  V(IntPtrMod, IntPtrT, IntPtrT, IntPtrT)                               \
+  V(IntPtrAddWithOverflow, PAIR_TYPE(IntPtrT, BoolT), IntPtrT, IntPtrT) \
+  V(IntPtrSubWithOverflow, PAIR_TYPE(IntPtrT, BoolT), IntPtrT, IntPtrT) \
+  V(IntPtrMulWithOverflow, PAIR_TYPE(IntPtrT, BoolT), IntPtrT, IntPtrT) \
+  V(Int32Add, Word32T, Word32T, Word32T)                                \
+  V(Int32AddWithOverflow, PAIR_TYPE(Int32T, BoolT), Int32T, Int32T)     \
+  V(Int32Sub, Word32T, Word32T, Word32T)                                \
+  V(Int32SubWithOverflow, PAIR_TYPE(Int32T, BoolT), Int32T, Int32T)     \
+  V(Int32Mul, Word32T, Word32T, Word32T)                                \
+  V(Int32MulWithOverflow, PAIR_TYPE(Int32T, BoolT), Int32T, Int32T)     \
+  V(Int32Div, Int32T, Int32T, Int32T)                                   \
+  V(Uint32Div, Uint32T, Uint32T, Uint32T)                               \
+  V(Int32Mod, Int32T, Int32T, Int32T)                                   \
+  V(Uint32Mod, Uint32T, Uint32T, Uint32T)                               \
+  V(Int64Add, Word64T, Word64T, Word64T)                                \
+  V(Int64Sub, Word64T, Word64T, Word64T)                                \
+  V(Int64SubWithOverflow, PAIR_TYPE(Int64T, BoolT), Int64T, Int64T)     \
+  V(Int64Mul, Word64T, Word64T, Word64T)                                \
+  V(Int64MulHigh, Int64T, Int64T, Int64T)                               \
+  V(Uint64MulHigh, Uint64T, Uint64T, Uint64T)                           \
+  V(Int64Div, Int64T, Int64T, Int64T)                                   \
+  V(Int64Mod, Int64T, Int64T, Int64T)                                   \
+  V(WordSarShiftOutZeros, WordT, WordT, IntegralT)                      \
+  V(Word32Or, Word32T, Word32T, Word32T)                                \
+  V(Word32And, Word32T, Word32T, Word32T)                               \
+  V(Word32Xor, Word32T, Word32T, Word32T)                               \
+  V(Word32Ror, Word32T, Word32T, Word32T)                               \
+  V(Word32Shl, Word32T, Word32T, Word32T)                               \
+  V(Word32Shr, Word32T, Word32T, Word32T)                               \
+  V(Word32Sar, Word32T, Word32T, Word32T)                               \
+  V(Word32SarShiftOutZeros, Word32T, Word32T, Word32T)                  \
+  V(Word64And, Word64T, Word64T, Word64T)                               \
+  V(Word64Or, Word64T, Word64T, Word64T)                                \
+  V(Word64Xor, Word64T, Word64T, Word64T)                               \
+  V(Word64Shl, Word64T, Word64T, Word64T)                               \
+  V(Word64Shr, Word64T, Word64T, Word64T)                               \
+  V(Word64Sar, Word64T, Word64T, Word64T)
+#else // !__CHERI_PURE_CAPABILITY__
 #define CODE_ASSEMBLER_BINARY_OP_LIST(V)                                \
   CODE_ASSEMBLER_COMPARE_BINARY_OP_LIST(V)                              \
   V(Float64Add, Float64T, Float64T, Float64T)                           \
@@ -294,15 +365,79 @@ class CodeAssemblerParameterizedLabel;
   V(Word64Shl, Word64T, Word64T, Word64T)                               \
   V(Word64Shr, Word64T, Word64T, Word64T)                               \
   V(Word64Sar, Word64T, Word64T, Word64T)
-
-#if defined(__CHERI_PURE_CAPABILITY__)
-#define CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(V) \
-  V(CapAdd, WordT, WordT, IntPtrT)               \
-  V(CapSub, WordT, WordT, IntPtrT)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif // __CHERI_PURE_CAPABILITY__
 
 TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define CODE_ASSEMBLER_BITCAST_OP_LIST(V)                     \
+  V(BitcastTaggedToWord, IntPtrT, Object)                     \
+  V(BitcastMaybeObjectToWord, IntPtrT, MaybeObject)           \
+  V(BitcastWordToTagged, Object, WordT)                       \
+  V(BitcastWordToTaggedSigned, Smi, WordT)
+
+#define CODE_ASSEMBLER_UNARY_OP_LIST(V)                        \
+  V(Float64Abs, Float64T, Float64T)                            \
+  V(Float64Acos, Float64T, Float64T)                           \
+  V(Float64Acosh, Float64T, Float64T)                          \
+  V(Float64Asin, Float64T, Float64T)                           \
+  V(Float64Asinh, Float64T, Float64T)                          \
+  V(Float64Atan, Float64T, Float64T)                           \
+  V(Float64Atanh, Float64T, Float64T)                          \
+  V(Float64Cos, Float64T, Float64T)                            \
+  V(Float64Cosh, Float64T, Float64T)                           \
+  V(Float64Exp, Float64T, Float64T)                            \
+  V(Float64Expm1, Float64T, Float64T)                          \
+  V(Float64Log, Float64T, Float64T)                            \
+  V(Float64Log1p, Float64T, Float64T)                          \
+  V(Float64Log2, Float64T, Float64T)                           \
+  V(Float64Log10, Float64T, Float64T)                          \
+  V(Float64Cbrt, Float64T, Float64T)                           \
+  V(Float64Neg, Float64T, Float64T)                            \
+  V(Float64Sin, Float64T, Float64T)                            \
+  V(Float64Sinh, Float64T, Float64T)                           \
+  V(Float64Sqrt, Float64T, Float64T)                           \
+  V(Float64Tan, Float64T, Float64T)                            \
+  V(Float64Tanh, Float64T, Float64T)                           \
+  V(Float64ExtractLowWord32, Uint32T, Float64T)                \
+  V(Float64ExtractHighWord32, Uint32T, Float64T)               \
+  V(BitcastTaggedToWordForTagAndSmiBits, IntPtrT, AnyTaggedT)  \
+  V(TruncateFloat64ToFloat32, Float32T, Float64T)              \
+  V(TruncateFloat64ToWord32, Uint32T, Float64T)                \
+  V(TruncateInt64ToInt32, Int32T, Int64T)                      \
+  V(ChangeFloat32ToFloat64, Float64T, Float32T)                \
+  V(ChangeFloat64ToUint32, Uint32T, Float64T)                  \
+  V(ChangeFloat64ToUint64, Uint64T, Float64T)                  \
+  V(ChangeInt32ToFloat64, Float64T, Int32T)                    \
+  V(ChangeInt32ToInt64, Int64T, Int32T)                        \
+  V(ChangeUint32ToFloat64, Float64T, Word32T)                  \
+  V(ChangeUint32ToUint64, Uint64T, Word32T)                    \
+  V(BitcastInt32ToFloat32, Float32T, Word32T)                  \
+  V(BitcastFloat32ToInt32, Uint32T, Float32T)                  \
+  V(RoundFloat64ToInt32, Int32T, Float64T)                     \
+  V(RoundInt32ToFloat32, Float32T, Int32T)                     \
+  V(Float64SilenceNaN, Float64T, Float64T)                     \
+  V(Float64RoundDown, Float64T, Float64T)                      \
+  V(Float64RoundUp, Float64T, Float64T)                        \
+  V(Float64RoundTiesEven, Float64T, Float64T)                  \
+  V(Float64RoundTruncate, Float64T, Float64T)                  \
+  V(Word32Clz, Int32T, Word32T)                                \
+  V(Word64Clz, Int64T, Word64T)                                \
+  V(Word32Ctz, Int32T, Word32T)                                \
+  V(Word64Ctz, Int64T, Word64T)                                \
+  V(Word32Popcnt, Int32T, Word32T)                             \
+  V(Word64Popcnt, Int64T, Word64T)                             \
+  V(Word32BitwiseNot, Word32T, Word32T)                        \
+  V(WordNot, WordT, WordT)                                     \
+  V(Word64Not, Word64T, Word64T)                               \
+  V(I8x16BitMask, Int32T, I8x16T)                              \
+  V(I8x16Splat, I8x16T, Int32T)                                \
+  V(Int32AbsWithOverflow, PAIR_TYPE(Int32T, BoolT), Int32T)    \
+  V(Int64AbsWithOverflow, PAIR_TYPE(Int64T, BoolT), Int64T)    \
+  V(IntPtrAbsWithOverflow, PAIR_TYPE(IntPtrT, BoolT), IntPtrT) \
+  V(Word32BinaryNot, BoolT, Word32T)                           \
+  V(StackPointerGreaterThan, BoolT, WordT)
+#else  // !__CHERI_PURE_CAPABILITY__
 #define CODE_ASSEMBLER_UNARY_OP_LIST(V)                        \
   V(Float64Abs, Float64T, Float64T)                            \
   V(Float64Acos, Float64T, Float64T)                           \
@@ -368,6 +503,7 @@ TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
   V(IntPtrAbsWithOverflow, PAIR_TYPE(IntPtrT, BoolT), IntPtrT) \
   V(Word32BinaryNot, BoolT, Word32T)                           \
   V(StackPointerGreaterThan, BoolT, WordT)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // A "public" interface used by components outside of compiler directory to
 // create code objects with TurboFan's backend. This class is mostly a thin
@@ -465,15 +601,6 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                            code_assembler_->StringConstant(location_)));
       }
 #endif
-#ifndef V8_COMPRESS_POINTERS
-      // XXX(ds815): This is a messy hack.
-      if constexpr (is_capability<A>::value) {
-        node_->MarkAsCapability();
-      } else if constexpr (!std::is_base_of<IntPtrT, A>::value &&
-                           !std::is_base_of<UintPtrT, A>::value) {
-        node_->MarkAsInteger();
-      }
-#endif  // !V8_COMPRESS_POINTERS
       return TNode<A>::UncheckedCast(node_);
     }
 
@@ -489,25 +616,13 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 
   template <class T>
   TNode<T> UncheckedCast(Node* value) {
-    if constexpr (is_capability<T>::value) {
-      return MarkNodeAsCapability(TNode<T>::UncheckedCast(value));
-    } else if constexpr (is_capability<T>::maybe_tagged) {
-      return TNode<T>::UncheckedCast(value);
-    } else {
-      return MarkNodeAsInteger(TNode<T>::UncheckedCast(value));
-    }
+    return TNode<T>::UncheckedCast(value);
   }
   template <class T, class U>
   TNode<T> UncheckedCast(TNode<U> value) {
     static_assert(types_have_common_values<T, U>::value,
                   "Incompatible types: this cast can never succeed.");
-    if constexpr (is_capability<T>::value) {
-      return MarkNodeAsCapability(TNode<T>::UncheckedCast(value));
-    } else if constexpr (is_capability<T>::maybe_tagged) {
-      return TNode<T>::UncheckedCast(value);
-    } else {
-      return MarkNodeAsInteger(TNode<T>::UncheckedCast(value));
-    }
+    return TNode<T>::UncheckedCast(value);
   }
 
   // ReinterpretCast<T>(v) has the power to cast even when the type of v is
@@ -605,30 +720,31 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   bool IsNullConstant(TNode<Object> node);
 
   TNode<Int32T> Signed(TNode<Word32T> x) {
-    DCHECK(!NodeIsCapability(x));
+    DCHECK(!x.IsCapability());
     return UncheckedCast<Int32T>(x);
   }
   TNode<Int64T> Signed(TNode<Word64T> x) {
-    DCHECK(!NodeIsCapability(x));
+    DCHECK(!x.IsCapability());
     return UncheckedCast<Int64T>(x);
   }
   TNode<IntPtrT> Signed(TNode<WordT> x) {
-    if (NodeIsCapability(x)) {
-      return MarkNodeAsCapability(UncheckedCast<IntPtrT>(x));
+    if (x.IsCapability()) {
+      return UncheckedCast<IntPtrT>(x).MarkAsCapability();
     }
     return UncheckedCast<IntPtrT>(x);
   }
   TNode<Uint32T> Unsigned(TNode<Word32T> x) {
-    DCHECK(!NodeIsCapability(x));
+    DCHECK(!x.IsCapability());
     return UncheckedCast<Uint32T>(x);
   }
   TNode<Uint64T> Unsigned(TNode<Word64T> x) {
-    DCHECK(!NodeIsCapability(x));
+    DCHECK(!x.IsCapability());
     return UncheckedCast<Uint64T>(x);
   }
   TNode<UintPtrT> Unsigned(TNode<WordT> x) {
-    if (NodeIsCapability(x))
-      return MarkNodeAsCapability(UncheckedCast<UintPtrT>(x));
+    if (x.IsCapability()) {
+      return UncheckedCast<UintPtrT>(x).MarkAsCapability();
+    }
     return UncheckedCast<UintPtrT>(x);
   }
 
@@ -776,30 +892,19 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<Type> Load(MachineType type, TNode<RawPtr<Type>> base) {
     DCHECK(
         IsSubtype(type.representation(), MachineRepresentationOf<Type>::value));
-    auto tnode = UncheckedCast<Type>(Load(type, static_cast<Node*>(base)));
     if constexpr (is_capability<Type>::value) {
-      DCHECK(type == MachineType::Pointer());
-      return MarkNodeAsCapability(tnode);
+      DCHECK_EQ(type.representation(), MachineType::PointerRepresentation());
     }
-    return MarkNodeAsInteger(tnode);
+    return UncheckedCast<Type>(Load(type, static_cast<Node*>(base)));
   }
   Node* Load(MachineType type, Node* base, Node* offset);
   template <class Type>
   TNode<Type> Load(Node* base) {
-    auto tnode = UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base));
-    if constexpr (is_capability<Type>::value) {
-      return MarkNodeAsCapability(tnode);
-    }
-    return MarkNodeAsInteger(tnode);
+    return UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base));
   }
   template <class Type>
   TNode<Type> Load(Node* base, TNode<WordT> offset) {
-    auto tnode =
-        UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base, offset));
-    if constexpr (is_capability<Type>::value) {
-      return MarkNodeAsCapability(tnode);
-    }
-    return MarkNodeAsInteger(tnode);
+    return UncheckedCast<Type>(Load(MachineTypeOf<Type>::value, base, offset));
   }
   template <class Type>
   TNode<Type> AtomicLoad(AtomicMemoryOrder order, TNode<RawPtrT> base,
@@ -985,127 +1090,103 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #define DECLARE_CODE_ASSEMBLER_BINARY_OP(name, ResType, Arg1Type, Arg2Type) \
   TNode<ResType> name(TNode<Arg1Type> a, TNode<Arg2Type> b);
   CODE_ASSEMBLER_BINARY_OP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+  CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
+  TNode<WordT> IntPtrAdd(TNode<WordT> a, TNode<WordT> b);
+#endif  // __CHERI_PURE_CAPABILITY__
 #undef DECLARE_CODE_ASSEMBLER_BINARY_OP
 
   TNode<UintPtrT> WordShr(TNode<UintPtrT> left, TNode<IntegralT> right) {
-    if (NodeIsCapability(left)) {
-      return MarkNodeAsCapability(
-          Unsigned(WordShr(static_cast<TNode<WordT>>(left), right)));
-    }
     return Unsigned(WordShr(static_cast<TNode<WordT>>(left), right));
   }
   TNode<IntPtrT> WordSar(TNode<IntPtrT> left, TNode<IntegralT> right) {
-    if (NodeIsCapability(left)) {
-      return MarkNodeAsCapability(
-          Signed(WordSar(static_cast<TNode<WordT>>(left), right)));
-    }
     return Signed(WordSar(static_cast<TNode<WordT>>(left), right));
   }
   TNode<IntPtrT> WordShl(TNode<IntPtrT> left, TNode<IntegralT> right) {
-    if (NodeIsCapability(left)) {
-      return MarkNodeAsCapability(
-          Signed(WordShl(static_cast<TNode<WordT>>(left), right)));
-    }
     return Signed(WordShl(static_cast<TNode<WordT>>(left), right));
   }
   TNode<UintPtrT> WordShl(TNode<UintPtrT> left, TNode<IntegralT> right) {
-    if (NodeIsCapability(left)) {
-      return MarkNodeAsCapability(
-          Unsigned(WordShl(static_cast<TNode<WordT>>(left), right)));
-    }
     return Unsigned(WordShl(static_cast<TNode<WordT>>(left), right));
   }
 
   TNode<Int32T> Word32Shl(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word32Shl(static_cast<TNode<Word32T>>(left), right));
   }
   TNode<Uint32T> Word32Shl(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word32Shl(static_cast<TNode<Word32T>>(left), right));
   }
   TNode<Uint32T> Word32Shr(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word32Shr(static_cast<TNode<Word32T>>(left), right));
   }
   TNode<Int32T> Word32Sar(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word32Sar(static_cast<TNode<Word32T>>(left), right));
   }
 
   TNode<Int64T> Word64Shl(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word64Shl(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64Shl(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word64Shl(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64Shr(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word64Shr(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Int64T> Word64Sar(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word64Sar(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Word64And(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word64And(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64And(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word64And(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Word64Xor(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word64Xor(static_cast<TNode<Word64T>>(left), right));
   }
   TNode<Uint64T> Word64Xor(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word64Xor(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Word64Not(TNode<Int64T> value) {
-    DCHECK(!NodeIsCapability(value));
+    DCHECK(!value.IsCapability());
     return Signed(Word64Not(static_cast<TNode<Word64T>>(value)));
   }
   TNode<Uint64T> Word64Not(TNode<Uint64T> value) {
-    DCHECK(!NodeIsCapability(value));
+    DCHECK(!value.IsCapability());
     return Unsigned(Word64Not(static_cast<TNode<Word64T>>(value)));
   }
 
   TNode<IntPtrT> WordAnd(TNode<IntPtrT> left, TNode<IntPtrT> right) {
-    auto tnode = Signed(WordAnd(static_cast<TNode<WordT>>(left),
-                                static_cast<TNode<WordT>>(right)));
-    // XXX(ds815): What about provenance from the right node?
-    if (NodeIsCapability(left)) {
-      return MarkNodeAsCapability(tnode);
-    }
-    return tnode;
+    return Signed(WordAnd(static_cast<TNode<WordT>>(left),
+                          static_cast<TNode<WordT>>(right)));
   }
   TNode<UintPtrT> WordAnd(TNode<UintPtrT> left, TNode<UintPtrT> right) {
-    auto tnode = Unsigned(WordAnd(static_cast<TNode<WordT>>(left),
-                                  static_cast<TNode<WordT>>(right)));
-    // XXX(ds815): What about provenance from the right node?
-    if (NodeIsCapability(left)) {
-      return MarkNodeAsCapability(tnode);
-    }
-    return tnode;
+    return Unsigned(WordAnd(static_cast<TNode<WordT>>(left),
+                            static_cast<TNode<WordT>>(right)));
   }
 
   TNode<Int32T> Word32And(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word32And(static_cast<TNode<Word32T>>(left),
                             static_cast<TNode<Word32T>>(right)));
   }
   TNode<Uint32T> Word32And(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word32And(static_cast<TNode<Word32T>>(left),
                               static_cast<TNode<Word32T>>(right)));
   }
@@ -1116,12 +1197,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   }
 
   TNode<Int32T> Word32Or(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Word32Or(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
   TNode<Uint32T> Word32Or(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Word32Or(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
@@ -1141,83 +1222,83 @@ class V8_EXPORT_PRIVATE CodeAssembler {
     return Signed(WordNot(static_cast<TNode<WordT>>(a)));
   }
   TNode<Int32T> Word32BitwiseNot(TNode<Int32T> a) {
-    DCHECK(!NodeIsCapability(a));
+    DCHECK(!a.IsCapability());
     return Signed(Word32BitwiseNot(static_cast<TNode<Word32T>>(a)));
   }
   TNode<BoolT> Word32Or(TNode<BoolT> left, TNode<BoolT> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return UncheckedCast<BoolT>(Word32Or(static_cast<TNode<Word32T>>(left),
                                          static_cast<TNode<Word32T>>(right)));
   }
   TNode<BoolT> Word32And(TNode<BoolT> left, TNode<BoolT> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return UncheckedCast<BoolT>(Word32And(static_cast<TNode<Word32T>>(left),
                                           static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int32T> Int32Add(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Int32Add(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Uint32T> Uint32Add(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Int32Add(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Uint32T> Uint32Sub(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Int32Sub(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int32T> Int32Sub(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Int32Sub(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int32T> Int32Mul(TNode<Int32T> left, TNode<Int32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Int32Mul(static_cast<TNode<Word32T>>(left),
                            static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Uint32T> Uint32Mul(TNode<Uint32T> left, TNode<Uint32T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Int32Mul(static_cast<TNode<Word32T>>(left),
                              static_cast<TNode<Word32T>>(right)));
   }
 
   TNode<Int64T> Int64Add(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Int64Add(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Uint64T> Uint64Add(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Int64Add(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Int64Sub(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Int64Sub(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Uint64T> Uint64Sub(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Int64Sub(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Int64T> Int64Mul(TNode<Int64T> left, TNode<Int64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Signed(Int64Mul(static_cast<TNode<Word64T>>(left), right));
   }
 
   TNode<Uint64T> Uint64Mul(TNode<Uint64T> left, TNode<Uint64T> right) {
-    DCHECK(!NodeIsCapability(left));
+    DCHECK(!left.IsCapability());
     return Unsigned(Int64Mul(static_cast<TNode<Word64T>>(left), right));
   }
 
@@ -1242,12 +1323,15 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                               static_cast<TNode<WordT>>(right)));
   }
   TNode<RawPtrT> RawPtrAdd(TNode<RawPtrT> left, TNode<IntPtrT> right) {
+    DCHECK(left.IsCapability());
     return ReinterpretCast<RawPtrT>(IntPtrAdd(left, right));
   }
   TNode<RawPtrT> RawPtrSub(TNode<RawPtrT> left, TNode<IntPtrT> right) {
+    DCHECK(left.IsCapability());
     return ReinterpretCast<RawPtrT>(IntPtrSub(left, right));
   }
   TNode<IntPtrT> RawPtrSub(TNode<RawPtrT> left, TNode<RawPtrT> right) {
+    DCHECK(left.IsCapability());
     return Signed(IntPtrSub(static_cast<TNode<WordT>>(left),
                             static_cast<TNode<WordT>>(right)));
   }
@@ -1256,17 +1340,9 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<WordT> WordShr(TNode<WordT> value, int shift);
   TNode<WordT> WordSar(TNode<WordT> value, int shift);
   TNode<IntPtrT> WordShr(TNode<IntPtrT> value, int shift) {
-    if (NodeIsCapability(value)) {
-      return MarkNodeAsCapability(
-          UncheckedCast<IntPtrT>(WordShr(TNode<WordT>(value), shift)));
-    }
     return UncheckedCast<IntPtrT>(WordShr(TNode<WordT>(value), shift));
   }
   TNode<IntPtrT> WordSar(TNode<IntPtrT> value, int shift) {
-    if (NodeIsCapability(value)) {
-      return MarkNodeAsCapability(
-          UncheckedCast<IntPtrT>(WordSar(TNode<WordT>(value), shift)));
-    }
     return UncheckedCast<IntPtrT>(WordSar(TNode<WordT>(value), shift));
   }
   TNode<Word32T> Word32Shr(TNode<Word32T> value, int shift);
@@ -1274,15 +1350,19 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 
   // Convenience overloads.
   TNode<Int32T> Int32Sub(TNode<Int32T> left, int right) {
+    DCHECK(!left.IsCapability());
     return Int32Sub(left, Int32Constant(right));
   }
   TNode<Word32T> Word32And(TNode<Word32T> left, int right) {
+    DCHECK(!left.IsCapability());
     return Word32And(left, Int32Constant(right));
   }
   TNode<Int32T> Word32Shl(TNode<Int32T> left, int right) {
+    DCHECK(!left.IsCapability());
     return Word32Shl(left, Int32Constant(right));
   }
   TNode<BoolT> Word32Equal(TNode<Word32T> left, int right) {
+    DCHECK(!left.IsCapability());
     return Word32Equal(left, Int32Constant(right));
   }
 
@@ -1290,6 +1370,9 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #define DECLARE_CODE_ASSEMBLER_UNARY_OP(name, ResType, ArgType) \
   TNode<ResType> name(TNode<ArgType> a);
   CODE_ASSEMBLER_UNARY_OP_LIST(DECLARE_CODE_ASSEMBLER_UNARY_OP)
+#ifdef __CHERI_PURE_CAPABILITY__
+  CODE_ASSEMBLER_BITCAST_OP_LIST(DECLARE_CODE_ASSEMBLER_UNARY_OP)
+#endif  // __CHERI_PURE_CAPABILITY__
 #undef DECLARE_CODE_ASSEMBLER_UNARY_OP
 
   template <class Dummy = void>
@@ -1298,57 +1381,16 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                   "Should use BitcastTaggedToWordForTagAndSmiBits instead.");
   }
 
-  // Capability operations.
-  TNode<WordT> UncheckedCastCapabilityToAddress(Node* node);
-  TNode<WordT> UncheckedCastAddressToCapability(Node* node);
-  static bool NodeIsCapability(Node* node) { return node->IsCapability(); }
-
-  template <class T>
-  static const TNode<T> MarkNodeAsCapability(TNode<T> node) {
-    Node* n = node;
-    n->MarkAsCapability();
-    DCHECK(NodeIsCapability(node));
-    return node;
-  }
-
-  template <class T>
-  static const TNode<T> MarkNodeAsInteger(TNode<T> node) {
-    Node* n = node;
-    n->MarkAsInteger();
-    DCHECK(!NodeIsCapability(node));
-    return node;
-  }
-
-  template <class T>
-  static const TVariable<T>& MarkVariableAsCapability(
-      const TVariable<T>& variable) {
-    if (variable.IsBound()) MarkNodeAsCapability(variable.value());
-    return variable;
-  }
-
-  template <class T>
-  static const TVariable<T>& MarkVariableAsInteger(
-      const TVariable<T>& variable) {
-    if (variable.IsBound()) MarkNodeAsInteger(variable.value());
-    return variable;
-  }
-
-  template <class T>
-  static bool VariableIsCapability(const TVariable<T>& variable) {
-    if (variable.IsBound()) return NodeIsCapability(variable.value());
-    return false;
-  }
-
   template <class A, class P>
   TNode<A> BitcastCapabilityToAddress(TNode<P> node) {
     static_assert(is_capability<P>::maybe_tagged);
-    return UncheckedCast<A>(UncheckedCastCapabilityToAddress(node));
+    return ReinterpretCast<A>(node.MarkAsInteger());
   }
 
   template <class P, class A>
   TNode<P> BitcastAddressToCapability(TNode<A> node) {
     static_assert(is_capability<P>::maybe_tagged);
-    return UncheckedCast<P>(UncheckedCastAddressToCapability(node));
+    return ReinterpretCast<P>(node.MarkAsCapability());
   }
 
   // Changes a double to an inptr_t for pointer arithmetic outside of Smi range.
@@ -1693,53 +1735,79 @@ class TypedCodeAssemblerVariable : public CodeAssemblerVariable {
   TypedCodeAssemblerVariable(TNode<T> initial_value, CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, PhiMachineRepresentationOf<T>,
                               initial_value) {
-    if constexpr (is_capability<T>::value) {
-      CodeAssembler::MarkVariableAsCapability(*this);
-    } else if constexpr (is_capability<T>::maybe_tagged) {
-      static_assert(std::is_same<T, IntPtrT>::value ||
-                    std::is_same<T, UintPtrT>::value);
+    if (initial_value.IsCapability()) {
+      MarkAsCapability();
     } else {
-      static_assert(
-          !IsMachineRepresentationOf<T>(MachineType::PointerRepresentation()));
-      CodeAssembler::MarkVariableAsInteger(*this);
+      MarkAsInteger();
     }
   }
   explicit TypedCodeAssemblerVariable(CodeAssembler* assembler)
-      : CodeAssemblerVariable(assembler, PhiMachineRepresentationOf<T>) {}
+      : CodeAssemblerVariable(assembler, PhiMachineRepresentationOf<T>) {
+    if constexpr (is_capability<T>::value) {
+      MarkAsCapability();
+    }
+  }
 #if DEBUG
   TypedCodeAssemblerVariable(AssemblerDebugInfo debug_info,
                              CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, debug_info,
-                              PhiMachineRepresentationOf<T>) {}
+                              PhiMachineRepresentationOf<T>) {
+    if constexpr (is_capability<T>::value) {
+      MarkAsCapability();
+    }
+  }
 
   TypedCodeAssemblerVariable(AssemblerDebugInfo debug_info,
                              TNode<T> initial_value, CodeAssembler* assembler)
       : CodeAssemblerVariable(assembler, debug_info,
                               PhiMachineRepresentationOf<T>, initial_value) {
-    if constexpr (is_capability<T>::value) {
-      CodeAssembler::MarkVariableAsCapability(*this);
-    } else if constexpr (is_capability<T>::maybe_tagged) {
-      static_assert(std::is_same<T, IntPtrT>::value ||
-                    std::is_same<T, UintPtrT>::value);
+    if (initial_value.IsCapability()) {
+      MarkAsCapability();
     } else {
-      static_assert(
-          !IsMachineRepresentationOf<T>(MachineType::PointerRepresentation()));
-      CodeAssembler::MarkVariableAsInteger(*this);
+      MarkAsInteger();
     }
   }
 #endif  // DEBUG
-
   TNode<T> value() const {
-    return TNode<T>::UncheckedCast(CodeAssemblerVariable::value());
+    // Keep the capability/integer markings consistent.
+    if constexpr (is_capability<T>::maybe_tagged) {
+      if (IsCapability()) {
+        return TNode<T>::UncheckedCast(CodeAssemblerVariable::value())
+            .MarkAsCapability();
+      }
+    }
+    return TNode<T>::UncheckedCast(CodeAssemblerVariable::value())
+        .MarkAsInteger();
   }
 
-  void operator=(TNode<T> value) { Bind(value); }
+  void operator=(TNode<T> value) {
+    Bind(value);
+    if (value.IsCapability()) {
+      MarkAsCapability();
+    } else {
+      MarkAsInteger();
+    }
+  }
   void operator=(const TypedCodeAssemblerVariable<T>& variable) {
     Bind(variable.value());
+    is_capability_ = variable.is_capability_;
   }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+  void MarkAsCapability() { is_capability_ = true; }
+  void MarkAsInteger() { is_capability_ = false; }
+  bool IsCapability() const { return is_capability_; }
+#else   // !__CHERI_PURE_CAPABILITY__
+  void MarkAsCapability() {}
+  void MarkAsInteger() {}
+  bool IsCapability() const { return false; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
  private:
   using CodeAssemblerVariable::Bind;
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool is_capability_ = false;
+#endif // __CHERI_PURE_CAPABILITY__
 };
 
 class V8_EXPORT_PRIVATE CodeAssemblerLabel {

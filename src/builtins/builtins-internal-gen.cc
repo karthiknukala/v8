@@ -276,8 +276,9 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
   void WriteBarrier(SaveFPRegsMode fp_mode) {
     Label marking_is_on(this), marking_is_off(this), next(this);
 
-    auto slot = MarkNodeAsCapability(
-        UncheckedParameter<IntPtrT>(WriteBarrierDescriptor::kSlotAddress));
+    auto slot =
+        UncheckedParameter<IntPtrT>(WriteBarrierDescriptor::kSlotAddress)
+            .MarkAsCapability();
     Branch(IsMarking(), &marking_is_on, &marking_is_off);
 
     BIND(&marking_is_off);

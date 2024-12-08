@@ -81,9 +81,6 @@ Node* GraphTest::HeapConstant(const Handle<HeapObject>& value) {
   Node* node = graph()->NewNode(common()->HeapConstant(value));
   Type type = Type::Constant(broker(), value, zone());
   NodeProperties::SetType(node, type);
-#ifdef __CHERI_PURE_CAPABILITY__
-  if (__builtin_cheri_tag_get(value.address())) node->MarkAsCapability();
-#endif  // __CHERI_PURE_CAPABILITY__
   return node;
 }
 

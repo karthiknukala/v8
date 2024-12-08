@@ -675,7 +675,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<Smi> SmiShr(TNode<Smi> a, int shift) {
     TNode<Smi> result;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    // FIXME(cheri): This is kind of ugly.
+    if (true) {
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     if (kTaggedSize == kInt64Size) {
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       result = BitcastWordToTaggedSigned(
           WordAnd(WordShr(BitcastTaggedToWordForTagAndSmiBits(a), shift),
                   BitcastTaggedToWordForTagAndSmiBits(SmiConstant(-1))));
@@ -701,7 +706,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     // The number of shift bits is |shift % 64| for 64-bits value and |shift %
     // 32| for 32-bits value. The DCHECK is to ensure valid inputs.
     DCHECK_LT(shift, 32);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    // FIXME(cheri): This is kind of ugly.
+    if (true) {
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     if (kTaggedSize == kInt64Size) {
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       return BitcastWordToTaggedSigned(
           WordAnd(WordSar(BitcastTaggedToWordForTagAndSmiBits(a), shift),
                   BitcastTaggedToWordForTagAndSmiBits(SmiConstant(-1))));

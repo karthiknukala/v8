@@ -1523,7 +1523,7 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
   }
 
   BIND(&out);
-  return UncheckedCast<HeapObject>(MarkNodeAsCapability(result.value()));
+  return UncheckedCast<HeapObject>(result.value());
 }
 
 TNode<HeapObject> CodeStubAssembler::AllocateRawUnaligned(
@@ -2511,10 +2511,6 @@ TNode<TValue> CodeStubAssembler::LoadArrayElement(TNode<Array> array,
   CSA_DCHECK(this, IsOffsetInBounds(offset, LoadArrayLength(array),
                                     array_header_size));
   constexpr MachineType machine_type = MachineTypeOf<TValue>::value;
-  if constexpr (is_capability<TValue>::value) {
-    return MarkNodeAsCapability(
-        UncheckedCast<TValue>(LoadFromObject(machine_type, array, offset)));
-  }
   return UncheckedCast<TValue>(LoadFromObject(machine_type, array, offset));
 }
 
@@ -3310,6 +3306,9 @@ void CodeStubAssembler::StoreObjectField(TNode<HeapObject> object,
   if (TryToInt32Constant(offset, &const_offset)) {
     StoreObjectField(object, const_offset, value);
   } else {
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
     Store(object, IntPtrSub(offset, IntPtrConstant(kHeapObjectTag)), value);
   }
 }
@@ -3334,6 +3333,9 @@ void CodeStubAssembler::StoreSharedObjectField(TNode<HeapObject> object,
   if (TryToInt32Constant(offset, &const_offset)) {
     StoreObjectField(object, const_offset, value);
   } else {
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
     Store(object, IntPtrSub(offset, IntPtrConstant(kHeapObjectTag)), value);
   }
 }
@@ -3417,6 +3419,9 @@ void CodeStubAssembler::StoreFixedArrayOrPropertyArrayElement(
   } else if (barrier_mode == UPDATE_EPHEMERON_KEY_WRITE_BARRIER) {
     StoreEphemeronKey(object, offset, value);
   } else {
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
     Store(object, offset, value);
   }
 }
@@ -3484,6 +3489,9 @@ void CodeStubAssembler::StoreFeedbackVectorSlot(
     UnsafeStoreNoWriteBarrier(MachineRepresentation::kTagged, feedback_vector,
                               offset, value);
   } else {
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
     Store(feedback_vector, offset, value);
   }
 }
@@ -5576,6 +5584,9 @@ void CodeStubAssembler::CopyPropertyArrayValues(TNode<HeapObject> from_array,
         }
 
         if (needs_write_barrier) {
+#ifndef V8_COMPRESS_POINTERS
+          DCHECK(value.IsCapability());
+#endif  // !V8_COMPRESS_POINTERS
           Store(to_array, offset, value);
         } else {
           StoreNoWriteBarrier(MachineRepresentation::kTagged, to_array, offset,
@@ -8497,17 +8508,6 @@ void CodeStubAssembler::DecrementCounter(StatsCounter* counter, int delta) {
 
 template <typename TIndex>
 void CodeStubAssembler::Increment(TVariable<TIndex>* variable, int value) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  if constexpr (std::is_base_of<IntPtrT, TIndex>::value ||
-                std::is_base_of<UintPtrT, TIndex>::value) {
-    if (NodeIsCapability(variable->value())) {
-      *variable =
-          IntPtrOrSmiAdd(variable->value(), IntPtrOrSmiConstant<TIndex>(value));
-      MarkNodeAsCapability(variable->value());
-      return;
-    }
-  }
-#endif  // __CHERI_PURE_CAPABILITY__
   *variable =
       IntPtrOrSmiAdd(variable->value(), IntPtrOrSmiConstant<TIndex>(value));
 }

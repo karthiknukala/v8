@@ -92,10 +92,7 @@ struct ScheduleBuilder {
                    {});
   }
   Node* IntPtrAdd(Node* a, Node* b) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    if (a->IsCapability()) return AddNode(machine.CapAdd(), {a, b});
-    if (b->IsCapability()) return AddNode(machine.CapAdd(), {b, a});
-#endif  // __CHERI_PURE_CAPABILITY__
+    // XXX(cheri): This doesn't currently matter, but it might in the future.
     return AddNode(machine.Is64() ? machine.Int64Add() : machine.Int32Add(),
                    {a, b});
   }

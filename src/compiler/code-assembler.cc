@@ -243,7 +243,13 @@ TNode<Int64T> CodeAssembler::Int64Constant(int64_t value) {
 }
 
 TNode<IntPtrT> CodeAssembler::IntPtrConstant(intptr_t value) {
-  return UncheckedCast<IntPtrT>(jsgraph()->IntPtrConstant(value));
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (__builtin_cheri_tag_get(value))
+    return UncheckedCast<IntPtrT>(jsgraph()->Capability64Constant(value))
+        .MarkAsCapability();
+#endif  // __CHERI_PURE_CAPABILITY__
+  return UncheckedCast<IntPtrT>(jsgraph()->IntPtrConstant(value))
+      .MarkAsInteger();
 }
 
 TNode<TaggedIndex> CodeAssembler::TaggedIndexConstant(intptr_t value) {
@@ -554,15 +560,53 @@ TNode<RawPtrT> CodeAssembler::LoadParentFramePointer() {
   return UncheckedCast<RawPtrT>(raw_assembler()->LoadParentFramePointer());
 }
 
+// Mark as integer in order to ensure that anything that takes a
+// WordT/IntPtrT/UintPtrT gets marked as an integer, as these operations are
+// guaranteed to not output capabilities.
 #define DEFINE_CODE_ASSEMBLER_BINARY_OP(name, ResType, Arg1Type, Arg2Type)   \
   TNode<ResType> CodeAssembler::name(TNode<Arg1Type> a, TNode<Arg2Type> b) { \
-    return UncheckedCast<ResType>(raw_assembler()->name(a, b));              \
+    return UncheckedCast<ResType>(raw_assembler()->name(a, b))               \
+        .MarkAsInteger();                                                    \
   }
 CODE_ASSEMBLER_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
-#if defined(__CHERI_PURE_CAPABILITY__)
-CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
 #undef DEFINE_CODE_ASSEMBLER_BINARY_OP
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP(name, ResType, Arg1Type,     \
+                                                Arg2Type)                    \
+  TNode<ResType> CodeAssembler::name(TNode<Arg1Type> a, TNode<Arg2Type> b) { \
+    return UncheckedCast<ResType>(raw_assembler()->name(a, b))               \
+        .MarkAsCapability();                                                 \
+  }
+CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP)
+#undef DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP
+#endif  // __CHERI_PURE_CAPABILITY__
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DEFINE_CODE_ASSEMBLER_BINARY_OP_MAYBECAP(name, ResType, Arg1Type,    \
+                                                 Arg2Type)                   \
+  TNode<ResType> CodeAssembler::name(TNode<Arg1Type> a, TNode<Arg2Type> b) { \
+    if (a.IsCapability()) {                                                  \
+      return UncheckedCast<ResType>(raw_assembler()->name(a, b))             \
+          .MarkAsCapability();                                               \
+    }                                                                        \
+    return UncheckedCast<ResType>(raw_assembler()->name(a, b))               \
+        .MarkAsInteger();                                                    \
+  }
+CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP_MAYBECAP)
+#undef DEFINE_CODE_ASSEMBLER_BINARY_OP_MAYBECAP
+
+// Need to handle IntPtrAdd separately because of commutativity.
+TNode<WordT> CodeAssembler::IntPtrAdd(TNode<WordT> a, TNode<WordT> b) {
+  if (a.IsCapability()) {
+    return CapAdd(a, b);
+  } else if (b.IsCapability()) {
+    return CapAdd(b, a);
+  } else {
+    return UncheckedCast<WordT>(raw_assembler()->IntPtrAdd(a, b))
+        .MarkAsInteger();
+  }
+}
+#endif // __CHERI_PURE_CAPABILITY__
 
 TNode<WordT> CodeAssembler::WordShl(TNode<WordT> value, int shift) {
   return (shift != 0) ? WordShl(value, IntPtrConstant(shift)) : value;
@@ -617,16 +661,6 @@ TNode<IntPtrT> CodeAssembler::ChangeInt32ToIntPtr(TNode<Word32T> value) {
   return ReinterpretCast<IntPtrT>(value);
 }
 
-TNode<WordT> CodeAssembler::UncheckedCastCapabilityToAddress(Node* node) {
-  return UncheckedCast<WordT>(
-      raw_assembler()->BitcastCapabilityToAddress(node));
-}
-
-TNode<WordT> CodeAssembler::UncheckedCastAddressToCapability(Node* node) {
-  return UncheckedCast<WordT>(
-      raw_assembler()->BitcastAddressToCapability(node));
-}
-
 TNode<IntPtrT> CodeAssembler::ChangeFloat64ToIntPtr(TNode<Float64T> value) {
   if (raw_assembler()->machine()->Is64()) {
     return UncheckedCast<IntPtrT>(raw_assembler()->ChangeFloat64ToInt64(value));
@@ -663,34 +697,46 @@ TNode<Int32T> CodeAssembler::TruncateFloat32ToInt32(TNode<Float32T> value) {
   return UncheckedCast<Int32T>(raw_assembler()->TruncateFloat32ToInt32(
       value, TruncateKind::kSetOverflowToMin));
 }
-#define DEFINE_CODE_ASSEMBLER_UNARY_OP(name, ResType, ArgType) \
-  TNode<ResType> CodeAssembler::name(TNode<ArgType> a) {       \
-    return UncheckedCast<ResType>(raw_assembler()->name(a));   \
+// Mark as integer in order to ensure that anything that takes a
+// WordT/IntPtrT/UintPtrT gets marked as an integer, as these operations are
+// guaranteed to not output capabilities.
+#define DEFINE_CODE_ASSEMBLER_UNARY_OP(name, ResType, ArgType)               \
+  TNode<ResType> CodeAssembler::name(TNode<ArgType> a) {                     \
+    return UncheckedCast<ResType>(raw_assembler()->name(a)).MarkAsInteger(); \
   }
 CODE_ASSEMBLER_UNARY_OP_LIST(DEFINE_CODE_ASSEMBLER_UNARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_UNARY_OP
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DEFINE_CODE_ASSEMBLER_BITCAST_OP(name, ResType, ArgType)             \
+  TNode<ResType> CodeAssembler::name(TNode<ArgType> a) {                     \
+    if (a.IsCapability()) {                                                  \
+      return UncheckedCast<ResType>(raw_assembler()->name(a))                \
+          .MarkAsCapability();                                               \
+    }                                                                        \
+    return UncheckedCast<ResType>(raw_assembler()->name(a)).MarkAsInteger(); \
+  }
+CODE_ASSEMBLER_BITCAST_OP_LIST(DEFINE_CODE_ASSEMBLER_BITCAST_OP)
+#undef DEFINE_CODE_ASSEMBLER_BITCAST_OP
+#endif  // __CHERI_PURE_CAPABILITY__
+
 Node* CodeAssembler::Load(MachineType type, Node* base) {
-  if (type == MachineType::Pointer())
-    return raw_assembler()->Load(type, base)->MarkAsCapability();
   return raw_assembler()->Load(type, base);
 }
 
 Node* CodeAssembler::Load(MachineType type, Node* base, Node* offset) {
-  if (type == MachineType::Pointer())
-    return raw_assembler()->Load(type, base, offset)->MarkAsCapability();
   return raw_assembler()->Load(type, base, offset);
 }
 
 TNode<Object> CodeAssembler::LoadFullTagged(Node* base) {
-  return MarkNodeAsCapability(BitcastWordToTagged(Load<RawPtrT>(base)));
+  return BitcastWordToTagged(Load<RawPtrT>(base));
 }
 
 TNode<Object> CodeAssembler::LoadFullTagged(Node* base, TNode<IntPtrT> offset) {
   // Please use LoadFromObject(MachineType::MapInHeader(), object,
   // IntPtrConstant(-kHeapObjectTag)) instead.
   DCHECK(!raw_assembler()->IsMapOffsetConstantMinusTag(offset));
-  return MarkNodeAsCapability(BitcastWordToTagged(Load<RawPtrT>(base, offset)));
+  return BitcastWordToTagged(Load<RawPtrT>(base, offset));
 }
 
 Node* CodeAssembler::AtomicLoad(MachineType type, AtomicMemoryOrder order,
@@ -764,10 +810,14 @@ Node* CodeAssembler::UnalignedLoad(MachineType type, TNode<RawPtrT> base,
   return raw_assembler()->UnalignedLoad(type, static_cast<Node*>(base), offset);
 }
 
+// XXX(cheri): This seems to be unused and we don't really fix it for CHERI, so
+// ifdef it out for now.
+#ifndef __CHERI_PURE_CAPABILITY__
 void CodeAssembler::Store(Node* base, Node* value) {
   raw_assembler()->Store(MachineRepresentation::kTagged, base, value,
                          kFullWriteBarrier);
 }
+#endif  // !__CHERI_PURE_CAPABILITY__
 
 void CodeAssembler::StoreToObject(MachineRepresentation rep,
                                   TNode<Object> object, TNode<IntPtrT> offset,
@@ -899,14 +949,53 @@ void CodeAssembler::AtomicStoreCapability(AtomicMemoryOrder order,
                                           TNode<RawPtrT> base,
                                           TNode<WordT> offset,
                                           TNode<UintPtrT> value) {
-  DCHECK(NodeIsCapability(value));
+  DCHECK(base.IsCapability());
+  DCHECK(value.IsCapability());
   raw_assembler()->AtomicStoreCapability(
       AtomicStoreParameters(MachineType::PointerRepresentation(),
                             WriteBarrierKind::kNoWriteBarrier, order),
       base, offset, value);
 }
-#endif  // __CHERI_PURE_CAPABILITY__
 
+#define ATOMIC_FUNCTION(name)                                                 \
+  TNode<Word32T> CodeAssembler::Atomic##name(                                 \
+      MachineType type, TNode<RawPtrT> base, TNode<UintPtrT> offset,          \
+      TNode<Word32T> value) {                                                 \
+    DCHECK(base.IsCapability());                                              \
+    return UncheckedCast<Word32T>(                                            \
+        raw_assembler()->Atomic##name(type, base, offset, value));            \
+  }                                                                           \
+  template <class Type>                                                       \
+  TNode<Type> CodeAssembler::Atomic##name##64(                                \
+      TNode<RawPtrT> base, TNode<UintPtrT> offset, TNode<UintPtrT> value,     \
+      TNode<UintPtrT> value_high) {                                           \
+    DCHECK(base.IsCapability());                                              \
+    return UncheckedCast<Type>(                                               \
+        raw_assembler()->Atomic##name##64(base, offset, value, value_high));  \
+  }                                                                           \
+  template TNode<AtomicInt64> CodeAssembler::Atomic##name##64 < AtomicInt64 > \
+      (TNode<RawPtrT> base, TNode<UintPtrT> offset, TNode<UintPtrT> value,    \
+       TNode<UintPtrT> value_high);                                           \
+  template TNode<AtomicUint64> CodeAssembler::Atomic##name##64 <              \
+      AtomicUint64 > (TNode<RawPtrT> base, TNode<UintPtrT> offset,            \
+                      TNode<UintPtrT> value, TNode<UintPtrT> value_high);     \
+  template <class Type>                                                       \
+  TNode<Type> CodeAssembler::Atomic##name##Capability(                        \
+      TNode<RawPtrT> base, TNode<UintPtrT> offset, TNode<UintPtrT> value) {   \
+    static_assert(is_capability<Type>::maybe_tagged);                         \
+    DCHECK(base.IsCapability());                                              \
+    DCHECK(value.IsCapability());                                             \
+    return UncheckedCas<Type>(                                                \
+        raw_assembler()->Atomic##name##Capability(base, offset, value));      \
+  }
+ATOMIC_FUNCTION(Add)
+ATOMIC_FUNCTION(Sub)
+ATOMIC_FUNCTION(And)
+ATOMIC_FUNCTION(Or)
+ATOMIC_FUNCTION(Xor)
+ATOMIC_FUNCTION(Exchange)
+#undef ATOMIC_FUNCTION
+#else   // !__CHERI_PURE_CAPABILITY__
 #define ATOMIC_FUNCTION(name)                                                 \
   TNode<Word32T> CodeAssembler::Atomic##name(                                 \
       MachineType type, TNode<RawPtrT> base, TNode<UintPtrT> offset,          \
@@ -926,14 +1015,8 @@ void CodeAssembler::AtomicStoreCapability(AtomicMemoryOrder order,
        TNode<UintPtrT> value_high);                                           \
   template TNode<AtomicUint64> CodeAssembler::Atomic##name##64 <              \
       AtomicUint64 > (TNode<RawPtrT> base, TNode<UintPtrT> offset,            \
-                      TNode<UintPtrT> value, TNode<UintPtrT> value_high);     \
-  template <class Type>                                                       \
-  TNode<Type> CodeAssembler::Atomic##name##Capability(                        \
-      TNode<RawPtrT> base, TNode<UintPtrT> offset, TNode<UintPtrT> value) {   \
-    static_assert(is_capability<Type>::maybe_tagged);                         \
-    return UncheckedCas<Type>(                                                \
-        raw_assembler()->Atomic##name##Capability(base, offset, value));      \
-  }
+                      TNode<UintPtrT> value, TNode<UintPtrT> value_high);
+
 ATOMIC_FUNCTION(Add)
 ATOMIC_FUNCTION(Sub)
 ATOMIC_FUNCTION(And)
@@ -941,6 +1024,7 @@ ATOMIC_FUNCTION(Or)
 ATOMIC_FUNCTION(Xor)
 ATOMIC_FUNCTION(Exchange)
 #undef ATOMIC_FUNCTION
+#endif  // __CHERI_PURE_CAPABILITY__
 
 TNode<Word32T> CodeAssembler::AtomicCompareExchange(MachineType type,
                                                     TNode<RawPtrT> base,
@@ -979,7 +1063,7 @@ TNode<Type> CodeAssembler::AtomicCompareExchangeCapability(
     TNode<RawPtrT> base, TNode<WordT> offset, TNode<UintPtrT> old_value,
     TNode<UintPtrT> new_value) {
   static_assert(is_capability<Type>::maybe_tagged);
-  DCHECK(NodeIsCapability(old_value) && NodeIsCapability(new_value));
+  DCHECK(old_value.IsCapability() && new_value.IsCapability());
   return UncheckedCast<Type>(raw_assembler()->AtomicCompareExchange(
       MachineType::Pointer(), base, offset, old_value, new_value));
 }
@@ -1666,20 +1750,8 @@ void CodeAssemblerLabel::UpdateVariablesAfterBind() {
       FATAL("%s", str.str().c_str());
     }
 #endif  // DEBUG
-    MachineRepresentation rep;
-    if (i->second[0]->IsCapability() &&
-        var.first->rep_ == MachineRepresentation::kWord64) {
-#ifdef __CHERI_PURE_CAPABILITY__
-      // XXX(ds815): Need this ifdef because kCapability64 is only defined for
-      // CHERI.
-      rep = MachineRepresentation::kCapability64;
-#endif  // __CHERI_PURE_CAPABILITY__
-    } else {
-      rep = var.first->rep_;
-    }
-    Node* phi = state_->raw_assembler_->Phi(rep, static_cast<int>(merge_count_),
-                                            &(i->second[0]));
-    if (i->second[0]->IsCapability()) phi->MarkAsCapability();
+    Node* phi = state_->raw_assembler_->Phi(
+        var.first->rep_, static_cast<int>(merge_count_), &(i->second[0]));
     variable_phis_[var_impl] = phi;
   }
 
