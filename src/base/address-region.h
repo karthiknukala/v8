@@ -56,7 +56,7 @@ class AddressRegion {
     // runtime crashes.
     ptraddr_t addr = V8_CHERI_ADDR_GET(address);
     return V8_CHERI_INBOUNDS(begin(), addr) &&
-           V8_CHERI_INBOUNDS(begin(), addr + size);
+           V8_CHERI_INBOUNDS(begin(), addr + size - 1);
 #else   // !__CHERI_PURE_CAPABILITY__
     Address offset = address - begin();
     return (offset < size_) && (offset + size <= size_);
