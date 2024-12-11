@@ -1357,6 +1357,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                              std::is_same<T, MaybeObject>::value,
                          int>::type = 0>
   void StoreReference(Reference reference, TNode<T> value) {
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(reference.object.IsCapability());
+#endif  // V8_COMPRESS_POINTERS
     if (IsMapOffsetConstant(reference.offset)) {
       DCHECK((std::is_base_of<T, Map>::value));
       return StoreMap(CAST(reference.object), ReinterpretCast<Map>(value));
@@ -1378,6 +1381,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                          int>::type = 0>
   void StoreReference(Reference reference, TNode<T> value) {
     DCHECK(!IsMapOffsetConstant(reference.offset));
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(reference.object.IsCapability());
+#endif  // V8_COMPRESS_POINTERS
     TNode<IntPtrT> offset =
         IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
     StoreToObject(MachineRepresentationOf<T>::value, reference.object, offset,
@@ -1386,6 +1392,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<RawPtrT> GCUnsafeReferenceToRawPtr(TNode<Object> object,
                                            TNode<IntPtrT> offset) {
+#ifndef V8_COMPRESS_POINTERS
+    DCHECK(object.IsCapability());
+#endif  // V8_COMPRESS_POINTERS
     return ReinterpretCast<RawPtrT>(
         IntPtrAdd(BitcastTaggedToWord(object),
                   IntPtrSub(offset, IntPtrConstant(kHeapObjectTag))));

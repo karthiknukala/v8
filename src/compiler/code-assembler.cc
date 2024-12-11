@@ -761,6 +761,9 @@ template TNode<AtomicUint64> CodeAssembler::AtomicLoad64<AtomicUint64>(
 
 Node* CodeAssembler::LoadFromObject(MachineType type, TNode<Object> object,
                                     TNode<IntPtrT> offset) {
+#ifndef V8_COMPRESS_POINTERS
+  DCHECK(object.IsCapability());
+#endif  // V8_COMPRESS_POINTERS
   return raw_assembler()->LoadFromObject(type, object, offset);
 }
 

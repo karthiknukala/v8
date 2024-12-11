@@ -66,6 +66,7 @@ MemOperand BaselineAssembler::RegisterFrameOperand(
 }
 void BaselineAssembler::RegisterFrameAddress(
     interpreter::Register interpreter_register, Register rscratch) {
+  DCHECK(rscratch.IsC());
   return __ Add(rscratch, fp,
                 interpreter_register.ToOperand() * kSystemPointerSize);
 }
