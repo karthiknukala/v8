@@ -1794,10 +1794,18 @@ void StringBuiltinsAssembler::CopyStringCharacters(
   ElementsKind to_kind = to_one_byte ? UINT8_ELEMENTS : UINT16_ELEMENTS;
   static_assert(SeqOneByteString::kHeaderSize == SeqTwoByteString::kHeaderSize);
   int header_size = SeqOneByteString::kHeaderSize - kHeapObjectTag;
+#ifndef V8_COMPRESS_POINTERS
+  TNode<IntPtrT> from_offset =
+      ElementOffsetFromIndex(from_index, from_kind, header_size)
+          .MarkAsCapability();
+  TNode<IntPtrT> to_offset =
+      ElementOffsetFromIndex(to_index, to_kind, header_size).MarkAsCapability();
+#else   // V8_COMPRESS_POINTERS
   TNode<IntPtrT> from_offset =
       ElementOffsetFromIndex(from_index, from_kind, header_size);
   TNode<IntPtrT> to_offset =
       ElementOffsetFromIndex(to_index, to_kind, header_size);
+#endif  // !V8_COMPRESS_POINTERS
   TNode<IntPtrT> byte_count =
       ElementOffsetFromIndex(character_count, from_kind);
   TNode<IntPtrT> limit_offset = IntPtrAdd(from_offset, byte_count);
