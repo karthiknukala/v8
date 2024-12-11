@@ -12469,11 +12469,19 @@ TNode<TIndex> CodeStubAssembler::BuildFastLoop(
 
   auto loop_body = [&]() {
     if (advance_mode == IndexAdvanceMode::kPre) {
+#ifdef V8_COMPRESS_POINTERS
       Increment(&var_index, increment);
+#else   // !V8_COMPRESS_POINTERS
+      Increment(&var_index, increment, true);
+#endif  // V8_COMPRESS_POINTERS
     }
     body(var_index.value());
     if (advance_mode == IndexAdvanceMode::kPost) {
+#ifdef V8_COMPRESS_POINTERS
       Increment(&var_index, increment);
+#else   // !V8_COMPRESS_POINTERS
+      Increment(&var_index, increment, true);
+#endif  // V8_COMPRESS_POINTERS
     }
   };
   // The loops below are generated using the following trick:
