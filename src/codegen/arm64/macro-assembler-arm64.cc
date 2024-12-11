@@ -1125,13 +1125,16 @@ void MacroAssembler::LoadStoreMacro(const CPURegister& rt,
     Register temp = temps.AcquireSameSizeAs(addr.base());
 #endif  // !__CHERI_PURE_CAPABILITY__
     Mov(temp, addr.offset());
+    DCHECK(addr.base().IsC());
     LoadStore(rt, MemOperand(addr.base(), temp), op);
   } else if (addr.IsPostIndex() && !IsImmLSUnscaled(offset)) {
     // Post-index beyond unscaled addressing range.
     LoadStore(rt, MemOperand(addr.base()), op);
+    DCHECK(addr.base().IsC());
     Add(addr.base(), addr.base(), offset);
   } else if (addr.IsPreIndex() && !IsImmLSUnscaled(offset)) {
     // Pre-index beyond unscaled addressing range.
+    DCHECK(addr.base().IsC());
     Add(addr.base(), addr.base(), offset);
     LoadStore(rt, MemOperand(addr.base()), op);
   } else {
@@ -1146,8 +1149,15 @@ void MacroAssembler::LoadStorePairMacro(const CPURegister& rt,
                                         LoadStorePairOp op) {
   if (addr.IsRegisterOffset()) {
     UseScratchRegisterScope temps(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register base = addr.base().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register base = addr.base();
+#endif  // __CHERI_PURE_CAPABILITY__
     Register temp = temps.AcquireSameSizeAs(base);
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(temp.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     Add(temp, base, addr.regoffset());
     LoadStorePair(rt, rt2, MemOperand(temp), op);
     return;
@@ -1164,14 +1174,22 @@ void MacroAssembler::LoadStorePairMacro(const CPURegister& rt,
     // Encodable in one load/store pair instruction.
     LoadStorePair(rt, rt2, addr, op);
   } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register base = addr.base().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register base = addr.base();
+#endif  // __CHERI_PURE_CAPABILITY__
     if (addr.IsImmediateOffset()) {
       UseScratchRegisterScope temps(this);
       Register temp = temps.AcquireSameSizeAs(base);
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(temp.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
       Add(temp, base, offset);
       LoadStorePair(rt, rt2, MemOperand(temp), op);
     } else if (addr.IsPostIndex()) {
       LoadStorePair(rt, rt2, MemOperand(base), op);
+      DCHECK(base.IsC());
       Add(base, base, offset);
     } else {
       DCHECK(addr.IsPreIndex());
