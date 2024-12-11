@@ -3092,11 +3092,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void DecrementCounter(StatsCounter* counter, int delta);
 
   template <typename TIndex>
-  void Increment(TVariable<TIndex>* variable, int value = 1);
+  void Increment(TVariable<TIndex>* variable, int value = 1, bool is_cap = false);
 
   template <typename TIndex>
-  void Decrement(TVariable<TIndex>* variable, int value = 1) {
-    Increment(variable, -value);
+  void Decrement(TVariable<TIndex>* variable, int value = 1, bool is_cap = false) {
+    Increment(variable, -value, is_cap);
   }
 
   // Generates "if (false) goto label" code. Useful for marking a label as

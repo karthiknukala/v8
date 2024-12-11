@@ -8507,7 +8507,9 @@ void CodeStubAssembler::DecrementCounter(StatsCounter* counter, int delta) {
 }
 
 template <typename TIndex>
-void CodeStubAssembler::Increment(TVariable<TIndex>* variable, int value) {
+void CodeStubAssembler::Increment(TVariable<TIndex>* variable, int value,
+                                  bool is_cap) {
+  if (is_cap) variable->MarkAsCapability();
   *variable =
       IntPtrOrSmiAdd(variable->value(), IntPtrOrSmiConstant<TIndex>(value));
 }
@@ -8515,11 +8517,11 @@ void CodeStubAssembler::Increment(TVariable<TIndex>* variable, int value) {
 // Instantiate Increment for Smi and IntPtrT.
 // TODO(v8:9708): Consider renaming to [Smi|IntPtrT|RawPtrT]Increment.
 template void CodeStubAssembler::Increment<Smi>(TVariable<Smi>* variable,
-                                                int value);
+                                                int value, bool is_cap);
 template void CodeStubAssembler::Increment<IntPtrT>(
-    TVariable<IntPtrT>* variable, int value);
+    TVariable<IntPtrT>* variable, int value, bool is_cap);
 template void CodeStubAssembler::Increment<RawPtrT>(
-    TVariable<RawPtrT>* variable, int value);
+    TVariable<RawPtrT>* variable, int value, bool is_cap);
 
 void CodeStubAssembler::Use(Label* label) {
   GotoIf(Word32Equal(Int32Constant(0), Int32Constant(1)), label);
