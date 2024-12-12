@@ -163,6 +163,10 @@ void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
   int prot = GetProtectionFromMemoryPermission(access);
 #endif // __CHERI_PURE_CAPABILITY__
   int flags = GetFlagsForMemoryPermission(access, page_type);
+#ifdef __CHERI_PURE_CAPABILITY__
+  // TODO(cheri): Remove this once core dumping is more optimised.
+  if (size >= (1ull << 35)) flags |= MAP_NOCORE;
+#endif  // __CHERI_PURE_CAPABILITY__
   void* result = mmap(hint, size, prot, flags, kMmapFd, kMmapFdOffset);
   if (result == MAP_FAILED) return nullptr;
 #if ENABLE_HUGEPAGE
