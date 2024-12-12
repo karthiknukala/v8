@@ -19,7 +19,7 @@ V8_INLINE Address ReadSandboxedPointerField(Address field_address,
   SandboxedPointer_t sandboxed_pointer =
       base::ReadUnalignedValue<SandboxedPointer_t>(field_address);
 
-  Address offset = sandboxed_pointer >> kSandboxedPointerShift;
+  size_t offset = sandboxed_pointer >> kSandboxedPointerShift;
   Address pointer = cage_base.address() + offset;
   return pointer;
 #else
@@ -34,7 +34,7 @@ V8_INLINE void WriteSandboxedPointerField(Address field_address,
   // The pointer must point into the sandbox.
   CHECK(GetProcessWideSandbox()->Contains(pointer));
 
-  Address offset = pointer - cage_base.address();
+  size_t offset = pointer - cage_base.address();
   SandboxedPointer_t sandboxed_pointer = offset << kSandboxedPointerShift;
   base::WriteUnalignedValue<SandboxedPointer_t>(field_address,
                                                 sandboxed_pointer);

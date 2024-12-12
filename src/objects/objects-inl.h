@@ -793,7 +793,7 @@ HeapObject MapWord::ToForwardingAddress(HeapObject map_word_host) {
   // When external code space is enabled forwarding pointers are encoded as
   // Smi representing a diff from the source object address in kObjectAlignment
   // chunks.
-  intptr_t diff = static_cast<intptr_t>(Smi(value_).value()) * kObjectAlignment;
+  ScaledInt diff = static_cast<ScaledInt>(Smi(value_).value()) * kObjectAlignment;
   Address address = map_word_host.address() + diff;
   return HeapObject::FromAddress(address);
 #else
