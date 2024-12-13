@@ -888,11 +888,11 @@ void InstructionSelector::VisitLoad(Node* node) {
       opcode = kArm64LdrDecompressTagged;
       immediate_mode = kLoadStoreImm32;
       break;
-#else
+#else   // !V8_COMPRESS_POINTERS
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:         // Fall through.
-#endif
+#endif  // V8_COMPRESS_POINTERS
 #ifdef __CHERI_PURE_CAPABILITY__
     case MachineRepresentation::kCapability64:
       // On purecap uncompressed builds, any tagged value is going to be
