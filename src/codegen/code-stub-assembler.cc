@@ -7252,11 +7252,19 @@ void CodeStubAssembler::GotoIfLargeBigInt(TNode<BigInt> bigint,
       DecodeWord32<BigIntBase::LengthBits>(LoadBigIntBitfield(bigint));
   GotoIf(Word32Equal(length, Uint32Constant(0)), &false_label);
   GotoIfNot(Word32Equal(length, Uint32Constant(1)), true_label);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Branch(WordEqual(UintPtrConstant(0),
+                   WordAnd(LoadBigIntDigit(bigint, 0),
+                           UintPtrConstant(static_cast<uintptr_t>(
+                               1ULL << (sizeof(uint64_t) * 8 - 1))))),
+         &false_label, true_label);
+#else
   Branch(WordEqual(UintPtrConstant(0),
                    WordAnd(LoadBigIntDigit(bigint, 0),
                            UintPtrConstant(static_cast<uintptr_t>(
                                1ULL << (sizeof(uintptr_t) * 8 - 1))))),
          &false_label, true_label);
+#endif
   Bind(&false_label);
 }
 
