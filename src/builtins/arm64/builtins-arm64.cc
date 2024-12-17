@@ -3349,16 +3349,18 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
         __ SmiTag(x0);
 #if defined(__CHERI_PURE_CAPABILITY__)
         __ Push(padregc, c0, c1, cp);
+        __ Mov(c0, c3);
 #else // defined(__CHERI_PURE_CAPABILITY__)
         __ Push(padreg, x0, x1, cp);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
         __ Mov(x0, x3);
+#endif // defined(__CHERI_PURE_CAPABILITY__)
         __ Call(BUILTIN_CODE(masm->isolate(), ToObject),
                 RelocInfo::CODE_TARGET);
-        __ Mov(x3, x0);
 #if defined(__CHERI_PURE_CAPABILITY__)
+        __ Mov(c3, c0);
         __ Pop(cp, c1, c0, padregc);
 #else // defined(__CHERI_PURE_CAPABILITY__)
+        __ Mov(x3, x0);
         __ Pop(cp, x1, x0, padreg);
 #endif // defined(__CHERI_PURE_CAPABILITY__)
         __ SmiUntag(x0);
