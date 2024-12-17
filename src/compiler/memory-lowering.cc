@@ -404,8 +404,13 @@ Reduction MemoryLowering::ReduceAllocateRaw(
     __ Store(StoreRepresentation(MachineType::PointerRepresentation(),
                                  kNoWriteBarrier),
              top_address, __ IntPtrConstant(0), new_top);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Goto(&done, __ BitcastWordToTagged(
+                       __ CapAdd(top, __ IntPtrConstant(kHeapObjectTag))));
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Goto(&done, __ BitcastWordToTagged(
                        __ IntAdd(top, __ IntPtrConstant(kHeapObjectTag))));
+#endif  // __CHERI_PURE_CAPABILITY__
 
     __ Bind(&call_runtime);
     EnsureAllocateOperator();
