@@ -56,7 +56,11 @@ GCInfoTable::GCInfoTable(PageAllocator& page_allocator,
       table_(static_cast<decltype(table_)>(page_allocator_.AllocatePages(
           nullptr, MaxTableSize(), page_allocator_.AllocatePageSize(),
 #if defined(__CHERI_PURE_CAPABILITY__)
-          PageAllocator::kNoAccess,
+	  // TODO(https://github.com/CTSRD-CHERI/cheribsd/issues/1818): On
+	  // CHERI architectures set PROT_WRITE so that the mapped memory gains
+	  // permissions to write capabilities: VM_PROT_ADD_CAP is never called
+	  // on prot and max_prot in mprotect itself.
+          PageAllocator::kReadWrite,
           PageAllocator::kReadWrite))),
 #else
           PageAllocator::kNoAccess))),
