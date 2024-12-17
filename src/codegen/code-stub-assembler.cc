@@ -1362,6 +1362,9 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
                                                  AllocationFlags flags,
                                                  TNode<RawPtrT> top_address,
                                                  TNode<RawPtrT> limit_address) {
+  // TODO(cheri): Add proper bounds here. We can't be too strict yet because we
+  // don't know what we are allocating, but we can certainly bound to
+  // size_in_bytes as we currently have holes.
   Label if_out_of_memory(this, Label::kDeferred);
 
   // TODO(jgruber,jkummerow): Extract the slow paths (= probably everything
@@ -1382,6 +1385,13 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
 
   TNode<RawPtrT> top = Load<RawPtrT>(top_address);
   TNode<RawPtrT> limit = Load<RawPtrT>(limit_address);
+
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(top_address.IsCapability());
+  DCHECK(limit_address.IsCapability());
+  DCHECK(top.IsCapability());
+  DCHECK(limit.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // If there's not enough space, call the runtime.
   TVARIABLE(Object, result);
@@ -1431,11 +1441,15 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
                                         Uint32Constant(alignment_mask)), &next);
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    DCHECK(top.IsCapability());
     TNode<IntPtrT> rounded_top = IntPtrRoundUpToByteBoundary(
-        UncheckedCast<IntPtrT>(top), kSystemPointerSize);
+        UncheckedCast<IntPtrT>(top).MarkAsCapability(), kSystemPointerSize);
+    DCHECK(rounded_top.IsCapability());
     TNode<IntPtrT> padding_needed =
-        IntPtrSub(rounded_top, UncheckedCast<IntPtrT>(top));
+        IntPtrSub(rounded_top, UncheckedCast<IntPtrT>(top)).MarkAsInteger();
+    DCHECK(!padding_needed.IsCapability());
     adjusted_size = IntPtrAdd(size_in_bytes, padding_needed);
+    DCHECK(!adjusted_size.IsCapability());
 #else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     adjusted_size = IntPtrAdd(size_in_bytes, IntPtrConstant(4));
 #endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
@@ -1445,8 +1459,17 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
   }
 
   adjusted_size = AlignToAllocationAlignment(adjusted_size.value());
-  TNode<IntPtrT> new_top =
-      IntPtrAdd(UncheckedCast<IntPtrT>(top), adjusted_size.value());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(!adjusted_size.IsCapability());
+  TNode<IntPtrT> new_top = IntPtrRoundUpToByteBoundary(
+      IntPtrAdd(UncheckedCast<IntPtrT>(top).MarkAsCapability(),
+                adjusted_size.value()),
+      kSystemPointerSize);
+  DCHECK(new_top.IsCapability());
+#else   // !__CHERI_PURE_CAPABILITY__
+  TNode<IntPtrT> new_top = IntPtrAdd(
+      UncheckedCast<IntPtrT>(top).MarkAsCapability(), adjusted_size.value());
+#endif  // __CHERI_PURE_CAPABILITY__
 
   Branch(UintPtrGreaterThanOrEqual(new_top, limit), &runtime_call,
          &no_runtime_call);
@@ -1474,7 +1497,7 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
     StoreNoWriteBarrier(MachineType::PointerRepresentation(), top_address,
                         new_top);
 
-    TVARIABLE(IntPtrT, address, UncheckedCast<IntPtrT>(top));
+    TVARIABLE(IntPtrT, address, UncheckedCast<IntPtrT>(top).MarkAsCapability());
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     // Do this unconditionally on CHERI because we always need to check
@@ -1495,10 +1518,14 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
       // round up to ensure we have enough space, but then we can fit more than
       // just one map.
       TNode<IntPtrT> rounded_top = IntPtrRoundUpToByteBoundary(
-          UncheckedCast<IntPtrT>(top), kSystemPointerSize);
+          UncheckedCast<IntPtrT>(top).MarkAsCapability(), kSystemPointerSize);
+      DCHECK(rounded_top.IsCapability());
       TNode<IntPtrT> padding_needed =
-          IntPtrSub(rounded_top, UncheckedCast<IntPtrT>(top));
-      address = IntPtrAdd(UncheckedCast<IntPtrT>(top), padding_needed);
+          IntPtrSub(rounded_top, UncheckedCast<IntPtrT>(top)).MarkAsInteger();
+      DCHECK(!padding_needed.IsCapability());
+      address = IntPtrAdd(UncheckedCast<IntPtrT>(top).MarkAsCapability(),
+                          padding_needed);
+      DCHECK(address.IsCapability());
 #else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
       // Store a filler and increase the address by 4.
       StoreNoWriteBarrier(MachineRepresentation::kTagged, top,
@@ -1512,6 +1539,9 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
 
     result = BitcastWordToTagged(
         IntPtrAdd(address.value(), IntPtrConstant(kHeapObjectTag)));
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(result.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
     Goto(&out);
   }
 
