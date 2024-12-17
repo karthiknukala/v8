@@ -958,6 +958,15 @@ Node* GraphAssembler::Retain(Node* buffer) {
   return AddNode(graph()->NewNode(common()->Retain(), buffer, effect()));
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+Node* GraphAssembler::CapAdd(Node* a, Node* b) {
+  return AddNode(graph()->NewNode(machine()->CapAdd(), a, b));
+}
+Node* GraphAssembler::CapSub(Node* a, Node* b) {
+  return AddNode(graph()->NewNode(machine()->CapSub(), a, b));
+}
+#endif // __CHERI_PURE_CAPABILITY__
+
 Node* GraphAssembler::IntPtrAdd(Node* a, Node* b) {
   return AddNode(graph()->NewNode(
       machine()->Is64() ? machine()->Int64Add() : machine()->Int32Add(), a, b));
