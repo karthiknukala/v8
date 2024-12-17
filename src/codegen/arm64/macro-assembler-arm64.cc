@@ -4054,7 +4054,7 @@ void MacroAssembler::LoadMap(Register dst, Register object) {
 void MacroAssembler::CompareInstanceType(Register map, Register type_reg,
                                          InstanceType type) {
   ASM_CODE_COMMENT(this);
-  Ldrh(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  Ldrh(type_reg.W(), FieldMemOperand(map, Map::kInstanceTypeOffset));
   Cmp(type_reg.W(), type);
 }
 
