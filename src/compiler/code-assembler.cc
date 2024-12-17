@@ -803,6 +803,9 @@ TNode<Object> CodeAssembler::LoadRoot(RootIndex root_index) {
   // cases, it would boil down to loading from a fixed kRootRegister offset.
   TNode<ExternalReference> isolate_root =
       ExternalConstant(ExternalReference::isolate_root(isolate()));
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(isolate_root.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
   int offset = IsolateData::root_slot_offset(root_index);
   return UncheckedCast<Object>(
       LoadFullTagged(isolate_root, IntPtrConstant(offset)));
