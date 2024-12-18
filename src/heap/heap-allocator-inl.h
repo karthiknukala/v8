@@ -230,6 +230,10 @@ V8_WARN_UNUSED_RESULT V8_INLINE HeapObject HeapAllocator::AllocateRawWith(
                                                   alignment);
       break;
   }
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(IsAligned(result.ToAddress(), kSystemPointerSize));
+  DCHECK(IsAligned(result.ToAddress() + size, kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   if (result.To(&object)) {
     return object;
   }

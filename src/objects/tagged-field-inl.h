@@ -80,6 +80,10 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 void TaggedField<T, kFieldOffset, CompressionScheme>::store(HeapObject host,
                                                             T value) {
 #ifdef V8_ATOMIC_OBJECT_FIELD_WRITES
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(
+      IsAligned(reinterpret_cast<Address>(location(host)), kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   Relaxed_Store(host, value);
 #else
   Address ptr = value.ptr();

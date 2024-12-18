@@ -292,6 +292,7 @@ Reduction MemoryLowering::ReduceAllocateRaw(
       DCHECK_IMPLIES(V8_COMPRESS_POINTERS_8GB_BOOL,
                      IsAligned(object_size, kObjectAlignment8GbHeap));
 #ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(IsAligned(object_size, kSystemPointerSize));
       Node* top = __ CapAdd(state->top(), __ IntPtrConstant(object_size));
 #else   // !__CHERI_PURE_CAPABILITY__
       Node* top = __ IntAdd(state->top(), __ IntPtrConstant(object_size));
@@ -352,6 +353,7 @@ Reduction MemoryLowering::ReduceAllocateRaw(
 
       // Compute the new top and write it back.
 #ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(IsAligned(object_size, kSystemPointerSize));
       top = __ CapAdd(done.PhiAt(0), __ IntPtrConstant(object_size));
 #else   // !__CHERI_PURE_CAPABILITY__
       top = __ IntAdd(done.PhiAt(0), __ IntPtrConstant(object_size));
