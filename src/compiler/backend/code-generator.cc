@@ -1287,7 +1287,7 @@ void CodeGenerator::AddTranslationForOperand(Instruction* instr,
         }
         break;
       case Constant::kInt64:
-        DCHECK_EQ(8, kSystemPointerSize);
+        DCHECK_EQ(8, kSystemPointerAddrSize);
         if (type == MachineType::SignedBigInt64()) {
           literal = DeoptimizationLiteral(constant.ToInt64());
         } else if (type == MachineType::UnsignedBigInt64()) {
