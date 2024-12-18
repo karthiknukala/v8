@@ -147,22 +147,47 @@ class AllocationSite : public Struct {
   // Layout description.
   // AllocationSite has to start with TransitionInfoOrboilerPlateOffset
   // and end with WeakNext field.
-  #define ALLOCATION_SITE_FIELDS(V)                     \
-    V(kStartOffset, 0)                                  \
-    V(kTransitionInfoOrBoilerplateOffset, kTaggedSize)  \
-    V(kNestedSiteOffset, kTaggedSize)                   \
-    V(kDependentCodeOffset, kTaggedSize)                \
-    V(kCommonPointerFieldEndOffset, 0)                  \
-    V(kPretenureDataOffset, kInt32Size)                 \
-    V(kPretenureCreateCountOffset, kInt32Size)          \
-    /* Size of AllocationSite without WeakNext field */ \
-    V(kSizeWithoutWeakNext, 0)                          \
-    V(kWeakNextOffset, kTaggedSize)                     \
-    /* Size of AllocationSite with WeakNext field */    \
-    V(kSizeWithWeakNext, 0)
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#define ALLOCATION_SITE_FIELDS(V)                     \
+  V(kStartOffset, 0)                                  \
+  V(kTransitionInfoOrBoilerplateOffset, kTaggedSize)  \
+  V(kNestedSiteOffset, kTaggedSize)                   \
+  V(kDependentCodeOffset, kTaggedSize)                \
+  V(kCommonPointerFieldEndOffset, 0)                  \
+  V(kPretenureDataOffset, kInt32Size)                 \
+  V(kPretenureCreateCountOffset, kInt32Size)          \
+  /* Size of AllocationSite without WeakNext field */ \
+  V(kSizeWithoutWeakNext, 0)                          \
+  V(kCheriPaddingInternal, 8)                         \
+  V(kWeakNextOffset, kTaggedSize)                     \
+  /* Size of AllocationSite with WeakNext field */    \
+  V(kSizeWithWeakNext, 0)
+#else  // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#define ALLOCATION_SITE_FIELDS(V)                     \
+  V(kStartOffset, 0)                                  \
+  V(kTransitionInfoOrBoilerplateOffset, kTaggedSize)  \
+  V(kNestedSiteOffset, kTaggedSize)                   \
+  V(kDependentCodeOffset, kTaggedSize)                \
+  V(kCommonPointerFieldEndOffset, 0)                  \
+  V(kPretenureDataOffset, kInt32Size)                 \
+  V(kPretenureCreateCountOffset, kInt32Size)          \
+  /* Size of AllocationSite without WeakNext field */ \
+  V(kSizeWithoutWeakNext, 0)                          \
+  V(kWeakNextOffset, kTaggedSize)                     \
+  /* Size of AllocationSite with WeakNext field */    \
+  V(kSizeWithWeakNext, 0)
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   DEFINE_FIELD_OFFSET_CONSTANTS(HeapObject::kHeaderSize, ALLOCATION_SITE_FIELDS)
   #undef ALLOCATION_SITE_FIELDS
+
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  static_assert(IsAligned(kTransitionInfoOrBoilerplateOffset,
+                          kSystemPointerSize));
+  static_assert(IsAligned(kNestedSiteOffset, kSystemPointerSize));
+  static_assert(IsAligned(kDependentCodeOffset, kSystemPointerSize));
+  static_assert(IsAligned(kWeakNextOffset, kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   class BodyDescriptor;
 

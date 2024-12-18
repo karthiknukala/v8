@@ -314,12 +314,21 @@ class JSFinalizationRegistry::BodyDescriptor final : public BodyDescriptorBase {
 
 class AllocationSite::BodyDescriptor final : public BodyDescriptorBase {
  public:
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  static_assert(AllocationSite::kCommonPointerFieldEndOffset ==
+                AllocationSite::kPretenureDataOffset);
+  static_assert(AllocationSite::kPretenureDataOffset + kInt32Size ==
+                AllocationSite::kPretenureCreateCountOffset);
+  static_assert(AllocationSite::kPretenureCreateCountOffset + kInt32Size + 8 ==
+                AllocationSite::kWeakNextOffset); // CHERI Padding
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   static_assert(AllocationSite::kCommonPointerFieldEndOffset ==
                 AllocationSite::kPretenureDataOffset);
   static_assert(AllocationSite::kPretenureDataOffset + kInt32Size ==
                 AllocationSite::kPretenureCreateCountOffset);
   static_assert(AllocationSite::kPretenureCreateCountOffset + kInt32Size ==
                 AllocationSite::kWeakNextOffset);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   static bool IsValidSlot(Map map, HeapObject obj, int offset) {
     if (offset >= AllocationSite::kStartOffset &&
