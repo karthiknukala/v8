@@ -146,6 +146,9 @@ UseInfo TruncatingUseInfoFromRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
     case MachineRepresentation::kMapWord:
+#ifdef __CHERI_PURE_CAPABILITY__
+    case MachineRepresentation::kCapability64:
+#endif  // __CHERI_PURE_CAPABILITY__
       return UseInfo::AnyTagged();
     case MachineRepresentation::kFloat64:
       return UseInfo::TruncatingFloat64();
