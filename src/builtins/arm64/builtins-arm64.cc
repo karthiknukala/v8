@@ -6925,8 +6925,13 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 
   // Copy double registers to the input frame.
+#ifdef __CHERI_PURE_CAPABILITY__
+  CopyRegListToFrame(masm, c1, FrameDescription::double_registers_offset(),
+                     saved_double_registers, x2, x3, kDoubleRegistersOffset);
+#else   // !__CHERI_PURE_CAPABILITY__
   CopyRegListToFrame(masm, x1, FrameDescription::double_registers_offset(),
                      saved_double_registers, x2, x3, kDoubleRegistersOffset);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Mark the stack as not iterable for the CPU profiler which won't be able to
   // walk the stack without the return address.
@@ -7016,7 +7021,7 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
   Label outer_push_loop, outer_loop_header;
 #if defined(__CHERI_PURE_CAPABILITY__)
   __ Ldrsw(x1, MemOperand(c4, Deoptimizer::output_count_offset()));
-  __ Ldr(x0, MemOperand(c4, Deoptimizer::output_offset()));
+  __ Ldr(c0, MemOperand(c4, Deoptimizer::output_offset()));
 #else // defined(__CHERI_PURE_CAPABILITY__)
   __ Ldrsw(x1, MemOperand(x4, Deoptimizer::output_count_offset()));
   __ Ldr(x0, MemOperand(x4, Deoptimizer::output_offset()));
