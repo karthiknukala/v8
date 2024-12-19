@@ -303,7 +303,8 @@ Reduction MemoryLowering::ReduceAllocateRaw(
 
       // Compute the effective inner allocated address.
 #ifdef __CHERI_PURE_CAPABILITY__
-      value = __ CapAdd(state->top(), __ IntPtrConstant(kHeapObjectTag));
+      value = __ BitcastWordToTagged(
+          __ CapAdd(state->top(), __ IntPtrConstant(kHeapObjectTag)));
 #else   // !__CHERI_PURE_CAPABILITY__
       value = __ BitcastWordToTagged(
           __ IntAdd(state->top(), __ IntPtrConstant(kHeapObjectTag)));
@@ -364,7 +365,8 @@ Reduction MemoryLowering::ReduceAllocateRaw(
 
       // Compute the initial object address.
 #ifdef __CHERI_PURE_CAPABILITY__
-      value = __ CapAdd(done.PhiAt(0), __ IntPtrConstant(kHeapObjectTag));
+      value = __ BitcastWordToTagged(
+          __ CapAdd(done.PhiAt(0), __ IntPtrConstant(kHeapObjectTag)));
 #else   // !__CHERI_PURE_CAPABILITY__
       value = __ BitcastWordToTagged(
           __ IntAdd(done.PhiAt(0), __ IntPtrConstant(kHeapObjectTag)));
