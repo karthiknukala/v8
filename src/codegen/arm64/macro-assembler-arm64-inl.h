@@ -1545,6 +1545,16 @@ void MacroAssembler::jmp(Label* L) { B(L); }
 template <MacroAssembler::StoreLRMode lr_mode>
 void MacroAssembler::Push(const CPURegister& src0, const CPURegister& src1,
                           const CPURegister& src2, const CPURegister& src3) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  // XXX(cheri): This is quite messy, but it seems to be the "cleanest" way to
+  // resolve calls from the baseline assembler that explicitly pass padreg with
+  // no information about the other registers being passed in.
+  if (src0.is_valid() && !src0.IsC() && src0.code() == padreg.code() &&
+      src1.IsC()) {
+    Push(padregc, src1, src2, src3);
+    return;
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK(AreSameSizeAndType(src0, src1, src2, src3));
   DCHECK_IMPLIES((lr_mode == kSignLR), ((src0 == lr) || (src1 == lr) ||
                                         (src2 == lr) || (src3 == lr)));
@@ -1597,6 +1607,16 @@ void MacroAssembler::Pop(const CPURegister& dst0, const CPURegister& dst1,
   // It is not valid to pop into the same register more than once in one
   // instruction, not even into the zero register.
   DCHECK(!AreAliased(dst0, dst1, dst2, dst3));
+#ifdef __CHERI_PURE_CAPABILITY__
+  // XXX(cheri): This is quite messy, but it seems to be the "cleanest" way to
+  // resolve calls from the baseline assembler that explicitly pass padreg with
+  // no information about the other registers being passed in.
+  if (dst1.is_valid() && !dst1.IsC() && dst1.code() == padreg.code() &&
+      dst0.IsC()) {
+    Pop(dst0, padregc, dst2, dst3);
+    return;
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK(AreSameSizeAndType(dst0, dst1, dst2, dst3));
   DCHECK(dst0.is_valid());
 
