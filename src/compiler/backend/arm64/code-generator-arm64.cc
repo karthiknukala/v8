@@ -3765,7 +3765,9 @@ void CodeGenerator::AssembleConstructFrame() {
       __ CodeEntry();
       size_t unoptimized_frame_slots = osr_helper()->UnoptimizedFrameSlots();
       DCHECK(call_descriptor->IsJSFunctionCall());
+#ifndef __CHERI_PURE_CAPABILITY__
       DCHECK_EQ(unoptimized_frame_slots % 2, 1);
+#endif  // !__CHERI_PURE_CAPABILITY__
       // One unoptimized frame slot has already been claimed when the actual
       // arguments count was pushed.
       required_slots -=
