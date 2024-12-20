@@ -6175,8 +6175,13 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, Register function_address,
   // Allocate HandleScope in callee-saved registers.
   // We will need to restore the HandleScope after the call to the API function,
   // by allocating it in callee-saved registers it'll be preserved by C code.
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register prev_next_address_reg = c19;
+  Register prev_limit_reg = c20;
+#else   // !__CHERI_PURE_CAPABILITY__
   Register prev_next_address_reg = x19;
   Register prev_limit_reg = x20;
+#endif  // __CHERI_PURE_CAPABILITY__
   Register prev_level_reg = w21;
 
   // C arguments (arg_reg_1/2) are expected to be initialized outside, so this
@@ -6282,7 +6287,11 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, Register function_address,
   } else {
     DCHECK_EQ(stack_space, 0);
     // {stack_space_operand} was loaded into {stack_space_reg} above.
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ DropArguments(stack_space_reg.X());
+#else   // !__CHERI_PURE_CAPABILITY__
     __ DropArguments(stack_space_reg);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   __ Ret();
@@ -6310,10 +6319,18 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, Register function_address,
     __ Str(prev_limit_reg, limit_mem_op);
     // Save the return value in a callee-save register.
     Register saved_result = prev_limit_reg;
-    __ Mov(saved_result, x0);
+    __ Mov(saved_result, return_value);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Mov(carg_reg_1, ER::isolate_address(isolate));
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Mov(arg_reg_1, ER::isolate_address(isolate));
+#endif  // __CHERI_PURE_CAPABILITY__
     __ CallCFunction(ER::delete_handle_scope_extensions(), 1);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Mov(carg_reg_1, saved_result);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Mov(arg_reg_1, saved_result);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ B(&leave_exit_frame);
   }
 }

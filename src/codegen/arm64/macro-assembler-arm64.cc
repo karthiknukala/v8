@@ -3755,7 +3755,11 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
     // Just push a minimal "machine frame", saving the frame pointer and return
     // address, without any markers.
     Push<MacroAssembler::kSignLR>(lr, fp);
+#ifdef __CHERI_PURE_CAPABILITY__
+    Mov(cfp, csp);
+#else   // !__CHERI_PURE_CAPABILITY__
     Mov(fp, sp);
+#endif  // __CHERI_PURE_CAPABILITY__
     // sp[1] : lr
     // sp[0] : fp
   } else {
