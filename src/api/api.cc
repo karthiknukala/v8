@@ -1088,6 +1088,10 @@ void HandleScope::Initialize(Isolate* v8_isolate) {
   i_isolate_ = i_isolate;
   prev_next_ = current->next;
   prev_limit_ = current->limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
   current->level++;
 }
 
@@ -1149,6 +1153,10 @@ SealHandleScope::SealHandleScope(Isolate* v8_isolate)
   i::HandleScopeData* current = i_isolate_->handle_scope_data();
   prev_limit_ = current->limit;
   current->limit = current->next;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+  DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   prev_sealed_level_ = current->sealed_level;
   current->sealed_level = current->level;
 }
@@ -1157,6 +1165,9 @@ SealHandleScope::~SealHandleScope() {
   i::HandleScopeData* current = i_isolate_->handle_scope_data();
   DCHECK_EQ(current->next, current->limit);
   current->limit = prev_limit_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(current->level, current->sealed_level);
   current->sealed_level = prev_sealed_level_;
 }
@@ -11247,6 +11258,10 @@ void HandleScopeImplementer::FreeThreadResources() { Free(); }
 
 char* HandleScopeImplementer::ArchiveThread(char* storage) {
   HandleScopeData* current = isolate_->handle_scope_data();
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(current->next != nullptr, V8_CHERI_TAG_GET(current->next));
+  DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   handle_scope_data_ = *current;
   MemCopy(storage, this, sizeof(*this));
 
@@ -11262,6 +11277,12 @@ int HandleScopeImplementer::ArchiveSpacePerThread() {
 
 char* HandleScopeImplementer::RestoreThread(char* storage) {
   MemCopy(this, storage, sizeof(*this));
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(handle_scope_data_.next != nullptr,
+                 V8_CHERI_TAG_GET(handle_scope_data_.next));
+  DCHECK_IMPLIES(handle_scope_data_.limit != nullptr,
+                 V8_CHERI_TAG_GET(handle_scope_data_.limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   *isolate_->handle_scope_data() = handle_scope_data_;
   return storage + ArchiveSpacePerThread();
 }
@@ -11321,6 +11342,10 @@ void HandleScopeImplementer::IterateThis(RootVisitor* v) {
 void HandleScopeImplementer::Iterate(RootVisitor* v) {
   HandleScopeData* current = isolate_->handle_scope_data();
   handle_scope_data_ = *current;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(current->next != nullptr, V8_CHERI_TAG_GET(current->next));
+  DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   IterateThis(v);
 }
 

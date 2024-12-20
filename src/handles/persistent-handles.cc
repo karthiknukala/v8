@@ -150,6 +150,13 @@ PersistentHandlesScope::PersistentHandlesScope(Isolate* isolate)
   prev_next_ = data->next;
   data->next = new_next;
   data->limit = new_limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(first_block_ != nullptr, V8_CHERI_TAG_GET(first_block_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(data->next != nullptr, V8_CHERI_TAG_GET(data->next));
+  DCHECK_IMPLIES(data->limit != nullptr, V8_CHERI_TAG_GET(data->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 PersistentHandlesScope::~PersistentHandlesScope() {
@@ -163,6 +170,10 @@ std::unique_ptr<PersistentHandles> PersistentHandlesScope::Detach() {
   HandleScopeData* data = impl_->isolate()->handle_scope_data();
   data->next = prev_next_;
   data->limit = prev_limit_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(data->next != nullptr, V8_CHERI_TAG_GET(data->next));
+  DCHECK_IMPLIES(data->limit != nullptr, V8_CHERI_TAG_GET(data->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
 #ifdef DEBUG
   handles_detached_ = true;
 #endif

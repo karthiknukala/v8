@@ -3367,6 +3367,9 @@ Isolate* Isolate::Allocate() {
       std::make_unique<IsolateAllocator>();
   // Construct Isolate object in the allocated memory.
   void* isolate_ptr = isolate_allocator->isolate_memory();
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(isolate_ptr));
+#endif  // __CHERI_PURE_CAPABILITY__
   Isolate* isolate = new (isolate_ptr) Isolate(std::move(isolate_allocator));
 
 #ifdef DEBUG
@@ -3449,6 +3452,9 @@ Isolate::Isolate(std::unique_ptr<i::IsolateAllocator> isolate_allocator)
           SourceTextModule::kFirstAsyncEvaluatingOrdinal),
       cancelable_task_manager_(new CancelableTaskManager()) {
   TRACE_ISOLATE(constructor);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(isolate_allocator_.get()));
+#endif  // __CHERI_PURE_CAPABILITY__
   CheckIsolateLayout();
 
   // ThreadManager is initialized early to support locking an isolate
@@ -3456,6 +3462,12 @@ Isolate::Isolate(std::unique_ptr<i::IsolateAllocator> isolate_allocator)
   thread_manager_ = new ThreadManager(this);
 
   handle_scope_data()->Initialize();
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(handle_scope_data()->next != nullptr,
+                 V8_CHERI_TAG_GET(handle_scope_data()->next));
+  DCHECK_IMPLIES(handle_scope_data()->limit != nullptr,
+                 V8_CHERI_TAG_GET(handle_scope_data()->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define ISOLATE_INIT_EXECUTE(type, name, initial_value) \
   name##_ = (initial_value);

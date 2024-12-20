@@ -155,6 +155,10 @@ Address* HandleScope::Extend(Isolate* isolate) {
     Address* limit = &impl->blocks()->back()[kHandleBlockSize];
     if (current->limit != limit) {
       current->limit = limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK_IMPLIES(current->limit != nullptr,
+                     V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
       DCHECK_LT(limit - current->next, kHandleBlockSize);
     }
   }
@@ -168,6 +172,9 @@ Address* HandleScope::Extend(Isolate* isolate) {
     // extension as part of the current scope.
     impl->blocks()->push_back(result);
     current->limit = &result[kHandleBlockSize];
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   return result;

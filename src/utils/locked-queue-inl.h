@@ -60,6 +60,9 @@ inline bool LockedQueue<Record>::Dequeue(Record* record) {
     old_head = head_;
     Node* const next_node = head_->next.Value();
     if (next_node == nullptr) return false;
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(V8_CHERI_TAG_GET(next_node));
+#endif  // __CHERI_PURE_CAPABILITY__
     *record = std::move(next_node->value);
     head_ = next_node;
     size_t old_size = size_.fetch_sub(1);

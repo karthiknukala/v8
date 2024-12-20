@@ -442,9 +442,16 @@ internal::Address* HandleScopeImplementer::GetSpareOrNewBlock() {
 }
 
 void HandleScopeImplementer::DeleteExtensions(internal::Address* prev_limit) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_limit != nullptr, V8_CHERI_TAG_GET(prev_limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   while (!blocks_.empty()) {
     internal::Address* block_start = blocks_.back();
     internal::Address* block_limit = block_start + kHandleBlockSize;
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(block_start != nullptr, V8_CHERI_TAG_GET(block_start));
+    DCHECK_IMPLIES(block_limit != nullptr, V8_CHERI_TAG_GET(block_limit));
+#endif  // __CHERI_PURE_CAPABILITY__
 
     // SealHandleScope may make the prev_limit to point inside the block.
     // Cast possibly-unrelated pointers to plain Addres before comparing them

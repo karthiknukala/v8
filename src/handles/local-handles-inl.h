@@ -44,6 +44,10 @@ LocalHandleScope::LocalHandleScope(LocalHeap* local_heap) {
     local_heap_ = local_heap;
     prev_next_ = handles->scope_.next;
     prev_limit_ = handles->scope_.limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+    DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
     handles->scope_.level++;
   }
 }
@@ -75,6 +79,10 @@ Handle<T> LocalHandleScope::CloseAndEscape(Handle<T> handle_value) {
   // to be used or closed again).
   prev_next_ = current->next;
   prev_limit_ = current->limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
   current->level++;
   return result;
 }

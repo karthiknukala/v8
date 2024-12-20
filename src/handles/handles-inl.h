@@ -84,6 +84,10 @@ HandleScope::HandleScope(Isolate* isolate) {
   isolate_ = isolate;
   prev_next_ = data->next;
   prev_limit_ = data->limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
   data->level++;
 }
 
@@ -92,6 +96,10 @@ HandleScope::HandleScope(HandleScope&& other) V8_NOEXCEPT
       prev_next_(other.prev_next_),
       prev_limit_(other.prev_limit_) {
   other.isolate_ = nullptr;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 HandleScope::~HandleScope() {
@@ -108,6 +116,10 @@ HandleScope& HandleScope::operator=(HandleScope&& other) V8_NOEXCEPT {
   }
   prev_next_ = other.prev_next_;
   prev_limit_ = other.prev_limit_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
   other.isolate_ = nullptr;
   return *this;
 }
@@ -120,11 +132,18 @@ void HandleScope::CloseScope(Isolate* isolate, Address* prev_next,
   DCHECK_NOT_NULL(isolate);
   HandleScopeData* current = isolate->handle_scope_data();
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next != nullptr, V8_CHERI_TAG_GET(prev_next));
+  DCHECK_IMPLIES(prev_limit != nullptr, V8_CHERI_TAG_GET(prev_limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   std::swap(current->next, prev_next);
   current->level--;
   Address* limit = prev_next;
   if (V8_UNLIKELY(current->limit != prev_limit)) {
     current->limit = prev_limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
     limit = prev_limit;
     DeleteExtensions(isolate);
   }
@@ -155,6 +174,10 @@ Handle<T> HandleScope::CloseAndEscape(Handle<T> handle_value) {
   // to be used or closed again).
   prev_next_ = current->next;
   prev_limit_ = current->limit;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_next_ != nullptr, V8_CHERI_TAG_GET(prev_next_));
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+#endif  // __CHERI_PURE_CAPABILITY__
   current->level++;
   return result;
 }
@@ -188,6 +211,10 @@ inline SealHandleScope::SealHandleScope(Isolate* isolate) : isolate_(isolate) {
   // handle allocations without an explicit handle scope.
   prev_limit_ = current->limit;
   current->limit = current->next;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(prev_limit_ != nullptr, V8_CHERI_TAG_GET(prev_limit_));
+  DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   prev_sealed_level_ = current->sealed_level;
   current->sealed_level = current->level;
 }
@@ -198,6 +225,9 @@ inline SealHandleScope::~SealHandleScope() {
   HandleScopeData* current = isolate_->handle_scope_data();
   DCHECK_EQ(current->next, current->limit);
   current->limit = prev_limit_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(current->limit != nullptr, V8_CHERI_TAG_GET(current->limit));
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(current->level, current->sealed_level);
   current->sealed_level = prev_sealed_level_;
 }

@@ -106,6 +106,9 @@ IsolateAllocator::IsolateAllocator() {
 
   // Allocate Isolate in C++ heap.
   isolate_memory_ = ::operator new(sizeof(Isolate));
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(isolate_memory_));
+#endif  // __CHERI_PURE_CAPABILITY__
 
   CHECK_NOT_NULL(page_allocator_);
 }
