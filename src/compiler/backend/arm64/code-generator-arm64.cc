@@ -1481,26 +1481,25 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                FlagsConditionField::decode(opcode) == kNotEqual ||
                FlagsConditionField::decode(opcode) == kPositiveOrZero ||
                FlagsConditionField::decode(opcode) == kNegative);
-#if defined(__CHERI_PURE_CAPABILITY__)
-	if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
+#ifdef __CHERI_PURE_CAPABILITY__
+        if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
             (instr->InputAt(0)->IsCapabilityRegister())) {
-          __ Ands(i.OutputRegisterCapability(), i.InputOrZeroRegisterCapability(0),
-                  i.InputOperand2_64(1));
-	  return kSuccess;
+          __ Ands(i.OutputRegisterCapability(),
+                  i.InputOrZeroRegisterCapability(0), i.InputOperand2_64(1));
+          return kSuccess;
         }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
         __ Ands(i.OutputRegister(), i.InputOrZeroRegister64(0),
                 i.InputOperand2_64(1));
       } else {
-#if defined(__CHERI_PURE_CAPABILITY__)
-	if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
+#ifdef __CHERI_PURE_CAPABILITY__
+        if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
             (instr->InputAt(0)->IsCapabilityRegister())) {
           __ And(i.OutputRegisterCapability(),
-                 i.InputOrZeroRegisterCapability(0),
-                 i.InputOperand2_64(1));
-	  return kSuccess;
+                 i.InputOrZeroRegisterCapability(0), i.InputOperand2_64(1));
+          return kSuccess;
         }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
         __ And(i.OutputRegister(), i.InputOrZeroRegister64(0),
                i.InputOperand2_64(1));
       }
