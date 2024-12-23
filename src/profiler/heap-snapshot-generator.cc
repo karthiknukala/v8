@@ -1089,8 +1089,13 @@ class IndexedReferencesExtractor : public ObjectVisitorWithCageBases {
         generator_(generator),
         parent_obj_(parent_obj),
         parent_start_(parent_obj_.RawMaybeWeakField(0)),
+#ifdef __CHERI_PURE_CAPABILITY__
+        parent_end_(parent_obj_.RawMaybeWeakField(
+            RoundUp(parent_obj_.Size(cage_base()), kSystemPointerSize))),
+#else // __CHERI_PURE_CAPABILITY__
         parent_end_(
             parent_obj_.RawMaybeWeakField(parent_obj_.Size(cage_base()))),
+#endif // __CHERI_PURE_CAPABILITY__
         parent_(parent),
         next_index_(0) {}
   void VisitPointers(HeapObject host, ObjectSlot start,
