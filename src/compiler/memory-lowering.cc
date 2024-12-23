@@ -136,13 +136,24 @@ Node* MemoryLowering::AlignToAllocationAlignment(Node* value) {
   if (!V8_COMPRESS_POINTERS_8GB_BOOL) return value;
 
   auto already_aligned = __ MakeLabel(MachineRepresentation::kWord64);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Node* alignment_check = __ WordEqual(
+      __ WordAnd(value, __ UintPtrConstant(kSystemPointerSize - 1)),
+      __ UintPtrConstant(0));
+#else   // !__CHERI_PURE_CAPABILITY__
   Node* alignment_check = __ WordEqual(
       __ WordAnd(value, __ UintPtrConstant(kObjectAlignment8GbHeapMask)),
       __ UintPtrConstant(0));
+#endif  // __CHERI_PURE_CAPABILITY__
 
   __ GotoIf(alignment_check, &already_aligned, value);
   {
     Node* aligned_value;
+#ifdef __CHERI_PURE_CAPABILITY__
+    aligned_value = __ WordAnd(
+        __ CapAdd(value, __ IntPtrConstant(kSystemPointerSize - 1)),
+        __ UintPtrConstant(~(kSystemPointerSize - 1)));
+#else   // !__CHERI_PURE_CAPABILITY__
     if (kObjectAlignment8GbHeap == 2 * kTaggedSize) {
       aligned_value = __ IntPtrAdd(value, __ IntPtrConstant(kTaggedSize));
     } else {
@@ -150,6 +161,7 @@ Node* MemoryLowering::AlignToAllocationAlignment(Node* value) {
           __ IntPtrAdd(value, __ IntPtrConstant(kObjectAlignment8GbHeapMask)),
           __ UintPtrConstant(~kObjectAlignment8GbHeapMask));
     }
+#endif  // __CHERI_PURE_CAPABILITY__
     __ Goto(&already_aligned, aligned_value);
   }
 
