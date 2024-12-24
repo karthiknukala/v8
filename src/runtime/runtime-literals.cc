@@ -444,6 +444,9 @@ Handle<JSObject> CreateObjectLiteral(
     JSObject::MigrateSlowToFast(
         boilerplate, boilerplate->map().UnusedPropertyFields(), "FastLiteral");
   }
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(IsAligned(boilerplate.address(), kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   return boilerplate;
 }
 

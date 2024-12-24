@@ -41,16 +41,27 @@ ACCESSORS(AllocationMemento, allocation_site, Object, kAllocationSiteOffset)
 
 JSObject AllocationSite::boilerplate() const {
   DCHECK(PointsToLiteral());
-  return JSObject::cast(transition_info_or_boilerplate());
+  JSObject boilerplate = JSObject::cast(transition_info_or_boilerplate());
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(IsAligned(boilerplate.address(), kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  return boilerplate;
 }
 
 JSObject AllocationSite::boilerplate(AcquireLoadTag tag) const {
   DCHECK(PointsToLiteral());
-  return JSObject::cast(transition_info_or_boilerplate(tag));
+  JSObject boilerplate = JSObject::cast(transition_info_or_boilerplate(tag));
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(IsAligned(boilerplate.address(), kSystemPointerSize));
+#endif // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  return boilerplate;
 }
 
 void AllocationSite::set_boilerplate(JSObject value, ReleaseStoreTag tag,
                                      WriteBarrierMode mode) {
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(IsAligned(value.address(), kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   set_transition_info_or_boilerplate(value, tag, mode);
 }
 

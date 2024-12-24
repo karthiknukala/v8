@@ -536,6 +536,12 @@ TNode<HeapObject> ConstructorBuiltinsAssembler::CreateShallowObjectLiteral(
   TNode<Map> boilerplate_map = LoadMap(boilerplate);
   CSA_DCHECK(this, IsJSObjectMap(boilerplate_map));
 
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  CSA_DCHECK(this, WordIsAligned(BitcastTaggedToWord(boilerplate),
+                                 kSystemPointerSize));
+  CSA_DCHECK(this, WordIsAligned(BitcastTaggedToWord(boilerplate_map),
+                                 kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   TVARIABLE(HeapObject, var_properties);
   {
     TNode<Uint32T> bit_field_3 = LoadMapBitField3(boilerplate_map);

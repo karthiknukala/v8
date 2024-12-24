@@ -12907,6 +12907,10 @@ TNode<Oddball> CodeStubAssembler::RelationalComparison(
   // conversions.
   TVARIABLE(Object, var_left, left);
   TVARIABLE(Object, var_right, right);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(var_left.IsCapability());
+  DCHECK(var_right.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   VariableList loop_variable_list({&var_left, &var_right}, zone());
   if (var_type_feedback != nullptr) {
     // Initialize the type feedback to None. The current feedback is combined
@@ -12920,6 +12924,10 @@ TNode<Oddball> CodeStubAssembler::RelationalComparison(
   {
     left = var_left.value();
     right = var_right.value();
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    DCHECK(left.IsCapability());
+    DCHECK(right.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
     Label if_left_smi(this), if_left_not_smi(this);
     Branch(TaggedIsSmi(left), &if_left_smi, &if_left_not_smi);
