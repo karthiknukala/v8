@@ -101,6 +101,30 @@ bool Type::IsSubtypeOf(const Type* supertype) const {
   return false;
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+bool Type::InheritsRepresentationFrom(const Type* other) const {
+  DCHECK(UnionType::DynamicCast(this) == nullptr);
+  return IsSubtypeOf(other);
+}
+bool Type::IsCapability() const {
+#ifdef V8_COMPRESS_POINTERS
+  return InheritsRepresentationFrom(TypeOracle::GetRawPtrType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetExternalPointerType());
+#else   // !V8_COMPRESS_POINTERS
+  return InheritsRepresentationFrom(TypeOracle::GetRawPtrType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetIntPtrType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetUIntPtrType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetTaggedType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetJSAnyType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetExternalPointerType()) ||
+         InheritsRepresentationFrom(TypeOracle::GetHeapObjectType());
+#endif  // V8_COMPRESS_POINTERS
+}
+#else   // !__CHERI_PURE_CAPABILITY__
+bool Type::InheritsRepresentationFrom(const Type* other) const { return false; }
+bool Type::IsCapability() const { return false; }
+#endif  // __CHERI_PURE_CAPABILITY__
+
 std::string Type::GetConstexprGeneratedTypeName() const {
   const Type* constexpr_version = ConstexprVersion();
   if (constexpr_version == nullptr) {

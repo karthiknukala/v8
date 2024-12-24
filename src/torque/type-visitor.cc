@@ -125,27 +125,6 @@ void DeclareMethods(AggregateType* container_type,
   }
 }
 
-bool TypeOracle::IsCapability(const Type* field_type) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  if (field_type->IsSubtypeOf(TypeOracle::GetRawPtrType()) ||
-      field_type->IsSubtypeOf(TypeOracle::GetIntPtrType()) ||
-      field_type->IsSubtypeOf(TypeOracle::GetUIntPtrType()) ||
-      field_type->IsSubtypeOf(TypeOracle::GetTaggedType()) ||
-      field_type->IsSubtypeOf(TypeOracle::GetJSAnyType()) ||
-      field_type->IsSubtypeOf(TypeOracle::GetExternalPointerType()) ||
-      field_type->IsSubtypeOf(TypeOracle::GetHeapObjectType()))
-    return true;
-  if (field_type->IsAggregateType()) {
-    auto* aggregate_type = AggregateType::DynamicCast(field_type);
-    const std::vector<Field>& fields = aggregate_type->fields();
-    if (fields.size() == 0) return false;
-    const Field& first_field = fields[0];
-    return TypeOracle::IsCapability(first_field.name_and_type.type);
-  }
-#endif
-  return false;
-}
-
 uint8_t AlignToCapabilitySize(ResidueClass& offset) {
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
   auto offset_opt = offset.SingleValue();
@@ -242,7 +221,7 @@ const StructType* TypeVisitor::ComputeType(
       ReportError("struct field \"", field.name_and_type.name->value,
                   "\" carries constexpr type \"", *field_type, "\"");
     }
-    if (TypeOracle::IsCapability(field_type)) {
+    if (field_type->IsCapability()) {
       ResidueClass adjusted_offset = offset;
       auto needed_padding = AlignToCapabilitySize(adjusted_offset);
       auto* u8 = TypeOracle::GetUint8Type();
@@ -503,7 +482,7 @@ void TypeVisitor::VisitClassFieldsAndMethods(
     base::Optional<ClassFieldIndexInfo> array_length = field_expression.index;
     bool is_indexed =
         field_expression.index && !field_expression.index->optional;
-    if (TypeOracle::IsCapability(field_type) || is_indexed) {
+    if (field_type->IsCapability() || is_indexed) {
       ResidueClass adjusted_offset = class_offset;
       auto needed_padding = AlignToCapabilitySize(adjusted_offset);
       auto* u8 = TypeOracle::GetUint8Type();

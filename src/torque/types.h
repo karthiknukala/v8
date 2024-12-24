@@ -108,6 +108,8 @@ class V8_EXPORT_PRIVATE Type : public TypeBase {
  public:
   Type& operator=(const Type& other) = delete;
   virtual bool IsSubtypeOf(const Type* supertype) const;
+  virtual bool InheritsRepresentationFrom(const Type* supertype) const;
+  virtual bool IsCapability() const;
 
   // Default rendering for error messages etc.
   std::string ToString() const;
@@ -423,6 +425,15 @@ class V8_EXPORT_PRIVATE UnionType final : public Type {
     return true;
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool InheritsRepresentationFrom(const Type* other) const override {
+    for (const Type* member : types_) {
+      if (member->InheritsRepresentationFrom(other)) return true;
+    }
+    return false;
+  }
+#endif // __CHERI_PURE_CAPABILITY__
+
   bool IsSupertypeOf(const Type* other) const {
     for (const Type* member : types_) {
       if (other->IsSubtypeOf(member)) {
@@ -546,6 +557,14 @@ class AggregateType : public Type {
   std::string GetGeneratedTNodeTypeNameImpl() const override { UNREACHABLE(); }
 
   virtual void Finalize() const = 0;
+
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool IsCapability() const override {
+    if (parent() != nullptr) return parent()->IsCapability();
+    if (fields_.size() == 0) return false;
+    return fields_[0].name_and_type.type->IsCapability();
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   void SetFields(std::vector<Field> fields) { fields_ = std::move(fields); }
   const std::vector<Field>& fields() const {
