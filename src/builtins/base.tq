@@ -1532,6 +1532,8 @@ macro SameValue(a: (JSAny|TheHole), b: (JSAny|TheHole)): bool {
 // friendly way where index1 and index2 are in [0, kMaxSafeInteger] range.
 macro CheckIntegerIndexAdditionOverflow(
     index1: uintptr, index2: uintptr, limit: uintptr): void labels IfOverflow {
+  // FIXME(cheri): This is wrong on CHERI, we probably need to create an
+  // if constexpr (IsCheri() || Is64()) or something along those lines.
   if constexpr (Is64()) {
     dcheck(index1 <= kMaxSafeIntegerUint64);
     dcheck(index2 <= kMaxSafeIntegerUint64);
@@ -1586,6 +1588,7 @@ macro TryNumberToUintPtr(valueNumber: Number, kMode: constexpr int31):
         dcheck(valueDouble >= 0);
       }
 
+      // FIXME(cheri): if constexpr (IsCheri() || Is64())
       if constexpr (Is64()) {
         // On 64-bit architectures uintptr range is bigger than safe integer
         // range.
