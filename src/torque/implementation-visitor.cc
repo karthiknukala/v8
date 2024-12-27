@@ -4195,7 +4195,8 @@ void CppClassGenerator::GenerateClass() {
                  cpp::Function::kV8Inline);
       f.PrintInlineDefinition(hdr_, [&](std::ostream& stream) {
         stream << "    int32_t size = 0;\n";
-        for (const Field& field : type_->ComputeAllFields()) {
+        for (const Field& field : type_->fields()) {
+          DCHECK_EQ(field.aggregate, type_);
           if (ImplementationVisitor::IsInternal(field)) {
             stream << "    size += 1;\n";
           }
@@ -4217,14 +4218,17 @@ void CppClassGenerator::GenerateClass() {
                << *type_->size().SingleValue() << ");\n";
       }
       stream << "    int32_t size = kHeaderSize;\n";
-      for (const Field& field : type_->ComputeAllFields()) {
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+      for (const Field& field : type_->fields()) {
+        DCHECK_EQ(field.aggregate, type_);
         if (ImplementationVisitor::IsInternal(field)) {
           stream << "   if (" << *field.offset << " > kHeaderSize - 1)\n";
           stream << "       size += 1;\n";
-          continue;
+          stream << "   DCHECK_GE(" << *field.offset << ", P::kHeaderSize);\n";
         }
-#endif  // __CHERI_PURE_CAPABILITY__ && V8_COMPRESS_POINTERS
+      }
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+      for (const Field& field : type_->ComputeAllFields()) {
         if (field.index) {
           auto index_name_and_type =
               *ExtractSimpleFieldArraySize(*type_, field.index->expr);
