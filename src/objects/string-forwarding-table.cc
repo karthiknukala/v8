@@ -203,10 +203,13 @@ StringForwardingTable::BlockVector* StringForwardingTable::EnsureCapacity(
 }
 
 int StringForwardingTable::AddForwardString(String string, String forward_to) {
+#if !(defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS))
+  // XXX(cheri): Remove this once we can actually use ThinStrings.
   DCHECK_IMPLIES(!v8_flags.always_use_string_forwarding_table,
                  string.InSharedHeap());
   DCHECK_IMPLIES(!v8_flags.always_use_string_forwarding_table,
                  forward_to.InSharedHeap());
+#endif  // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   int index = next_free_index_++;
   uint32_t index_in_block;
   const uint32_t block_index = BlockForIndex(index, &index_in_block);

@@ -458,7 +458,17 @@ void SetInternalizedReference(Isolate* isolate, String string,
   DCHECK(!string.IsInternalizedString());
   DCHECK(internalized.IsInternalizedString());
   DCHECK(!internalized.HasInternalizedForwardingIndex(kAcquireLoad));
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  Map initial_string_map = string.map(kAcquireLoad);
+  // Due to the padding required to fit the 'actual' String in a ThinString, we
+  // can end up trying to internalize strings that are smaller sized than the
+  // expected ThinString size. In that case, go via the forwarding table instead
+  // of trying to create a ThinString.
+  if (ThinString::kSize > string.SizeFromMap(initial_string_map) ||
+      string.IsShared() || v8_flags.always_use_string_forwarding_table) {
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   if (string.IsShared() || v8_flags.always_use_string_forwarding_table) {
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     uint32_t field = string.raw_hash_field(kAcquireLoad);
     // Don't use the forwarding table for strings that have an integer index.
     // Using the hash field for the integer index is more beneficial than
