@@ -213,6 +213,10 @@ const StructType* TypeVisitor::ComputeType(
 
   ResidueClass offset = 0;
   uint64_t padding_count = 0;
+  bool trace_cheri = GlobalContext::trace_cheri();
+  if (trace_cheri) {
+    std::cout << "struct " << decl->name << " {\n";
+  }
   for (auto& field : decl->fields) {
     CurrentSourcePosition::Scope position_activator(
         field.name_and_type.type->pos);
@@ -223,9 +227,12 @@ const StructType* TypeVisitor::ComputeType(
     }
     if (field_type->IsCapability()) {
       ResidueClass adjusted_offset = offset;
-      auto needed_padding = AlignToCapabilitySize(adjusted_offset);
+      uint8_t needed_padding = AlignToCapabilitySize(adjusted_offset);
       auto* u8 = TypeOracle::GetUint8Type();
-      assert(offset.SingleValue().has_value() || needed_padding == 0);
+      DCHECK_IMPLIES(
+          needed_padding != 0,
+          offset.SingleValue().value() < adjusted_offset.SingleValue().value());
+      DCHECK(offset.SingleValue().has_value() || needed_padding == 0);
       for (auto i = 0; i < needed_padding; i++) {
         auto new_offset = offset.SingleValue().value() + i;
         struct_type->RegisterField(
@@ -241,6 +248,10 @@ const StructType* TypeVisitor::ComputeType(
              FieldSynchronization::kNone,
              FieldSynchronization::kNone});
       }
+      if (trace_cheri && needed_padding > 0) {
+        std::cout << "  cheri_padding : uint8[" << uint32_t{needed_padding}
+                  << "] @ " << offset << "\n";
+      }
       offset = adjusted_offset;
     }
     Field f{field.name_and_type.name->pos,
@@ -253,6 +264,10 @@ const StructType* TypeVisitor::ComputeType(
             FieldSynchronization::kNone,
             FieldSynchronization::kNone};
     auto optional_size = SizeOf(f.name_and_type.type);
+    if (trace_cheri) {
+      std::cout << "  " << f.name_and_type.name << " : "
+                << *f.name_and_type.type << " @ " << offset << "\n";
+    }
     struct_type->RegisterField(f);
     // Offsets are assigned based on an assumption of no space between members.
     // This might lead to invalid alignment in some cases, but most structs are
@@ -269,6 +284,9 @@ const StructType* TypeVisitor::ComputeType(
       // so, the offset of subsequent fields are marked as invalid.
       offset = ResidueClass::Unknown();
     }
+  }
+  if (trace_cheri) {
+    std::cout << "};\n";
   }
   return struct_type;
 }
@@ -462,6 +480,10 @@ void TypeVisitor::VisitClassFieldsAndMethods(
     header_size = super_class->header_size();
   }
 
+  bool trace_cheri = GlobalContext::trace_cheri();
+  if (trace_cheri) {
+    std::cout << "class " << class_declaration->name << " {\n";
+  }
   uint64_t padding_count = 0;
   for (const ClassFieldExpression& field_expression :
        class_declaration->fields) {
@@ -484,11 +506,14 @@ void TypeVisitor::VisitClassFieldsAndMethods(
         field_expression.index && !field_expression.index->optional;
     if (field_type->IsCapability() || is_indexed) {
       ResidueClass adjusted_offset = class_offset;
-      auto needed_padding = AlignToCapabilitySize(adjusted_offset);
+      uint8_t needed_padding = AlignToCapabilitySize(adjusted_offset);
       auto* u8 = TypeOracle::GetUint8Type();
-      assert(class_offset.SingleValue().has_value() || needed_padding == 0);
+      DCHECK_IMPLIES(needed_padding != 0,
+                     class_offset.SingleValue().value() <
+                         adjusted_offset.SingleValue().value());
+      DCHECK(class_offset.SingleValue().has_value() || needed_padding == 0);
       for (auto i = 0; i < needed_padding; i++) {
-        auto new_offset = class_offset.SingleValue().value() + i;
+        size_t new_offset = class_offset.SingleValue().value() + i;
         class_type->RegisterField(
             {field_expression.name_and_type.name->pos,
              class_type,
@@ -502,6 +527,10 @@ void TypeVisitor::VisitClassFieldsAndMethods(
              FieldSynchronization::kNone,
              FieldSynchronization::kNone});
       }
+      if (trace_cheri && needed_padding > 0) {
+        std::cout << "  cheri_padding : uint8[" << uint32_t{needed_padding}
+                  << "] @ " << class_offset << "\n";
+      }
       class_offset = adjusted_offset;
     }
     const Field& field = class_type->RegisterField(
@@ -514,6 +543,11 @@ void TypeVisitor::VisitClassFieldsAndMethods(
          field_expression.const_qualified,
          field_expression.read_synchronization,
          field_expression.write_synchronization});
+    if (trace_cheri) {
+      std::cout << "  " << field.name_and_type.name << " : "
+                << *field.name_and_type.type << " @ "
+                << class_offset;
+    }
     ResidueClass field_size = std::get<0>(field.GetFieldSizeInformation());
     if (field.index) {
       // Validate that a value at any index in a packed array is aligned
@@ -538,6 +572,12 @@ void TypeVisitor::VisitClassFieldsAndMethods(
     // In-object properties are not considered part of the header.
     if (class_offset.SingleValue() && !class_type->IsShape()) {
       header_size = *class_offset.SingleValue();
+      if (trace_cheri) {
+        std::cout << " :: kHeaderSize = " << header_size;
+      }
+    }
+    if (trace_cheri) {
+      std::cout << "\n";
     }
     if (!field.index && !class_offset.SingleValue()) {
       Error("Indexed fields have to be at the end of the object")
@@ -547,6 +587,9 @@ void TypeVisitor::VisitClassFieldsAndMethods(
   DCHECK_GT(header_size, 0);
   class_type->header_size_ = header_size;
   class_type->size_ = class_offset;
+  if (trace_cheri) {
+    std::cout << "};\n";
+  }
   class_type->GenerateAccessors();
   DeclareMethods(class_type, class_declaration->methods);
 }

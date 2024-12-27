@@ -59,6 +59,9 @@ void CompileCurrentAst(TorqueCompilerOptions options) {
   if (options.annotate_ir) {
     GlobalContext::SetAnnotateIR();
   }
+  if (options.trace_cheri) {
+    GlobalContext::SetTraceCheri();
+  }
   TargetArchitecture::Scope target_architecture(options.force_32bit_output);
   TypeOracle::Scope type_oracle;
   CurrentScope::Scope current_namespace(GlobalContext::GetDefaultNamespace());

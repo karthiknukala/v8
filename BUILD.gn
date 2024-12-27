@@ -393,6 +393,9 @@ declare_args() {
   # iOS (non-simulator) does not have executable pages for 3rd party
   # applications yet so disable jit.
   v8_jitless = v8_enable_lite_mode || target_is_ios_device
+
+  # A global flag to enable all CHERI debugging.
+  v8_cheri_debug = false
 }
 
 # Derived defaults.
@@ -2071,6 +2074,9 @@ template("run_torque") {
     ]
     if (v8_annotate_torque_ir) {
       args += [ "-annotate-ir" ]
+    }
+    if (v8_cheri_debug) {
+      args += [ "-trace-cheri" ]
     }
     if (defined(invoker.args)) {
       args += invoker.args

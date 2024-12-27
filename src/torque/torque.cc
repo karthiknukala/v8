@@ -43,6 +43,10 @@ int WrappedMain(int argc, const char** argv) {
       options.annotate_ir = true;
     } else if (argument == "-strip-v8-root") {
       options.strip_v8_root = true;
+#ifdef __CHERI_PURE_CAPABILITY__
+    } else if (argument == "-trace-cheri") {
+      options.trace_cheri = true;
+#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       // Strip the v8-root in case it is a prefix of the file path itself.
       // This is used when building in Google3.

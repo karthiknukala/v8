@@ -59,6 +59,8 @@ class GlobalContext : public base::ContextualClass<GlobalContext> {
   }
   static void SetAnnotateIR() { Get().annotate_ir_ = true; }
   static bool annotate_ir() { return Get().annotate_ir_; }
+  static void SetTraceCheri() { Get().trace_cheri_ = true; }
+  static bool trace_cheri() { return Get().trace_cheri_; }
   static Ast* ast() { return &Get().ast_; }
   static std::string MakeUniqueName(const std::string& base) {
     return base + "_" + std::to_string(Get().fresh_ids_[base]++);
@@ -123,6 +125,7 @@ class GlobalContext : public base::ContextualClass<GlobalContext> {
   bool collect_kythe_data_;
   bool force_assert_statements_;
   bool annotate_ir_;
+  bool trace_cheri_;
   Namespace* default_namespace_;
   Ast ast_;
   std::vector<std::unique_ptr<Declarable>> declarables_;

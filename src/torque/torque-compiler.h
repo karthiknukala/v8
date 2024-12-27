@@ -38,6 +38,10 @@ struct TorqueCompilerOptions {
 
   // Strips the v8-root in case the source path contains it as a prefix.
   bool strip_v8_root = false;
+
+  // Traces CHERI-related extensions to the Torque compiler such as alignment
+  // enforcement.
+  bool trace_cheri = false;
 };
 
 struct TorqueCompilerResult {
