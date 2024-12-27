@@ -61,4 +61,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The CHERI extensions of this project were created by Capabilities
-Limited and Domagoj Stolfa and are available under the same license.
+Limited and Domagoj Stolfa, are available under the same license and
+were created under Innovate UK project 10027332, "MOJO" and project
+10027440, "Developing and Evaluating an Open-Source Desktop for Arm
+Morello".
