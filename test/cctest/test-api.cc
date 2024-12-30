@@ -675,7 +675,14 @@ TEST(MakingExternalStringConditions) {
   }
 
   Local<String> tiny_local_string = v8_str("\xCF\x80");
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  // Due to the padding we need to place in order to accommodate for the
+  // resource pointer in ExternalString, we need a bigger string here in order
+  // to test for what we're actually trying to test for.
+  Local<String> local_string = v8_str("s12345678\xCF\x80");
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   Local<String> local_string = v8_str("s1234\xCF\x80");
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   CHECK(!tiny_local_string->IsOneByte());
   CHECK(!local_string->IsOneByte());
@@ -689,9 +696,13 @@ TEST(MakingExternalStringConditions) {
   CHECK(local_string->CanMakeExternal(String::Encoding::TWO_BYTE_ENCODING));
 
   // Tiny strings are not in-place externalizable when pointer compression is
-  // enabled, but they are if the sandbox is enabled.
+  // enabled, but they are if the sandbox is enabled. If we are compiling in
+  // purecap mode without pointer compression, we also can't externalize a tiny
+  // string due to the padding inserted in order to accommodate for the resource
+  // pointer.
   CHECK_EQ(
-      V8_ENABLE_SANDBOX_BOOL || i::kTaggedSize == i::kSystemPointerSize,
+      V8_ENABLE_SANDBOX_BOOL || (i::kTaggedSize == i::kSystemPointerSize &&
+                                 i::kSystemPointerSize == sizeof(uint64_t)),
       tiny_local_string->CanMakeExternal(String::Encoding::TWO_BYTE_ENCODING));
 
   // Change of representation is not allowed.
@@ -709,7 +720,14 @@ TEST(MakingExternalOneByteStringConditions) {
   }
 
   Local<String> tiny_local_string = v8_str("s");
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  // Due to the padding we need to place in order to accommodate for the
+  // resource pointer in ExternalString, we need a bigger string here in order
+  // to test for what we're actually trying to test for.
+  Local<String> local_string = v8_str("s12345678");
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   Local<String> local_string = v8_str("s1234");
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   CHECK(tiny_local_string->IsOneByte());
   CHECK(local_string->IsOneByte());
