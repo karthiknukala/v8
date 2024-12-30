@@ -279,8 +279,15 @@ int JSObject::GetHeaderSize(Map map) {
 
 // static
 int JSObject::GetEmbedderFieldsStartOffset(Map map) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  // Embedder fields are located after the object header, but we need to round
+  // it up to capability alignment.
+  static_assert(kEmbedderDataSlotSize == kSystemPointerSize);
+  return RoundUp(GetHeaderSize(map), kEmbedderDataSlotSize);
+#else   // !__CHERI_PURE_CAPABILITY__
   // Embedder fields are located after the object header.
   return GetHeaderSize(map);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 int JSObject::GetEmbedderFieldsStartOffset() {

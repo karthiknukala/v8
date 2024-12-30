@@ -552,19 +552,33 @@ void Map::MapVerify(Isolate* isolate) {
     int inobject_fields_start_offset = GetInObjectPropertyOffset(0);
     // Ensure that embedder fields are located exactly between header and
     // inobject properties.
-    CHECK_EQ(header_end_offset, JSObject::GetEmbedderFieldsStartOffset(*this));
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#ifdef __CHERI_PURE_CAPABILITY__
+    // On CHERI systems we have to ensure that the embedder data slots are
+    // capability-aligned.
+    static_assert(kEmbedderDataSlotSize == kSystemPointerSize);
+    CHECK_EQ(RoundUp(header_end_offset, kEmbedderDataSlotSize),
+             JSObject::GetEmbedderFieldsStartOffset(*this));
+#ifdef V8_COMPRESS_POINTERS
+    // Since we don't aggressively align on the compressed build right now, keep
+    // the original check.
+    CHECK_EQ(header_end_offset +
+                 JSObject::GetEmbedderFieldCount(*this) * kEmbedderDataSlotSize,
+
+             inobject_fields_start_offset);
+#else   // !V8_COMPRESS_POINTERS
     CHECK_EQ(
         RoundUp(header_end_offset + JSObject::GetEmbedderFieldCount(*this) *
                                         kEmbedderDataSlotSize,
                 kSystemPointerSize),
         inobject_fields_start_offset);
-#else
+#endif  // V8_COMPRESS_POINTERS
+#else   // !__CHERI_PURE_CAPABILITY__
+    CHECK_EQ(header_end_offset, JSObject::GetEmbedderFieldsStartOffset(*this));
     CHECK_EQ(header_end_offset +
                  JSObject::GetEmbedderFieldCount(*this) * kEmbedderDataSlotSize,
 
              inobject_fields_start_offset);
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
 
     if (IsJSSharedStructMap() || IsJSSharedArrayMap() || IsJSAtomicsMutex() ||
         IsJSAtomicsCondition()) {
