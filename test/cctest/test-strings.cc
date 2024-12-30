@@ -2009,7 +2009,11 @@ TEST(CheckCachedDataInternalExternalUncachedString) {
 #elif V8_TARGET_ARCH_32_BIT
   const char* raw_small = "smol";
 #else
+#ifdef __CHERI_PURE_CAPABILITY__
+  const char* raw_small = "small string";
+#else   // !__CHERI_PURE_CAPABILITY__
   const char* raw_small = "smalls";
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif  // V8_COMPRESS_POINTERS
 
   Handle<String> string =
@@ -2052,7 +2056,11 @@ TEST(CheckCachedDataInternalExternalUncachedStringTwoByte) {
 #elif V8_TARGET_ARCH_32_BIT
   const char16_t* raw_small = u"🤓";
 #else
+#ifdef __CHERI_PURE_CAPABILITY__
+  const char16_t* raw_small = u"smøl🤓";
+#else   // !__CHERI_PURE_CAPABILITY__
   const char16_t* raw_small = u"s🤓";
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif  // V8_COMPRESS_POINTERS
 
   size_t len;
