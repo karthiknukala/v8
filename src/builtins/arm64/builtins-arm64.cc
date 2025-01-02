@@ -1594,8 +1594,17 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
   }
 
   Label call_stack_guard;
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register frame_size =
+      descriptor
+          .GetRegisterParameter(
+              BaselineOutOfLinePrologueDescriptor::kStackFrameSize)
+          .X();
+  DCHECK(!frame_size.IsC());
+#else   // !__CHERI_PURE_CAPABILITY__
   Register frame_size = descriptor.GetRegisterParameter(
       BaselineOutOfLinePrologueDescriptor::kStackFrameSize);
+#endif  // __CHERI_PURE_CAPABILITY__
   {
     ASM_CODE_COMMENT_STRING(masm, "Stack/interrupt check");
     // Stack check. This folds the checks for both the interrupt stack limit
@@ -1604,16 +1613,9 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
     // limit or tighter. By ensuring we have space until that limit after
     // building the frame we can quickly precheck both at once.
     UseScratchRegisterScope temps(masm);
-
-#if defined(__CHERI_PURE_CAPABILITY__)
-    Register sp_minus_frame_size = temps.AcquireC();
-    __ Sub(sp_minus_frame_size, csp, frame_size);
-    Register interrupt_limit = temps.AcquireC();
-#else // defined(__CHERI_PURE_CAPABILITY__)
     Register sp_minus_frame_size = temps.AcquireX();
     __ Sub(sp_minus_frame_size, sp, frame_size);
     Register interrupt_limit = temps.AcquireX();
-#endif // defined(__CHERI_PURE_CAPABILITY__)
     __ LoadStackLimit(interrupt_limit, StackLimitKind::kInterruptStackLimit);
     __ Cmp(sp_minus_frame_size, interrupt_limit);
     __ B(lo, &call_stack_guard);
