@@ -520,6 +520,7 @@ void MacroAssembler::Mov(const Register& rd, const Operand& operand,
     } else {
       // Call the macro assembler for generic immediates.
       Mov(dst.X(), operand.ImmediateValue());
+      return;
     }
 #endif  // __CHERI_PURE_CAPABILITY__
     // Call the macro assembler for generic immediates.
@@ -548,7 +549,7 @@ void MacroAssembler::Mov(const Register& rd, const Operand& operand,
         (rd.Is32Bits() && (discard_mode == kDontDiscardForSameWReg))) {
 #if defined(__CHERI_PURE_CAPABILITY__)
       if (rd.IsC()) {
-	DCHECK(operand.reg().IsC());
+        DCHECK(operand.reg().IsC());
         Assembler::cpy(rd, operand.reg());
       } else {
         DCHECK(!operand.reg().IsC());
