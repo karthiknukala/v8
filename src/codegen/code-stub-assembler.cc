@@ -2619,6 +2619,9 @@ void CodeStubAssembler::FixedArrayBoundsCheck(TNode<FixedArrayBase> array,
 TNode<Object> CodeStubAssembler::LoadPropertyArrayElement(
     TNode<PropertyArray> object, TNode<IntPtrT> index) {
   int additional_offset = 0;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(object.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   return CAST(LoadArrayElement(object, PropertyArray::kHeaderSize, index,
                                additional_offset));
 }
@@ -3342,9 +3345,9 @@ void CodeStubAssembler::StoreObjectField(TNode<HeapObject> object,
   if (TryToInt32Constant(offset, &const_offset)) {
     StoreObjectField(object, const_offset, value);
   } else {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(value.IsCapability());
-#endif  // !V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     Store(object, IntPtrSub(offset, IntPtrConstant(kHeapObjectTag)), value);
   }
 }
@@ -3369,9 +3372,9 @@ void CodeStubAssembler::StoreSharedObjectField(TNode<HeapObject> object,
   if (TryToInt32Constant(offset, &const_offset)) {
     StoreObjectField(object, const_offset, value);
   } else {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(value.IsCapability());
-#endif  // !V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     Store(object, IntPtrSub(offset, IntPtrConstant(kHeapObjectTag)), value);
   }
 }
@@ -3455,9 +3458,9 @@ void CodeStubAssembler::StoreFixedArrayOrPropertyArrayElement(
   } else if (barrier_mode == UPDATE_EPHEMERON_KEY_WRITE_BARRIER) {
     StoreEphemeronKey(object, offset, value);
   } else {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(value.IsCapability());
-#endif  // !V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     Store(object, offset, value);
   }
 }
@@ -3525,9 +3528,9 @@ void CodeStubAssembler::StoreFeedbackVectorSlot(
     UnsafeStoreNoWriteBarrier(MachineRepresentation::kTagged, feedback_vector,
                               offset, value);
   } else {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(value.IsCapability());
-#endif  // !V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     Store(feedback_vector, offset, value);
   }
 }
@@ -5623,9 +5626,9 @@ void CodeStubAssembler::CopyPropertyArrayValues(TNode<HeapObject> from_array,
         }
 
         if (needs_write_barrier) {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
           DCHECK(value.IsCapability());
-#endif  // !V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
           Store(to_array, offset, value);
         } else {
           StoreNoWriteBarrier(MachineRepresentation::kTagged, to_array, offset,
@@ -10235,6 +10238,12 @@ void CodeStubAssembler::LoadPropertyFromFastObject(
     TNode<Uint32T> details, TVariable<Object>* var_value) {
   Comment("[ LoadPropertyFromFastObject");
 
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(object.IsCapability());
+  DCHECK(map.IsCapability());
+  DCHECK(descriptors.IsCapability());
+  DCHECK(var_value->IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   TNode<Uint32T> location =
       DecodeWord32<PropertyDetails::LocationField>(details);
 
@@ -10255,6 +10264,10 @@ void CodeStubAssembler::LoadPropertyFromFastObject(
     field_index =
         IntPtrAdd(field_index, LoadMapInobjectPropertiesStartInWords(map));
     TNode<IntPtrT> instance_size_in_words = LoadMapInstanceSizeInWords(map);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    DCHECK(!field_index.IsCapability());
+    DCHECK(!instance_size_in_words.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
     Label if_inobject(this), if_backing_store(this);
     TVARIABLE(Float64T, var_double_value);
@@ -10288,6 +10301,10 @@ void CodeStubAssembler::LoadPropertyFromFastObject(
       Comment("if_backing_store");
       TNode<HeapObject> properties = LoadFastProperties(CAST(object));
       field_index = Signed(IntPtrSub(field_index, instance_size_in_words));
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+      DCHECK(properties.IsCapability());
+      DCHECK(!field_index.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       TNode<Object> value =
           LoadPropertyArrayElement(CAST(properties), field_index);
 
@@ -10573,6 +10590,9 @@ void CodeStubAssembler::TryGetOwnProperty(
   BIND(&if_found_fast);
   {
     TNode<DescriptorArray> descriptors = CAST(var_meta_storage.value());
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    DCHECK(!var_entry.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     TNode<IntPtrT> name_index = var_entry.value();
 
     LoadPropertyFromFastObject(object, map, descriptors, name_index,
