@@ -1562,13 +1562,11 @@ void MacroAssembler::Push(const Register& src0, const VRegister& src1) {
   // Reserve room for src0 and push src1.
 #if defined(__CHERI_PURE_CAPABILITY__)
   str(src1, MemOperand(csp, -size, PreIndex));
-#else
-  str(src1, MemOperand(sp, -size, PreIndex));
-#endif // __CHERI_PURE_CAPABILITY__
   // Fill the gap with src0.
-#if defined(__CHERI_PURE_CAPABILITY__)
   str(src0, MemOperand(csp, src1.SizeInBytes()));
 #else
+  str(src1, MemOperand(sp, -size, PreIndex));
+  // Fill the gap with src0.
   str(src0, MemOperand(sp, src1.SizeInBytes()));
 #endif // __CHERI_PURE_CAPABILITY__
 }
