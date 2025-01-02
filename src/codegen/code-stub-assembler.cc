@@ -668,9 +668,15 @@ TNode<IntPtrT> CodeStubAssembler::PopulationCountFallback(
   // C++ code and comments from there for reference.
   // Fall back to divide-and-conquer popcount (see "Hacker's Delight" by Henry
   // S. Warren,  Jr.), chapter 5-1.
+#ifdef __CHERI_PURE_CAPABILITY__
+  constexpr uint64_t mask[] = {static_cast<uint64_t>(0x5555555555555555),
+                               static_cast<uint64_t>(0x3333333333333333),
+                               static_cast<uint64_t>(0x0f0f0f0f0f0f0f0f)};
+#else   // !__CHERI_PURE_CAPABILITY__
   constexpr uintptr_t mask[] = {static_cast<uintptr_t>(0x5555555555555555),
                                 static_cast<uintptr_t>(0x3333333333333333),
                                 static_cast<uintptr_t>(0x0f0f0f0f0f0f0f0f)};
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // TNode<UintPtrT> value = Unsigned(value_word);
   TNode<UintPtrT> lhs, rhs;
@@ -8462,10 +8468,19 @@ TNode<Uint32T> CodeStubAssembler::DecodeWord32(TNode<Word32T> word32,
 }
 
 TNode<UintPtrT> CodeStubAssembler::DecodeWord(TNode<WordT> word, uint32_t shift,
+#ifdef __CHERI_PURE_CAPABILITY__
+                                              uint64_t mask) {
+#else  // !__CHERI_PURE_CAPABILITY__
                                               uintptr_t mask) {
+#endif // __CHERI_PURE_CAPABILITY__
   DCHECK_EQ((mask >> shift) << shift, mask);
+#ifdef __CHERI_PURE_CAPABILITY__
+  if ((std::numeric_limits<uint64_t>::max() >> shift) ==
+      ((std::numeric_limits<uint64_t>::max() & mask) >> shift)) {
+#else   // !__CHERI_PURE_CAPABILITY__
   if ((std::numeric_limits<uintptr_t>::max() >> shift) ==
       ((std::numeric_limits<uintptr_t>::max() & mask) >> shift)) {
+#endif  // __CHERI_PURE_CAPABILITY__
     return Unsigned(WordShr(word, static_cast<int>(shift)));
   } else {
     return Unsigned(WordAnd(WordShr(word, static_cast<int>(shift)),
@@ -8493,7 +8508,11 @@ TNode<Word32T> CodeStubAssembler::UpdateWord32(TNode<Word32T> word,
 
 TNode<WordT> CodeStubAssembler::UpdateWord(TNode<WordT> word,
                                            TNode<UintPtrT> value,
+#ifdef __CHERI_PURE_CAPABILITY__
+                                           uint32_t shift, uint64_t mask,
+#else   // !__CHERI_PURE_CAPABILITY__
                                            uint32_t shift, uintptr_t mask,
+#endif  // __CHERI_PURE_CAPABILITY__
                                            bool starts_as_zero) {
   DCHECK_EQ((mask >> shift) << shift, mask);
   // Ensure the {value} fits fully in the mask.

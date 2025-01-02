@@ -525,8 +525,17 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   uintptr_t ConstexprUintPtrAdd(uintptr_t a, uintptr_t b) {
     return a + static_cast<ssize_t>(b);
   }
+#ifdef __CHERI_PURE_CAPABILITY__
+  intptr_t ConstexprWordNot(intptr_t a) {
+    return static_cast<intptr_t>(~static_cast<int64_t>(a));
+  }
+  uintptr_t ConstexprWordNot(uintptr_t a) {
+    return static_cast<uintptr_t>(~static_cast<uint64_t>(a));
+  }
+#else
   intptr_t ConstexprWordNot(intptr_t a) { return ~a; }
   uintptr_t ConstexprWordNot(uintptr_t a) { return ~a; }
+#endif  // __CHERI_PURE_CAPABILITY__
 #if defined(__CHERI_PURE_CAPABILITY__)
   intptr_t ConstexprWordNot(ssize_t a) { return ~a; }
   uintptr_t ConstexprWordNot(size_t a) { return ~a; }
@@ -2942,7 +2951,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                               uint32_t mask);
 
   // Decodes an unsigned (!) value from |word| to a word-size node.
+#ifdef __CHERI_PURE_CAPABILITY__
+  TNode<UintPtrT> DecodeWord(TNode<WordT> word, uint32_t shift, uint64_t mask);
+#else   // !__CHERI_PURE_CAPABILITY__
   TNode<UintPtrT> DecodeWord(TNode<WordT> word, uint32_t shift, uintptr_t mask);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Returns a node that contains the updated values of a |BitField|.
   template <typename BitField>
@@ -2986,7 +2999,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Returns a node that contains the updated {value} inside {word} starting
   // at {shift} and fitting in {mask}.
   TNode<WordT> UpdateWord(TNode<WordT> word, TNode<UintPtrT> value,
+#ifdef __CHERI_PURE_CAPABILITY__
+                          uint32_t shift, uint64_t mask,
+#else   // !__CHERI_PURE_CAPABILITY__
                           uint32_t shift, uintptr_t mask,
+#endif  // __CHERI_PURE_CAPABILITY__
                           bool starts_as_zero = false);
 
   // Returns true if any of the |T|'s bits in given |word32| are set.
