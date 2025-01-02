@@ -1064,11 +1064,11 @@ constexpr LoadLiteralOp LDR_d_lit = LoadLiteralFixed | 0x44000000;
   V(LD, R, d, 0xC4400000);    \
   V(LD, R, q, 0x04C00000)
 
-#if defined(__CHERI_PURE_CAPABILITY__)
-#define LOAD_STORE_CAP_OP_LIST(V)    \
-  V(LD, R, c, 0x00400000);           \
+#ifdef __CHERI_PURE_CAPABILITY__
+#define LOAD_STORE_CAP_OP_LIST(V) \
+  V(LD, R, c, 0x00400000);        \
   V(ST, R, c, 0x00000000)
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // Load/store unscaled offset.
 using LoadStoreUnscaledOffsetOp = uint32_t;

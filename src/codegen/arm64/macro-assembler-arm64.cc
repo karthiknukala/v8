@@ -1109,7 +1109,7 @@ void MacroAssembler::AddSubWithCarryMacro(const Register& rd,
 void MacroAssembler::LoadStoreMacro(const CPURegister& rt,
                                     const MemOperand& addr, LoadStoreOp op) {
   int64_t offset = addr.offset();
-  unsigned size = CalcLSDataSize(op);
+  unsigned size = CalcLSDataSize(op, rt.IsC());
 
   // Check if an immediate offset fits in the immediate field of the
   // appropriate instruction. If not, emit two instructions to perform

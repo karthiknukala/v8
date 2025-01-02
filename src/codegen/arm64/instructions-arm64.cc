@@ -174,11 +174,11 @@ double Instruction::ImmNEONFP64() const {
   return Imm8ToFP64(ImmNEONabcdefgh());
 }
 
-unsigned CalcLSDataSize(LoadStoreOp op) {
+unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap) {
   DCHECK_EQ(static_cast<unsigned>(LSSize_offset + LSSize_width),
             kInstrSize * 8);
 #if defined(__CHERI_PURE_CAPABILITY__)
-  if (op == STR_c || op == LDR_c) {
+  if (is_cap && (op == STR_c || op == LDR_c)) {
     return kCRegSizeLog2;
   }
 #endif // __CHERI_PURE_CAPABILITY_

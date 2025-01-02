@@ -4369,14 +4369,14 @@ int DisassemblingDecoder::SubstituteImmediateField(Instruction* instr,
         }
         case 'U': {  // ILU - Immediate Load/Store Unsigned.
 #if defined(__CHERI_PURE_CAPABILITY__)
-	  if (format[3] == 'C') { // ILUC - Immediate Load/Store Unsigned.
+          if (format[3] == 'C') {  // ILUC - Immediate Load/Store Unsigned.
             if (instr->ImmLSUnsigned() != 0) {
-              int shift = instr->SizeLS();
+              int shift = instr->SizeLS(true);
               AppendToOutput(", #%" PRId32, instr->ImmLSUnsigned() << shift);
-	    }
+            }
             return 4;
-	  }
-#endif // __CHERI_PURE_CAPABILITY
+          }
+#endif  // __CHERI_PURE_CAPABILITY
           if (instr->ImmLSUnsigned() != 0) {
             int shift = instr->SizeLS();
             AppendToOutput(", #%" PRId32, instr->ImmLSUnsigned() << shift);

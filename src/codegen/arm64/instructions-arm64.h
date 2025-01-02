@@ -50,7 +50,7 @@ extern const float16 kFP16DefaultNaN;
 }  // end of extern "C"
 #endif
 
-unsigned CalcLSDataSize(LoadStoreOp op);
+unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap = false);
 unsigned CalcLSPairDataSize(LoadStorePairOp op);
 unsigned CalcLSPairDataSize(LoadStorePairOp op, const CPURegister& rt);
 #if defined(__CHERI_PURE_CAPABILITY__)
@@ -150,8 +150,9 @@ class Instruction {
   float ImmNEONFP32() const;
   double ImmNEONFP64() const;
 
-  unsigned SizeLS() const {
-    return CalcLSDataSize(static_cast<LoadStoreOp>(Mask(LoadStoreMask)));
+  unsigned SizeLS(bool is_cap = false) const {
+    return CalcLSDataSize(static_cast<LoadStoreOp>(Mask(LoadStoreMask)),
+                          is_cap);
   }
 
   unsigned SizeLSPair() const {

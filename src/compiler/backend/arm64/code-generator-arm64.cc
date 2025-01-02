@@ -4282,13 +4282,13 @@ void CodeGenerator::SetPendingMove(MoveOperands* move) {
     }
     int64_t src_offset = src.offset();
 #if defined(__CHERI_PURE_CAPABILITY__)
-    unsigned src_size = CalcLSDataSize(LDR_c);
+    unsigned src_size = CalcLSDataSize(LDR_c, true);
 #else   // defined(__CHERI_PURE_CAPABILITY__)
     unsigned src_size = CalcLSDataSize(LDR_x);
 #endif  // defined(__CHERI_PURE_CAPABILITY__)
     int64_t dst_offset = dst.offset();
 #if defined(__CHERI_PURE_CAPABILITY__)
-    unsigned dst_size = CalcLSDataSize(STR_c);
+    unsigned dst_size = CalcLSDataSize(STR_c, true);
 #else   // defined(__CHERI_PURE_CAPABILITY__)
     unsigned dst_size = CalcLSDataSize(STR_x);
 #endif  // defined(__CHERI_PURE_CAPABILITY__)

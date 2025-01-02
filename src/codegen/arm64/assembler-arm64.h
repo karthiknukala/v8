@@ -2956,7 +2956,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline static Instr ImmHint(int imm7);
   inline static Instr ImmBarrierDomain(int imm2);
   inline static Instr ImmBarrierType(int imm2);
-  inline static unsigned CalcLSDataSize(LoadStoreOp op);
+  inline static unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap = false);
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   static bool IsImmAddSubCapability(int64_t immediate);
