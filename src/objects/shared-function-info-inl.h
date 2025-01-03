@@ -844,8 +844,13 @@ void SharedFunctionInfo::ClearPreparseData() {
   heap->NotifyObjectLayoutChange(data, no_gc, InvalidateRecordedSlots::kNo);
   static_assert(UncompiledDataWithoutPreparseData::kSize <
                 UncompiledDataWithPreparseData::kSize);
+#ifdef __CHERI_PURE_CAPABILITY__
+  static_assert(UncompiledDataWithoutPreparseData::kSize ==
+                UncompiledData::kHeaderSize + 8);
+#else   // !__CHERI_PURE_CAPABILITY__
   static_assert(UncompiledDataWithoutPreparseData::kSize ==
                 UncompiledData::kHeaderSize);
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Fill the remaining space with filler and clear slots in the trimmed area.
   heap->NotifyObjectSizeChange(data, UncompiledDataWithPreparseData::kSize,

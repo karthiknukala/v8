@@ -404,8 +404,13 @@ Handle<UncompiledDataWithoutPreparseData>
 FactoryBase<Impl>::NewUncompiledDataWithoutPreparseData(
     Handle<String> inferred_name, int32_t start_position,
     int32_t end_position) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  return TorqueGeneratedFactory<Impl>::NewUncompiledDataWithoutPreparseData(
+      inferred_name, start_position, end_position, 0, 0, AllocationType::kOld);
+#else   // !__CHERI_PURE_CAPABILITY__
   return TorqueGeneratedFactory<Impl>::NewUncompiledDataWithoutPreparseData(
       inferred_name, start_position, end_position, AllocationType::kOld);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 template <typename Impl>
@@ -423,12 +428,21 @@ Handle<UncompiledDataWithoutPreparseDataWithJob>
 FactoryBase<Impl>::NewUncompiledDataWithoutPreparseDataWithJob(
     Handle<String> inferred_name, int32_t start_position,
     int32_t end_position) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  return TorqueGeneratedFactory<
+      Impl>::NewUncompiledDataWithoutPreparseDataWithJob(inferred_name,
+                                                         start_position,
+                                                         end_position,
+                                                         kNullAddress, 0, 0,
+                                                         AllocationType::kOld);
+#else   // !__CHERI_PURE_CAPABILITY__
   return TorqueGeneratedFactory<
       Impl>::NewUncompiledDataWithoutPreparseDataWithJob(inferred_name,
                                                          start_position,
                                                          end_position,
                                                          kNullAddress,
                                                          AllocationType::kOld);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 template <typename Impl>

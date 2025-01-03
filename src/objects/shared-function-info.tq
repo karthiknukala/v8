@@ -123,6 +123,10 @@ extern class UncompiledData extends HeapObject {
 @generateUniqueMap
 @generateFactoryFunction
 extern class UncompiledDataWithoutPreparseData extends UncompiledData {
+  @if(CHERI_PURECAP) optional_padding_1: uint32;
+  @if(CHERI_PURECAP) optional_padding_2: uint32;
+  @ifnot(CHERI_PURECAP) optional_padding_1: void;
+  @ifnot(CHERI_PURECAP) optional_padding_2: void;
 }
 
 @generateBodyDescriptor
