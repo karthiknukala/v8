@@ -126,6 +126,8 @@ void BodyDescriptorBase::IterateJSObjectBodyImpl(Map map, HeapObject obj,
   static_assert(kEmbedderDataSlotSize == kTaggedSize);
 #endif
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  // XXX(cheri): Is this fine to do here without messing up other parts of the
+  // JS GC?
   IteratePointers(obj, RoundUp(start_offset, kSystemPointerSize), end_offset,
                   v);
 #else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
