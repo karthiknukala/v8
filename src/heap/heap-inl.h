@@ -361,6 +361,14 @@ Heap* Heap::FromWritableHeapObject(HeapObject obj) {
 }
 
 void Heap::CopyBlock(Address dst, Address src, int byte_size) {
+  if (!IsAligned(byte_size, kTaggedSize)) {
+    // Copy up to kTaggedSize alignment.
+    size_t to_boundary = byte_size - RoundDown(byte_size, kTaggedSize);
+    CopyBytes(reinterpret_cast<byte*>(dst),
+              reinterpret_cast<const byte*>(src),
+              static_cast<size_t>(to_boundary));
+    byte_size -= to_boundary;
+  }
   DCHECK(IsAligned(byte_size, kTaggedSize));
   CopyTagged(dst, src, static_cast<size_t>(byte_size / kTaggedSize));
 }
