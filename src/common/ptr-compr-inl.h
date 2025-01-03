@@ -101,6 +101,9 @@ Address V8HeapCompressionScheme::DecompressTagged(TOnHeapAddress on_heap_addr,
   Address cage_base = GetPtrComprCageBaseAddress(on_heap_addr);
 #endif
   Address result = cage_base + static_cast<Address>(raw_value);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(IsAligned(result, kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__
   V8_ASSUME(static_cast<uint32_t>(result) == raw_value);
   return result;
 }
