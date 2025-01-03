@@ -115,7 +115,11 @@ class V8_EXPORT_PRIVATE Frame : public ZoneObject {
     return !allocated_double_registers_->IsEmpty();
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  void AlignSavedCalleeRegisterSlots(int alignment = kSystemPointerSize) {
+#else   // __CHERI_PURE_CAPABILITY__
   void AlignSavedCalleeRegisterSlots(int alignment = kDoubleSize) {
+#endif  // __CHERI_PURE_CAPABILITY__
     DCHECK(!frame_aligned_);
 #if DEBUG
     spill_slots_finished_ = true;
