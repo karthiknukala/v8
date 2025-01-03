@@ -125,7 +125,12 @@ void BodyDescriptorBase::IterateJSObjectBodyImpl(Map map, HeapObject obj,
   // embedder field area as tagged slots.
   static_assert(kEmbedderDataSlotSize == kTaggedSize);
 #endif
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  IteratePointers(obj, RoundUp(start_offset, kSystemPointerSize), end_offset,
+                  v);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   IteratePointers(obj, start_offset, end_offset, v);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 }
 
 template <typename ObjectVisitor>
