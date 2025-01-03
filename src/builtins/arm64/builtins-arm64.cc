@@ -6859,26 +6859,28 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
       (saved_double_registers.Count() * kDRegSize);
 
   // Floating point registers are saved on the stack above core registers.
+#ifdef __CHERI_PURE_CAPABILITY__
+  const int kDoubleRegistersOffset = saved_registers.Count() * kCRegSize;
+#else // !__CHERI_PURE_CAPABILITY__
   const int kDoubleRegistersOffset = saved_registers.Count() * kXRegSize;
+#endif // __CHERI_PURE_CAPABILITY__
 
-#if defined(__CHERI_PURE_CAPABILITY__)
-  Register code_object = c2;
-  Register fp_to_sp = c3;
-#else // defined(__CHERI_PURE_CAPABILITY__)
-  Register code_object = x2;
   Register fp_to_sp = x3;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register code_object = c2;
+#else   // __CHERI_PURE_CAPABILITY__
+  Register code_object = x2;
+#endif  // __CHERI_PURE_CAPABILITY__
   // Get the address of the location in the code object. This is the return
   // address for lazy deoptimization.
   __ Mov(code_object, lr);
   // Compute the fp-to-sp delta.
-#if defined(__CHERI_PURE_CAPABILITY__)
-  __ Add(fp_to_sp, csp, kSavedRegistersAreaSize);
-  __ Sub(fp_to_sp, fp, fp_to_sp);
-#else // defined(__CHERI_PURE_CAPABILITY__)
   __ Add(fp_to_sp, sp, kSavedRegistersAreaSize);
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Sub(fp_to_sp, fp.X(), fp_to_sp);
+#else   // __CHERI_PURE_CAPABILITY__
   __ Sub(fp_to_sp, fp, fp_to_sp);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Allocate a new deoptimizer object.
 #if defined(__CHERI_PURE_CAPABILITY__)
