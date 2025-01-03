@@ -194,7 +194,11 @@ class EscapeAnalysisTracker : public ZoneObject {
       DCHECK_EQ(IrOpcode::kAllocate, current_node()->opcode());
       VirtualObject* vobject = tracker_->virtual_objects_.Get(current_node());
       if (vobject) {
+#ifdef __CHERI_PURE_CAPABILITY__
+        CHECK(vobject->size() == ALIGN_TO_ALLOCATION_ALIGNMENT(size));
+#else   // !__CHERI_PURE_CAPABILITY__
         CHECK(vobject->size() == size);
+#endif  // __CHERI_PURE_CAPABILITY__
       } else {
         vobject = tracker_->NewVirtualObject(size);
       }
@@ -302,6 +306,9 @@ class EscapeAnalysisTracker : public ZoneObject {
 
   VirtualObject* NewVirtualObject(int size) {
     if (number_of_tracked_bytes_ + size >= kTrackingBudget) return nullptr;
+#ifdef __CHERI_PURE_CAPABILITY__
+    size = ALIGN_TO_ALLOCATION_ALIGNMENT(size);
+#endif // __CHERI_PURE_CAPABILITY__
     number_of_tracked_bytes_ += size;
     return zone_->New<VirtualObject>(&variable_states_, next_object_id_++,
                                      size);
