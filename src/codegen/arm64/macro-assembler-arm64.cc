@@ -3267,8 +3267,14 @@ bool MacroAssembler::IsNearCallOffset(int64_t offset) {
 //    3. if it is not zero then it jumps to the builtin.
 void MacroAssembler::BailoutIfDeoptimized() {
   UseScratchRegisterScope temps(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register scratch = temps.AcquireC();
+  int offset =
+      InstructionStream::kCodeOffset - InstructionStream::kHeaderSize - 1;
+#else   // !__CHERI_PURE_CAPABILITY__
   Register scratch = temps.AcquireX();
   int offset = InstructionStream::kCodeOffset - InstructionStream::kHeaderSize;
+#endif  // __CHERI_PURE_CAPABILITY__
   LoadTaggedField(scratch,
                   MemOperand(kJavaScriptCallCodeStartRegister, offset));
   Ldr(scratch.W(), FieldMemOperand(scratch, Code::kFlagsOffset));
