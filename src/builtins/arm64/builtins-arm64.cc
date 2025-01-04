@@ -7064,7 +7064,11 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
 #endif // defined(__CHERI_PURE_CAPABILITY__)
   __ Ldr(x3, MemOperand(current_frame, FrameDescription::frame_size_offset()));
   __ Lsr(frame_size, x3, kSystemPointerSizeLog2);
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Claim(frame_size, kCRegSize, /*assume_sp_aligned=*/false);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Claim(frame_size, kXRegSize, /*assume_sp_aligned=*/false);
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   __ Add(c7, current_frame, FrameDescription::frame_content_offset());
