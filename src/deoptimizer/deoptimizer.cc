@@ -555,11 +555,19 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction function,
   // the first deopt with resume entry.
   if (from_ <= lazy_deopt_start) {
     int offset = static_cast<int>(from_ - kEagerDeoptExitSize - deopt_start);
+#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64
+    // Account for the C64 bit.
+    offset -= 1;
+#endif  // __CHERI_PURE_CAPABILITY__ && V8_TARGET_ARCH_ARM64
     DCHECK_EQ(0, offset % kEagerDeoptExitSize);
     deopt_exit_index_ = offset / kEagerDeoptExitSize;
   } else {
     int offset =
         static_cast<int>(from_ - kLazyDeoptExitSize - lazy_deopt_start);
+#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64
+    // Account for the C64 bit.
+    offset -= 1;
+#endif  // __CHERI_PURE_CAPABILITY__ && V8_TARGET_ARCH_ARM64
     DCHECK_EQ(0, offset % kLazyDeoptExitSize);
     deopt_exit_index_ = eager_deopt_count + (offset / kLazyDeoptExitSize);
   }
