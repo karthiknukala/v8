@@ -560,8 +560,13 @@ void BaselineAssembler::AddSmi(Register lhs, Smi rhs) {
   if (SmiValuesAre31Bits()) {
     __ Add(lhs.W(), lhs.W(), Immediate(rhs));
   } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(lhs.IsX() || lhs.IsC());
+    __ Add(lhs.X(), lhs.X(), Immediate(rhs));
+#else   // !__CHERI_PURE_CAPABILITY__
     DCHECK(lhs.IsX());
     __ Add(lhs, lhs, Immediate(rhs));
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 }
 
