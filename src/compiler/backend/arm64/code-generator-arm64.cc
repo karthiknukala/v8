@@ -1420,46 +1420,37 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       EmitFpOrNeonUnop(masm(), &MacroAssembler::Frintn, instr, i, kFormatD,
                        kFormat2D);
       break;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     case kArm64AddCap:
       DCHECK(instr->OutputAt(0)->IsCapabilityRegister());
-      //TODO(gcjenkinson): Confirm whether this is required.
       if (FlagsModeField::decode(opcode) != kFlags_none) {
-        __ Adds(i.OutputRegisterCapability(),
-                i.InputOrZeroRegisterCapability(0),
-                i.InputOperand2_Capability(1));
-	break;
+        __ Adds(i.OutputRegister64(), i.InputOrZeroRegister64(0),
+                i.InputOperand2_64(1));
+        break;
       }
-      __ Add(i.OutputRegisterCapability(),
-             i.InputOrZeroRegisterCapability(0),
+      __ Add(i.OutputRegisterCapability(), i.InputOrZeroRegisterCapability(0),
              i.InputOperand2_Capability(1));
       break;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
     case kArm64Add:
       if (FlagsModeField::decode(opcode) != kFlags_none) {
 #if defined(__CHERI_PURE_CAPABILITY__)
-	if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
-            (instr->InputAt(0)->IsCapabilityRegister())) {
-          __ Adds(i.OutputRegisterCapability(),
-		  i.InputOrZeroRegisterCapability(0),
-                  i.InputOperand2_Capability(1));
-	  return kSuccess;
-        }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+        DCHECK(!i.OutputRegister().IsC());
+#endif  // defined(__CHERI_PURE_CAPABILITY__)
         __ Adds(i.OutputRegister(), i.InputOrZeroRegister64(0),
                 i.InputOperand2_64(1));
       } else {
 #if defined(__CHERI_PURE_CAPABILITY__)
-	// TODO(gcjenkinson): Remove once all additions of capability
-	// values use CapAdd.
-	if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
+        // TODO(gcjenkinson): Remove once all additions of capability
+        // values use CapAdd.
+        if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
             (instr->InputAt(0)->IsCapabilityRegister())) {
           __ Add(i.OutputRegisterCapability(),
-		 i.InputOrZeroRegisterCapability(0),
+                 i.InputOrZeroRegisterCapability(0),
                  i.InputOperand2_Capability(1));
-	  return kSuccess;
+          return kSuccess;
         }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // defined(__CHERI_PURE_CAPABILITY__)
         __ Add(i.OutputRegister(), i.InputOrZeroRegister64(0),
                i.InputOperand2_64(1));
       }

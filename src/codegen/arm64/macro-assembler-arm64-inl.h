@@ -266,10 +266,18 @@ void MacroAssembler::Add(const Register& rd, const Register& rn,
 void MacroAssembler::Adds(const Register& rd, const Register& rn,
                           const Operand& operand) {
   DCHECK(allow_macro_instructions());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(!rd.IsC());
+  DCHECK(!rn.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   if (operand.IsImmediate() && (operand.ImmediateValue() < 0) &&
       IsImmAddSub(-operand.ImmediateValue())) {
     AddSubMacro(rd, rn, -operand.ImmediateValue(), SetFlags, SUB);
   } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(operand.IsExtendedRegister() || operand.IsShiftedRegister(),
+                   !operand.reg().IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     AddSubMacro(rd, rn, operand, SetFlags, ADD);
   }
 }
