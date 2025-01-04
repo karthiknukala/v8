@@ -2510,9 +2510,9 @@ void MacroAssembler::SlotAddress(Register dst, Register slot_offset) {
   // footgun when pushing X registers onto the stack and expecting to be able to
   // get a slot address for them.
   DCHECK(!slot_offset.IsC());
-  if (size == kCRegSize)
+  if (size == kCRegSize) {
     Add(dst, csp, Operand(slot_offset, LSL, kSystemPointerSizeLog2));
-  else {
+  } else {
     DCHECK(size == kXRegSize);
     Add(dst, csp, Operand(slot_offset, LSL, kSystemPointerAddrSizeLog2));
   }
