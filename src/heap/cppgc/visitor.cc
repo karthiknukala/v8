@@ -69,6 +69,9 @@ void ConservativeTracingVisitor::TraceConservatively(
 
 void ConservativeTracingVisitor::TryTracePointerConservatively(
     Address pointer) {
+#if defined(__CHERI_PURE_CAPABILITY__)
+  if (!V8_CHERI_TAG_GET(reinterpret_cast<uintptr_t>(pointer))) return;
+#endif
 #if defined(CPPGC_CAGED_HEAP)
   // TODO(chromium:1056170): Add support for SIMD in stack scanning.
   if (V8_LIKELY(!CagedHeapBase::IsWithinCage(pointer))) return;

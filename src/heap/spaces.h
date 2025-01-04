@@ -243,11 +243,11 @@ class Page : public MemoryChunk {
   }
 #ifdef __CHERI_PURE_CAPABILITY__
   static Page* FromSentry(Address base, Address sentry) {
-    DCHECK(__builtin_cheri_sealed_get(sentry));
-    DCHECK(__builtin_cheri_tag_get(sentry));
-    DCHECK(__builtin_cheri_tag_get(base));
-    ptraddr_t addr = __builtin_cheri_address_get(sentry) & ~kAlignmentMask;
-    return reinterpret_cast<Page*>(__builtin_cheri_address_set(base, addr));
+    DCHECK(V8_CHERI_SEALED(sentry));
+    DCHECK(V8_CHERI_TAG_GET(sentry));
+    DCHECK(V8_CHERI_TAG_GET(base));
+    ptraddr_t addr = V8_CHERI_ADDR_GET(sentry) & ~kAlignmentMask;
+    return reinterpret_cast<Page*>(V8_CHERI_ADDR_SET(base, addr));
   }
 #endif  // __CHERI_PURE_CAPABILITY__
 

@@ -259,6 +259,9 @@ Address LargePageMemoryRegion::Lookup(ConstAddress address) const {
 
 Address PageMemoryRegion::Lookup(ConstAddress address) const {
   DCHECK(reserved_region().Contains(address));
+#if defined(__CHERI_PURE_CAPABILITY__)
+  DCHECK(V8_CHERI_TAG_GET(reinterpret_cast<uintptr_t>(address)));
+#endif
   return is_large()
              ? static_cast<const LargePageMemoryRegion*>(this)->Lookup(address)
              : static_cast<const NormalPageMemoryRegion*>(this)->Lookup(

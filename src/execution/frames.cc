@@ -878,7 +878,7 @@ void ExitFrame::ComputeCallerState(State* state) const {
       reinterpret_cast<Address*>(fp() + ExitFrameConstants::kCallerPCOffset));
 #ifdef __CHERI_PURE_CAPABILITY__
   // Sanity check.
-  DCHECK(__builtin_cheri_tag_get(*state->pc_address));
+  DCHECK(V8_CHERI_TAG_GET(*state->pc_address));
 #endif  // __CHERI_PURE_CAPABILITY__
   state->callee_pc_address = nullptr;
   if (V8_EMBEDDED_CONSTANT_POOL_BOOL) {

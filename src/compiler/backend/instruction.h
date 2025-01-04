@@ -1210,7 +1210,7 @@ class V8_EXPORT_PRIVATE Constant final {
       : type_(kExternalReference),
         value_(base::bit_cast<intptr_t>(ref.address())) {
 #ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(__builtin_cheri_tag_get(value_));
+  DCHECK(V8_CHERI_TAG_GET(value_));
 #endif  // __CHERI_PURE_CAPABILITY__
   }
   explicit Constant(Handle<HeapObject> obj, bool is_compressed = false)
