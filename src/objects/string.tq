@@ -52,6 +52,10 @@ extern class String extends Name {
   }
 
   const length: int32;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_1: uint32;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_2: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_1: void;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_2: void;
 }
 
 extern enum StringRepresentationTag extends uint32 {
@@ -169,23 +173,47 @@ type DirectString extends String;
 macro AllocateNonEmptySeqOneByteString<Iterator: type>(
     length: uint32, content: Iterator): SeqOneByteString {
   dcheck(length != 0 && length <= kStringMaxLength);
-  return new (ClearPadding) SeqOneByteString{
-    map: kOneByteStringMap,
-    raw_hash_field: kNameEmptyHashField,
-    length: Signed(length),
-    chars: ...content
-  };
+  @if (CHERI_PURECAP_UNCOMPRESSED) {
+    return new (ClearPadding) SeqOneByteString{
+      map: kOneByteStringMap,
+      raw_hash_field: kNameEmptyHashField,
+      length: Signed(length),
+      optional_padding_1: 0,
+      optional_padding_2: 0,
+      chars: ...content
+    };
+  }
+  @ifnot (CHERI_PURECAP_UNCOMPRESSED) {
+    return new (ClearPadding) SeqOneByteString{
+      map: kOneByteStringMap,
+      raw_hash_field: kNameEmptyHashField,
+      length: Signed(length),
+      chars: ...content
+    };
+  }
 }
 
 macro AllocateNonEmptySeqTwoByteString<Iterator: type>(
     length: uint32, content: Iterator): SeqTwoByteString {
   dcheck(length > 0 && length <= kStringMaxLength);
-  return new (ClearPadding) SeqTwoByteString{
-    map: kStringMap,
-    raw_hash_field: kNameEmptyHashField,
-    length: Signed(length),
-    chars: ...content
-  };
+  @if (CHERI_PURECAP_UNCOMPRESSED) {
+    return new (ClearPadding) SeqTwoByteString{
+      map: kStringMap,
+      raw_hash_field: kNameEmptyHashField,
+      length: Signed(length),
+      optional_padding_1: 0,
+      optional_padding_2: 0,
+      chars: ...content
+    };
+  }
+  @ifnot (CHERI_PURECAP_UNCOMPRESSED) {
+    return new (ClearPadding) SeqTwoByteString{
+      map: kStringMap,
+      raw_hash_field: kNameEmptyHashField,
+      length: Signed(length),
+      chars: ...content
+    };
+  }
 }
 
 macro AllocateNonEmptySeqOneByteString(length: uint32): SeqOneByteString {

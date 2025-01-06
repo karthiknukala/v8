@@ -675,14 +675,7 @@ TEST(MakingExternalStringConditions) {
   }
 
   Local<String> tiny_local_string = v8_str("\xCF\x80");
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  // Due to the padding we need to place in order to accommodate for the
-  // resource pointer in ExternalString, we need a bigger string here in order
-  // to test for what we're actually trying to test for.
-  Local<String> local_string = v8_str("s12345678\xCF\x80");
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   Local<String> local_string = v8_str("s1234\xCF\x80");
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   CHECK(!tiny_local_string->IsOneByte());
   CHECK(!local_string->IsOneByte());
@@ -701,8 +694,7 @@ TEST(MakingExternalStringConditions) {
   // string due to the padding inserted in order to accommodate for the resource
   // pointer.
   CHECK_EQ(
-      V8_ENABLE_SANDBOX_BOOL || (i::kTaggedSize == i::kSystemPointerSize &&
-                                 i::kSystemPointerSize == sizeof(uint64_t)),
+      V8_ENABLE_SANDBOX_BOOL || (i::kTaggedSize == i::kSystemPointerSize),
       tiny_local_string->CanMakeExternal(String::Encoding::TWO_BYTE_ENCODING));
 
   // Change of representation is not allowed.
@@ -720,14 +712,7 @@ TEST(MakingExternalOneByteStringConditions) {
   }
 
   Local<String> tiny_local_string = v8_str("s");
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  // Due to the padding we need to place in order to accommodate for the
-  // resource pointer in ExternalString, we need a bigger string here in order
-  // to test for what we're actually trying to test for.
-  Local<String> local_string = v8_str("s12345678");
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   Local<String> local_string = v8_str("s1234");
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   CHECK(tiny_local_string->IsOneByte());
   CHECK(local_string->IsOneByte());
