@@ -1726,14 +1726,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Mvn(i.OutputRegister32(), i.InputOperand32(0));
       break;
     case kArm64Or:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
       if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
           (instr->InputAt(0)->IsCapabilityRegister())) {
         __ Orr(i.OutputRegisterCapability(), i.InputOrZeroRegisterCapability(0),
                i.InputOperand2_64(1));
         break;
       }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
       __ Orr(i.OutputRegister(), i.InputOrZeroRegister64(0),
              i.InputOperand2_64(1));
       break;
@@ -1765,42 +1765,39 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Eon(i.OutputRegister32(), i.InputOrZeroRegister32(0),
              i.InputOperand2_32(1));
       break;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     case kArm64SubCap:
-      //TODO(gcjenkinson): Confirm whether this is required.
-      if (FlagsModeField::decode(opcode) != kFlags_none) {
-        __ Subs(i.OutputRegisterCapability(),
-                i.InputOrZeroRegisterCapability(0),
-                i.InputOperand2_Capability(1));
-      } else {
-        __ Sub(i.OutputRegisterCapability(), i.InputOrZeroRegisterCapability(0),
-               i.InputOperand2_Capability(1));
-      }
+      DCHECK_NE(i.OutputRegisterCapability(), czr);
+      DCHECK_EQ(FlagsModeField::decode(opcode), kFlags_none);
+      __ Sub(i.OutputRegisterCapability(), i.InputOrZeroRegisterCapability(0),
+             i.InputOperand2_Capability(1));
       break;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
     case kArm64Sub:
       if (FlagsModeField::decode(opcode) != kFlags_none) {
- #if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
+        DCHECK_NE(i.OutputRegisterCapability(), czr);
         if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
             (instr->InputAt(0)->IsCapabilityRegister())) {
-          __ Subs(i.OutputRegisterCapability(),
-                  i.InputOrZeroRegisterCapability(0),
-                  i.InputOperand2_Capability(1));
+          // We should only be here if we are dealing with Smis, which are never
+          // going to be CHERI tagged values so we can just use X registers.
+          __ Subs(i.OutputRegister64(), i.InputOrZeroRegister64(0),
+                  i.InputOperand2_64(1));
           return kSuccess;
         }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
         __ Subs(i.OutputRegister(), i.InputOrZeroRegister64(0),
                 i.InputOperand2_64(1));
       } else {
- #if defined(__CHERI_PURE_CAPABILITY__)
-	if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
+#ifdef __CHERI_PURE_CAPABILITY__
+        if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
             (instr->InputAt(0)->IsCapabilityRegister())) {
-           __ Sub(i.OutputRegisterCapability(),
-		 i.InputOrZeroRegisterCapability(0),
+          __ Sub(i.OutputRegisterCapability(),
+                 i.InputOrZeroRegisterCapability(0),
                  i.InputOperand2_Capability(1));
-	  return kSuccess;
+          return kSuccess;
         }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
         __ Sub(i.OutputRegister(), i.InputOrZeroRegister64(0),
                i.InputOperand2_64(1));
       }
