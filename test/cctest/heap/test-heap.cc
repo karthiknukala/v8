@@ -94,7 +94,11 @@ static void CheckMap(Map map, int type, int instance_size) {
   DCHECK(IsValidHeapObject(CcTest::heap(), map));
   CHECK_EQ(ReadOnlyRoots(CcTest::heap()).meta_map(), map.map());
   CHECK_EQ(type, map.instance_type());
+#ifdef __CHERI_PURE_CAPABILITY__
+  CHECK_EQ(ALIGN_TO_ALLOCATION_ALIGNMENT(instance_size), map.instance_size());
+#else   // !__CHERI_PURE_CAPABILITY__
   CHECK_EQ(instance_size, map.instance_size());
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 
@@ -338,7 +342,12 @@ TEST(HeapObjects) {
 TEST(Tagging) {
   CcTest::InitializeVM();
   int request = 24;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  // CHERI capabilities are 16 bytes, so we expect it to be aligned to 32.
+  CHECK_EQ(request + 8, static_cast<int>(OBJECT_POINTER_ALIGN(request)));
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   CHECK_EQ(request, static_cast<int>(OBJECT_POINTER_ALIGN(request)));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   CHECK(Smi::FromInt(42).IsSmi());
   CHECK(Smi::FromInt(Smi::kMinValue).IsSmi());
   CHECK(Smi::FromInt(Smi::kMaxValue).IsSmi());
@@ -2078,11 +2087,23 @@ TEST(TestAlignmentCalculations) {
   // Maximum fill amounts are consistent.
   int maximum_double_misalignment = kDoubleSize - kTaggedSize;
   int max_word_fill = Heap::GetMaximumFillToAlign(kTaggedAligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  CHECK_EQ(16, max_word_fill);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   CHECK_EQ(0, max_word_fill);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   int max_double_fill = Heap::GetMaximumFillToAlign(kDoubleAligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  CHECK_EQ(0, max_double_fill);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   CHECK_EQ(maximum_double_misalignment, max_double_fill);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   int max_double_unaligned_fill = Heap::GetMaximumFillToAlign(kDoubleUnaligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  CHECK_EQ(0, max_double_unaligned_fill);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   CHECK_EQ(maximum_double_misalignment, max_double_unaligned_fill);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   Address base = kNullAddress;
   int fill = 0;
@@ -2098,10 +2119,18 @@ TEST(TestAlignmentCalculations) {
   CHECK_EQ(0, fill);
   // Fill is required if address is not double aligned.
   fill = Heap::GetFillToAlign(base + kTaggedSize, kDoubleAligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  CHECK_EQ(0, fill);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   CHECK_EQ(maximum_double_misalignment, fill);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   // kDoubleUnaligned has the opposite fill amounts.
   fill = Heap::GetFillToAlign(base, kDoubleUnaligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  CHECK_EQ(0, fill);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   CHECK_EQ(maximum_double_misalignment, fill);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   fill = Heap::GetFillToAlign(base + kTaggedSize, kDoubleUnaligned);
   CHECK_EQ(0, fill);
 }
@@ -2148,7 +2177,11 @@ TEST(TestAlignedAllocation) {
     // aligned address.
     start = AlignNewSpace(kDoubleAligned, 0);
     obj = NewSpaceAllocateAligned(kTaggedSize, kDoubleAligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    CHECK(IsAligned(obj.address(), kSystemPointerSize));
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     CHECK(IsAligned(obj.address(), kDoubleAlignment));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     // There is no filler.
     CHECK_EQ(kTaggedSize, *top_addr - start);
 
@@ -2156,26 +2189,49 @@ TEST(TestAlignedAllocation) {
     // unaligned address.
     start = AlignNewSpace(kDoubleAligned, kTaggedSize);
     obj = NewSpaceAllocateAligned(kTaggedSize, kDoubleAligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    CHECK(IsAligned(obj.address(), kSystemPointerSize));
+#else   // !(__CHERI_PURE_CAPABILITY__  && !V8_COMPRESS_POINTERS)
     CHECK(IsAligned(obj.address(), kDoubleAlignment));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     // There is a filler object before the object.
     filler = HeapObject::FromAddress(start);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    CHECK_EQ(obj, filler);
+    CHECK_EQ(kTaggedSize, *top_addr - start);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     CHECK(obj != filler && filler.IsFreeSpaceOrFiller() &&
           filler.Size() == kTaggedSize);
     CHECK_EQ(kTaggedSize + double_misalignment, *top_addr - start);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
     // Similarly for kDoubleUnaligned.
     start = AlignNewSpace(kDoubleUnaligned, 0);
     obj = NewSpaceAllocateAligned(kTaggedSize, kDoubleUnaligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    CHECK(IsAligned(obj.address() + kTaggedSize, kSystemPointerSize));
+    CHECK_EQ(kTaggedSize, *top_addr - start);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     CHECK(IsAligned(obj.address() + kTaggedSize, kDoubleAlignment));
     CHECK_EQ(kTaggedSize, *top_addr - start);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     start = AlignNewSpace(kDoubleUnaligned, kTaggedSize);
     obj = NewSpaceAllocateAligned(kTaggedSize, kDoubleUnaligned);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    CHECK(IsAligned(obj.address() + kTaggedSize, kSystemPointerSize));
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     CHECK(IsAligned(obj.address() + kTaggedSize, kDoubleAlignment));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     // There is a filler object before the object.
     filler = HeapObject::FromAddress(start);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    CHECK_EQ(obj, filler);
+    CHECK_EQ(kTaggedSize, *top_addr - start);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
     CHECK(obj != filler && filler.IsFreeSpaceOrFiller() &&
           filler.Size() == kTaggedSize);
     CHECK_EQ(kTaggedSize + double_misalignment, *top_addr - start);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   }
 }
 
@@ -6966,7 +7022,11 @@ UNINITIALIZED_TEST(HugeHeapLimit) {
 #ifdef V8_COMPRESS_POINTERS
   size_t kExpectedHeapLimit = Heap::AllocatorLimitOnMaxOldGenerationSize();
 #else
+#ifdef __CHERI_PURE_CAPABILITY__
+  size_t kExpectedHeapLimit = size_t{8} * GB;
+#else   // !__CHERI_PURE_CAPABILITY__
   size_t kExpectedHeapLimit = size_t{4} * GB;
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif
   CHECK_EQ(kExpectedHeapLimit, i_isolate->heap()->MaxOldGenerationSize());
   CHECK_LT(size_t{3} * GB, i_isolate->heap()->MaxOldGenerationSize());
@@ -6982,7 +7042,11 @@ UNINITIALIZED_TEST(HeapLimit) {
   v8::Isolate* isolate = v8::Isolate::New(create_params);
   Isolate* i_isolate = reinterpret_cast<Isolate*>(isolate);
 #if defined(V8_TARGET_ARCH_64_BIT) && !defined(V8_OS_ANDROID)
+#ifdef __CHERI_PURE_CAPABILITY__
+  size_t kExpectedHeapLimit = size_t{4} * GB;
+#else   // !__CHERI_PURE_CAPABILITY__
   size_t kExpectedHeapLimit = size_t{2} * GB;
+#endif  // __CHERI_PURE_CAPABILITY__
 #else
   size_t kExpectedHeapLimit = size_t{1} * GB;
 #endif
