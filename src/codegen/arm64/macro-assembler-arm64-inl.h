@@ -362,6 +362,7 @@ void MacroAssembler::Subsc(const Register& rd, const Register& cn,
                            const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(operand.reg().IsC());
+  DCHECK(!operand.IsShiftedRegister());
   if (cn.code() == kSPRegInternalCode) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireC();
@@ -404,13 +405,12 @@ void MacroAssembler::Cmp(const Register& rn, const Operand& operand) {
   DCHECK(allow_macro_instructions());
 #if defined(__CHERI_PURE_CAPABILITY__)
   if (rn.IsC()) {
-    if (operand.IsImmediate() || !operand.reg().IsC()) {
-      UseScratchRegisterScope temps(this);
-      Register temp = temps.AcquireX();
-      Gcvalue(rn, temp);
-      Subs(AppropriateZeroRegFor(temp), temp, operand);
+    if (operand.IsImmediate() || !operand.reg().IsC() ||
+        operand.IsShiftedRegister()) {
+      Subs(xzr, rn.X(), operand.ToX());
       return;
     } else {
+      DCHECK(operand.IsExtendedRegister());
       Subsc(xzr, rn, operand);
     }
     return;

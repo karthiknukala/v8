@@ -689,7 +689,7 @@ bool InstructionOperand::IsSimd256Register() const {
 #if defined(__CHERI_PURE_CAPABILITY__)
 bool InstructionOperand::IsCapabilityRegister() const {
   return IsAnyRegister() &&
-	 IsCapability(LocationOperand::cast(this)->representation());
+         IsCapability(LocationOperand::cast(this)->representation());
 }
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 

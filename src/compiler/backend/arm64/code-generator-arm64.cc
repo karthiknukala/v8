@@ -1978,10 +1978,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 #if defined(__CHERI_PURE_CAPABILITY__)
       if (instr->InputAt(0)->IsCapabilityRegister()) {
         __ Cmp(i.InputOrZeroRegisterCapability(0),
-	       i.InputOperand2_Capability(1));
-	return kSuccess;
+               i.InputOperand2_Capability(1));
+        return kSuccess;
       }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // defined(__CHERI_PURE_CAPABILITY__)
       __ Cmp(i.InputOrZeroRegister64(0), i.InputOperand2_64(1));
       break;
     case kArm64Cmp32:

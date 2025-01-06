@@ -114,6 +114,7 @@ class Operand {
 
   // Returns new Operand adapted for using with W registers.
   inline Operand ToW() const;
+  inline Operand ToX() const;
 
   inline Immediate immediate() const;
 #if defined(__CHERI_PURE_CAPABILITY__)

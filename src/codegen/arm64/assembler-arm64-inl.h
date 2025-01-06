@@ -392,6 +392,22 @@ Operand Operand::ToW() const {
   return *this;
 }
 
+Operand Operand::ToX() const {
+  if (IsShiftedRegister()) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(reg_.Is128Bits() || reg_.Is64Bits());
+#endif  // __CHERI_PURE_CAPABILITY__
+    return Operand(reg_.X(), shift(), shift_amount());
+  } else if (IsExtendedRegister()) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(reg_.Is128Bits() || reg_.Is64Bits());
+#endif  // __CHERI_PURE_CAPABILITY__
+    return Operand(reg_.X(), extend(), shift_amount());
+  }
+  DCHECK(IsImmediate());
+  return *this;
+}
+
 Immediate Operand::immediate_for_heap_number_request() const {
   DCHECK(immediate_.rmode() == RelocInfo::FULL_EMBEDDED_OBJECT);
   return immediate_;
