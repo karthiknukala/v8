@@ -82,6 +82,10 @@ TNode<IntPtrT> StringBuiltinsAssembler::SearchOneByteStringInOneByteString(
     const TNode<RawPtrT> subject_ptr, const TNode<IntPtrT> subject_length,
     const TNode<RawPtrT> search_ptr, const TNode<IntPtrT> search_length,
     const TNode<IntPtrT> start_position) {
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(subject_ptr.IsCapability());
+  DCHECK(search_ptr.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   return CallSearchStringRaw<const uint8_t, const uint8_t>(
       subject_ptr, subject_length, search_ptr, search_length, start_position);
 }
@@ -89,6 +93,10 @@ TNode<IntPtrT> StringBuiltinsAssembler::SearchTwoByteStringInTwoByteString(
     const TNode<RawPtrT> subject_ptr, const TNode<IntPtrT> subject_length,
     const TNode<RawPtrT> search_ptr, const TNode<IntPtrT> search_length,
     const TNode<IntPtrT> start_position) {
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(subject_ptr.IsCapability());
+  DCHECK(search_ptr.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   return CallSearchStringRaw<const base::uc16, const base::uc16>(
       subject_ptr, subject_length, search_ptr, search_length, start_position);
 }
@@ -102,8 +110,15 @@ TNode<IntPtrT> StringBuiltinsAssembler::SearchTwoByteStringInOneByteString(
 TNode<IntPtrT> StringBuiltinsAssembler::SearchOneByteInOneByteString(
     const TNode<RawPtrT> subject_ptr, const TNode<IntPtrT> subject_length,
     const TNode<RawPtrT> search_ptr, const TNode<IntPtrT> start_position) {
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(subject_ptr.IsCapability());
+  DCHECK(search_ptr.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   const TNode<RawPtrT> subject_start_ptr =
       RawPtrAdd(subject_ptr, start_position);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(subject_start_ptr.IsCapability());
+#endif // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   const TNode<IntPtrT> search_byte =
       ChangeInt32ToIntPtr(Load<Uint8T>(search_ptr));
   const TNode<UintPtrT> search_length =

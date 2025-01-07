@@ -1390,9 +1390,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                          int>::type = 0>
   void StoreReference(Reference reference, TNode<T> value) {
     DCHECK(!IsMapOffsetConstant(reference.offset));
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(reference.object.IsCapability());
-#endif  // V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     TNode<IntPtrT> offset =
         IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
     StoreToObject(MachineRepresentationOf<T>::value, reference.object, offset,
@@ -1401,9 +1401,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<RawPtrT> GCUnsafeReferenceToRawPtr(TNode<Object> object,
                                            TNode<IntPtrT> offset) {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(object.IsCapability());
-#endif  // V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     return ReinterpretCast<RawPtrT>(
         IntPtrAdd(BitcastTaggedToWord(object),
                   IntPtrSub(offset, IntPtrConstant(kHeapObjectTag))));
