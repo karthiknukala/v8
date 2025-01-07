@@ -1493,6 +1493,12 @@ void Assembler::cselc(const Register& cd, const Register& cn,
   Emit(CSEL_c | Cm(cm) | Cond(cond) | Cn(cn) | Cd(cd));
 }
 
+void Assembler::gctag(const Register& rd, const Register& cn) {
+  DCHECK(cn.Is128Bits());
+  DCHECK(rd.Is64Bits());
+  Emit(GCTAG | CnCSP(cn) | Rd(rd));
+}
+
 void Assembler::gcvalue(const Register& cn, const Register& rd) {
   DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());

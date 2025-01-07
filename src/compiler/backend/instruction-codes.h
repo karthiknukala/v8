@@ -111,6 +111,15 @@ inline RecordWriteMode WriteBarrierKindToRecordWriteMode(
   V(AtomicStoreWord16)                                     \
   V(AtomicStoreWord32)
 
+// Currently not really used in the way it's intended to be used, but the way
+// the macros are set up here is useful for future opcodes, so we leave it this
+// way.
+#ifdef __CHERI_PURE_CAPABILITY__
+#define COMMON_CHERI_ARCH_OPCODE_LIST(V) V(ArchCapabilityIsTagged)
+#else  // !__CHERI_PURE_CAPABILITY__
+#define COMMON_CHERI_ARCH_OPCODE_LIST(V) V(ArchCapabilityIsTagged)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 // Target-specific opcodes that specify which assembly sequence to emit.
 // Most opcodes specify a single instruction.
 #define COMMON_ARCH_OPCODE_LIST(V)                                         \
@@ -174,7 +183,8 @@ inline RecordWriteMode WriteBarrierKindToRecordWriteMode(
 
 #define ARCH_OPCODE_LIST(V)  \
   COMMON_ARCH_OPCODE_LIST(V) \
-  TARGET_ARCH_OPCODE_LIST(V)
+  TARGET_ARCH_OPCODE_LIST(V) \
+  COMMON_CHERI_ARCH_OPCODE_LIST(V)
 
 enum ArchOpcode {
 #define DECLARE_ARCH_OPCODE(Name) k##Name,

@@ -630,6 +630,12 @@ extern macro PrintErr(constexpr string, Object): void;
 extern macro PrintErr(Object): void;
 extern macro Comment(constexpr string): void;
 extern macro DebugBreak(): void;
+// Ideally we'd have this under an @if(CHERI_PURECAP) but Torque doesn't
+// currently support that and it would introduce a massive diff in the
+// parser in our downstream.
+extern macro CapabilityIsTagged(RawPtr): bool;
+extern macro CapabilityIsTagged(intptr): bool;
+extern macro CapabilityIsTagged(uintptr): bool;
 
 // ES6 7.1.4 ToInteger ( argument )
 transitioning macro ToIntegerImpl(implicit context: Context)(input: JSAny):

@@ -298,6 +298,13 @@ void MacroAssembler::CzeroC(const Register& cd, Condition cond) {
   cselc(cd, czr, cd, cond);
 }
 
+void MacroAssembler::Gctag(const Register& rd, const Register& cn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(cn.Is128Bits());
+  DCHECK(rd.Is64Bits());
+  gctag(rd, cn);
+}
+
 void MacroAssembler::Gcvalue(const Register& cs, const Register& rd) {
   DCHECK(allow_macro_instructions());
   DCHECK(cs.Is128Bits());

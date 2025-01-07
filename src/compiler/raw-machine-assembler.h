@@ -645,6 +645,11 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
         value);
   }
 
+  // Always true on non-CHERI.
+  Node* CapabilityIsTagged(Node* value) {
+    return AddNode(machine()->CapabilityIsTagged(), value);
+  }
+
 #ifdef __CHERI_PURE_CAPABILITY__
   Node* CapAdd(Node* a, Node* b) {
     return AddNode(machine()->CapAdd(), a, b);

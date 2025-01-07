@@ -831,6 +831,9 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // Load a pair of capabilities
   void ldpc(const Register& ct, const Register& ct2,
             const MemOperand& src);
+  // Load a capability tag field
+  void gctag(const Register& rd, const Register& cn);
+  // FIXME(ds815): Rewrite for consistency.
   // Load a capability value field
   void gcvalue(const Register& cd, const Register& rd);
   // Load a capability base field

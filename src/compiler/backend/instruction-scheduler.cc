@@ -347,6 +347,9 @@ int InstructionScheduler::GetInstructionFlags(const Instruction* instr) const {
     case kAtomicStoreWord32:
       return kHasSideEffect;
 
+    case kArchCapabilityIsTagged:
+      return kNoOpcodeFlags;
+
     case kAtomicExchangeInt8:
     case kAtomicExchangeUint8:
     case kAtomicExchangeInt16:

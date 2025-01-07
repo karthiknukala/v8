@@ -1146,6 +1146,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchDebugBreak:
       __ DebugBreak();
       break;
+    case kArchCapabilityIsTagged:
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ Gctag(i.OutputRegister64(), i.InputCapabilityRegister(0));
+#else   // !__CHERI_PURE_CAPABILITY__
+      // Always true.
+      __ Mov(i.OutputRegister(), 1);
+#endif  // __CHERI_PURE_CAPABILITY__
+      break;
     case kArchComment:
 #if defined(__CHERI_PURE_CAPABILITY__)
       __ RecordComment(reinterpret_cast<const char*>(i.InputCapability(0)));

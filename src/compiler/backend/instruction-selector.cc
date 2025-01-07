@@ -2669,7 +2669,7 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kI16x16ExtMulI8x16U:
       return MarkAsSimd256(node), VisitI16x16ExtMulI8x16U(node);
 #endif  //  V8_TARGET_ARCH_X64
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     case IrOpcode::kCapAdd:
       return MarkAsCapability(node), VisitCapAdd(node);
     case IrOpcode::kCapSub:
@@ -2678,7 +2678,10 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kCapability64Constant:
     case IrOpcode::kRelocatableCapability64Constant:
       return MarkAsCapability(node), VisitConstant(node);
-#endif  // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
+    case IrOpcode::kCapabilityIsTagged:
+      return MarkAsRepresentation(MachineRepresentation::kWord8, node),
+             VisitCapabilityIsTagged(node);
     default:
       FATAL("Unexpected operator #%d:%s @ node #%d", node->opcode(),
             node->op()->mnemonic(), node->id());
@@ -3584,6 +3587,12 @@ void InstructionSelector::VisitThrow(Node* node) {
 void InstructionSelector::VisitDebugBreak(Node* node) {
   OperandGenerator g(this);
   Emit(kArchDebugBreak, g.NoOutput());
+}
+
+void InstructionSelector::VisitCapabilityIsTagged(Node* node) {
+  OperandGenerator g(this);
+  Emit(kArchCapabilityIsTagged, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
 }
 
 void InstructionSelector::VisitUnreachable(Node* node) {

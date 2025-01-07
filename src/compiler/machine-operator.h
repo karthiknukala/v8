@@ -1162,6 +1162,11 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   // applied for kFunctionEntry stack checks.
   const Operator* StackPointerGreaterThan(StackCheckKind kind);
 
+  // Returns a boolean which determines if the capability is tagged or not. On
+  // non-CHERI systems, this is always true.
+  const Operator* CapabilityIsTagged();
+
+
   // Loads the offset that should be applied to the current stack
   // pointer before a stack check. Used as input to the
   // Runtime::kStackGuardWithGap call.
