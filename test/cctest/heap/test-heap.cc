@@ -4593,7 +4593,11 @@ static Handle<InstructionStream> DummyOptimizedCode(Isolate* isolate) {
   CodeDesc desc;
 #if V8_TARGET_ARCH_ARM64
   UseScratchRegisterScope temps(&masm);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  Register tmp = temps.AcquireC();
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   Register tmp = temps.AcquireX();
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   masm.Mov(tmp, Operand(isolate->factory()->undefined_value()));
   masm.Push(tmp, tmp);
 #else
