@@ -1253,7 +1253,9 @@
 #define PURECAP_OP_LIST(V) \
   V(CapAdd)                \
   V(CapSub)                \
-  V(CapabilityIsTagged)
+  V(CapabilityIsTagged)    \
+  V(AlignU)                \
+  V(AlignD)
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 
 // The combination of all operators at all levels and the common operators.

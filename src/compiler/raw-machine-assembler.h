@@ -384,6 +384,13 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->MemoryBarrier(order));
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  // CHERI alignment instructions. Maps to alignu/alignd on Morello and will get
+  // expanded upon on CHERI-RISC-V.
+  Node* AlignU(Node* a, Node* b) { return AddNode(machine()->AlignU(), a, b); }
+  Node* AlignD(Node* a, Node* b) { return AddNode(machine()->AlignD(), a, b); }
+#endif  // __CHERI_PURE_CAPABILITY__
+
   // Arithmetic Operations.
   Node* WordAnd(Node* a, Node* b) {
     return AddNode(machine()->WordAnd(), a, b);

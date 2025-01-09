@@ -1154,6 +1154,16 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Mov(i.OutputRegister(), 1);
 #endif  // __CHERI_PURE_CAPABILITY__
       break;
+#ifdef __CHERI_PURE_CAPABILITY__
+    case kArchAlignU:
+      __ AlignU(i.OutputCapabilityRegister(), i.InputCapabilityRegister(0),
+                i.InputInt64(1));
+      break;
+    case kArchAlignD:
+      __ AlignD(i.OutputCapabilityRegister(), i.InputCapabilityRegister(0),
+                i.InputInt64(1));
+      break;
+#endif  // __CHERI_PURE_CAPABILITY__
     case kArchComment:
 #if defined(__CHERI_PURE_CAPABILITY__)
       __ RecordComment(reinterpret_cast<const char*>(i.InputCapability(0)));

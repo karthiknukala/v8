@@ -784,9 +784,11 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 // I'm adding an IntPtrT to a WordT, drawing a distinction between a
 // pointer and an integer constant so I don't think the operation is
 // commutative.
-#define MACHINE_PURE_OP_LIST_PURECAP(V)      \
-  V(CapAdd, Operator::kAssociative, 2, 0, 1) \
-  V(CapSub, Operator::kNoProperties, 2, 0, 1)
+#define MACHINE_PURE_OP_LIST_PURECAP(V)       \
+  V(CapAdd, Operator::kAssociative, 2, 0, 1)  \
+  V(CapSub, Operator::kNoProperties, 2, 0, 1) \
+  V(AlignU, Operator::kNoProperties, 2, 0, 1) \
+  V(AlignD, Operator::kNoProperties, 2, 0, 1)
 #endif // __CHERI_PURE_CAPABILITY__
 
 // The format is:

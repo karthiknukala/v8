@@ -350,6 +350,12 @@ int InstructionScheduler::GetInstructionFlags(const Instruction* instr) const {
     case kArchCapabilityIsTagged:
       return kNoOpcodeFlags;
 
+#ifdef __CHERI_PURE_CAPABILITY__
+    case kArchAlignU:
+    case kArchAlignD:
+      return kNoOpcodeFlags;
+#endif  // __CHERI_PURE_CAPABILITY__
+
     case kAtomicExchangeInt8:
     case kAtomicExchangeUint8:
     case kAtomicExchangeInt16:

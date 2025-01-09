@@ -379,6 +379,20 @@ void MacroAssembler::Subsc(const Register& rd, const Register& cn,
     subsc(rd, cn, operand);
   }
 }
+
+void MacroAssembler::AlignU(const Register& cd, const Register& cn,
+                            const Operand& operand) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(operand.IsImmediate());
+  alignu(cd, cn, operand);
+}
+
+void MacroAssembler::AlignD(const Register& cd, const Register& cn,
+                            const Operand& operand) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(operand.IsImmediate());
+  alignd(cd, cn, operand);
+}
 #endif // __CHERI_PURE_CAPABILITY__
 
 void MacroAssembler::Sub(const Register& rd, const Register& rn,

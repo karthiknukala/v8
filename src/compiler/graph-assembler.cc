@@ -965,6 +965,13 @@ Node* GraphAssembler::CapAdd(Node* a, Node* b) {
 Node* GraphAssembler::CapSub(Node* a, Node* b) {
   return AddNode(graph()->NewNode(machine()->CapSub(), a, b));
 }
+
+Node* GraphAssembler::AlignU(Node* a, Node* b) {
+  return AddNode(graph()->NewNode(machine()->AlignU(), a, b));
+}
+Node* GraphAssembler::AlignD(Node* a, Node* b) {
+  return AddNode(graph()->NewNode(machine()->AlignD(), a, b));
+}
 #endif // __CHERI_PURE_CAPABILITY__
 
 Node* GraphAssembler::IntPtrAdd(Node* a, Node* b) {

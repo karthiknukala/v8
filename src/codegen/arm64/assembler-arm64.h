@@ -822,7 +822,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void cselc(const Register& cd, const Register& cn, const Register& cm,
             Condition cond);
   // Subtract capability and update status flags.
-  void subsc(const Register& rd, const Register& cn, const Operand& operand);
+  void subsc(const Register& cd, const Register& cn, const Operand& operand);
+  // Align up the capability.
+  void alignu(const Register& cd, const Register& cn, const Operand& operand);
+  // Align down the capability.
+  void alignd(const Register& cd, const Register& cn, const Operand& operand);
   // Copies a capability register
   void cpy(const Register& cd, const Register& cn);
   // Store a pair of capabilities
@@ -2934,6 +2938,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline static Instr ImmRotate(unsigned immr, unsigned reg_size);
 #ifdef __CHERI_PURE_CAPABILITY__
   inline static Instr ImmSealForm(Cheri::SealImmediateForm form);
+  inline static Instr AlignImmLiteral(int imm6);
   inline static Instr CImmLLiteral(int imm17);
 #endif
   inline static Instr ImmLLiteral(int imm19);

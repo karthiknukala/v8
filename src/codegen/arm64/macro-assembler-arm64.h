@@ -939,8 +939,12 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   inline void Build(const Register& cd, const Register& cn, const Register& cm);
   inline void Seal(const Register& cd, const Register& cn,
                    Cheri::SealImmediateForm form);
-  inline void Subsc(const Register& cd, const Register& cn,
+  inline void Subsc(const Register& rd, const Register& cn,
                     const Operand& operand);
+  inline void AlignU(const Register& cd, const Register& cn,
+                     const Operand& operand);
+  inline void AlignD(const Register& cd, const Register& cn,
+                     const Operand& operand);
 #endif // __CHERI_PURE_CAPABILITY__
 
   // Push or pop up to 4 registers of the same width to or from the stack.

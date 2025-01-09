@@ -2678,6 +2678,10 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kCapability64Constant:
     case IrOpcode::kRelocatableCapability64Constant:
       return MarkAsCapability(node), VisitConstant(node);
+    case IrOpcode::kAlignU:
+      return MarkAsCapability(node), VisitAlignU(node);
+    case IrOpcode::kAlignD:
+      return MarkAsCapability(node), VisitAlignD(node);
 #endif  // __CHERI_PURE_CAPABILITY__
     case IrOpcode::kCapabilityIsTagged:
       return MarkAsRepresentation(MachineRepresentation::kWord8, node),
@@ -3588,6 +3592,24 @@ void InstructionSelector::VisitDebugBreak(Node* node) {
   OperandGenerator g(this);
   Emit(kArchDebugBreak, g.NoOutput());
 }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+void InstructionSelector::VisitAlignU(Node* node) {
+  OperandGenerator g(this);
+  Node* to_boundary = node->InputAt(1);
+  DCHECK_EQ(to_boundary->opcode(), IrOpcode::kInt64Constant);
+  Emit(kArchAlignU, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
+       g.UseImmediate(to_boundary));
+}
+
+void InstructionSelector::VisitAlignD(Node* node) {
+  OperandGenerator g(this);
+  Node* to_boundary = node->InputAt(1);
+  DCHECK_EQ(to_boundary->opcode(), IrOpcode::kInt64Constant);
+  Emit(kArchAlignD, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
+       g.UseImmediate(to_boundary));
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 void InstructionSelector::VisitCapabilityIsTagged(Node* node) {
   OperandGenerator g(this);

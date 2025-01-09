@@ -115,7 +115,10 @@ inline RecordWriteMode WriteBarrierKindToRecordWriteMode(
 // the macros are set up here is useful for future opcodes, so we leave it this
 // way.
 #ifdef __CHERI_PURE_CAPABILITY__
-#define COMMON_CHERI_ARCH_OPCODE_LIST(V) V(ArchCapabilityIsTagged)
+#define COMMON_CHERI_ARCH_OPCODE_LIST(V) \
+  V(ArchCapabilityIsTagged)              \
+  V(ArchAlignU)                          \
+  V(ArchAlignD)
 #else  // !__CHERI_PURE_CAPABILITY__
 #define COMMON_CHERI_ARCH_OPCODE_LIST(V) V(ArchCapabilityIsTagged)
 #endif  // __CHERI_PURE_CAPABILITY__

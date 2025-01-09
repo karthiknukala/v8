@@ -1531,6 +1531,26 @@ void Assembler::subsc(const Register& rd, const Register& cn,
   Emit(SUBS_c | Cm(operand.reg()) | Cn(cn) | Rd(rd));
 }
 
+void Assembler::alignu(const Register& cd, const Register& cn,
+                       const Operand& operand) {
+  DCHECK(cd.Is128Bits());
+  DCHECK(cn.Is128Bits());
+  DCHECK(operand.IsImmediate());
+  int64_t immediate = operand.ImmediateValue();
+  DCHECK(is_uint6(immediate));
+  Emit(ALIGNU | AlignImmLiteral(immediate) | Cn(cn) | Cd(cd));
+}
+
+void Assembler::alignd(const Register& cd, const Register& cn,
+                       const Operand& operand) {
+  DCHECK(cd.Is128Bits());
+  DCHECK(cn.Is128Bits());
+  DCHECK(operand.IsImmediate());
+  int64_t immediate = operand.ImmediateValue();
+  DCHECK(is_uint6(immediate));
+  Emit(ALIGND | AlignImmLiteral(immediate) | Cn(cn) | Cd(cd));
+}
+
 bool Assembler::IsImmAddSubCapability(int64_t immediate) {
   return is_uint12(immediate) ||
          (is_uint12(immediate >> 12) && ((immediate & 0xFFF) == 0));

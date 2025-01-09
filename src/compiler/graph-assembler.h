@@ -422,6 +422,9 @@ class V8_EXPORT_PRIVATE GraphAssembler {
 #ifdef __CHERI_PURE_CAPABILITY__
   Node* CapAdd(Node* a, Node* b);
   Node* CapSub(Node* a, Node* b);
+
+  Node* AlignU(Node* a, Node* b);
+  Node* AlignD(Node* a, Node* b);
 #endif  // __CHERI_PURE_CAPABILITY__
   Node* IntPtrAdd(Node* a, Node* b);
   Node* IntPtrSub(Node* a, Node* b);
