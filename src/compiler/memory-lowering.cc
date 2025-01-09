@@ -133,7 +133,9 @@ Node* MemoryLowering::GetWasmInstanceNode() {
 #define __ gasm()->
 
 Node* MemoryLowering::AlignToAllocationAlignment(Node* value) {
+#if !(defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS))
   if (!V8_COMPRESS_POINTERS_8GB_BOOL) return value;
+#endif  // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
 
   auto already_aligned = __ MakeLabel(MachineRepresentation::kWord64);
 #ifdef __CHERI_PURE_CAPABILITY__
