@@ -1801,6 +1801,7 @@ COMPARE_AND_SWAP_PAIR_LIST(DEFINE_ASM_FUNC)
     Emit(OP | Cs(cs) | Ct(ct) | CnCSP(src.base()));          \
   }
 COMPARE_AND_SWAP_CAPABILITY_LIST(DEFINE_ASM_FUNC)
+#undef DEFINE_ASM_FUNC
 #endif  // __CHERI_PURE_CAPABILITY__
 
 // These macros generate all the variations of the atomic memory operations,
