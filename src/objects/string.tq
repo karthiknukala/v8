@@ -54,8 +54,6 @@ extern class String extends Name {
   const length: int32;
   @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_1: uint32;
   @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_2: uint32;
-  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_1: void;
-  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_2: void;
 }
 
 extern enum StringRepresentationTag extends uint32 {

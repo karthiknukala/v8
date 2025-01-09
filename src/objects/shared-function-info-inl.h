@@ -842,8 +842,13 @@ void SharedFunctionInfo::ClearPreparseData() {
   // We are basically trimming that object to its supertype, so recorded slots
   // within the object don't need to be invalidated.
   heap->NotifyObjectLayoutChange(data, no_gc, InvalidateRecordedSlots::kNo);
+#ifdef __CHERI_PURE_CAPABILITY__
+  static_assert(UncompiledDataWithoutPreparseData::kSize <
+                UncompiledDataWithPreparseData::kSize + 8);
+#else   // !__CHERI_PURE_CAPABILITY__
   static_assert(UncompiledDataWithoutPreparseData::kSize <
                 UncompiledDataWithPreparseData::kSize);
+#endif  // __CHERI_PURE_CAPABILITY__
 #ifdef __CHERI_PURE_CAPABILITY__
   static_assert(UncompiledDataWithoutPreparseData::kSize ==
                 UncompiledData::kHeaderSize + 8);
