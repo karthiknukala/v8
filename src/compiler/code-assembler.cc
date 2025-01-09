@@ -595,7 +595,8 @@ CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP)
 CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP_MAYBECAP)
 #undef DEFINE_CODE_ASSEMBLER_BINARY_OP_MAYBECAP
 
-// Need to handle IntPtrAdd separately because of commutativity.
+// Need to handle IntPtrAdd separately because of commutativity and usage of
+// CapAdd.
 TNode<WordT> CodeAssembler::IntPtrAdd(TNode<WordT> a, TNode<WordT> b) {
   if (a.IsCapability()) {
     return CapAdd(a, b);
@@ -606,7 +607,15 @@ TNode<WordT> CodeAssembler::IntPtrAdd(TNode<WordT> a, TNode<WordT> b) {
         .MarkAsInteger();
   }
 }
-#endif // __CHERI_PURE_CAPABILITY__
+// Need to handle IntPtrSub separately because of commutativity and usage of
+// CapSub.
+TNode<WordT> CodeAssembler::IntPtrSub(TNode<WordT> a, TNode<WordT> b) {
+  if (a.IsCapability()) {
+    return CapSub(a, b);
+  }
+  return UncheckedCast<WordT>(raw_assembler()->IntPtrSub(a, b)).MarkAsInteger();
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 TNode<WordT> CodeAssembler::WordShl(TNode<WordT> value, int shift) {
   return (shift != 0) ? WordShl(value, IntPtrConstant(shift)) : value;

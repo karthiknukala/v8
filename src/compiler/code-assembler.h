@@ -236,7 +236,6 @@ class CodeAssemblerParameterizedLabel;
   V(CapSub, WordT, WordT, WordT)
 
 #define CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(V)                          \
-  V(IntPtrSub, WordT, WordT, WordT)                                     \
   V(WordOr, WordT, WordT, WordT)                                        \
   V(WordAnd, WordT, WordT, WordT)                                       \
   V(WordXor, WordT, WordT, WordT)                                       \
@@ -1130,6 +1129,7 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
   CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
   TNode<WordT> IntPtrAdd(TNode<WordT> a, TNode<WordT> b);
+  TNode<WordT> IntPtrSub(TNode<WordT> a, TNode<WordT> b);
 #endif  // __CHERI_PURE_CAPABILITY__
 #undef DECLARE_CODE_ASSEMBLER_BINARY_OP
 

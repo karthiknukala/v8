@@ -332,6 +332,7 @@ macro StringToSlice(string: String): never labels OneByte(ConstSlice<char8>),
       case (s: ExternalOneByteString): {
         const data = torque_internal::unsafe::NewOffHeapConstSlice(
             s.GetChars(), Convert<intptr>(s.length));
+        dcheck(CapabilityIsTagged(Convert<uintptr>(data.offset)));
         goto OneByte(Subslice(data, offset, length) otherwise unreachable);
       }
       case (s: ExternalTwoByteString): {
@@ -398,8 +399,11 @@ macro AbstractStringIndexOf(
     subject: RawPtr<char8>, subjectLen: intptr, search: RawPtr<char8>,
     searchLen: intptr, fromIndex: intptr): intptr {
   if (searchLen == 1) {
+    dcheck(CapabilityIsTagged(subject));
     return SearchOneByteInOneByteString(subject, subjectLen, search, fromIndex);
   }
+  dcheck(CapabilityIsTagged(subject));
+  dcheck(CapabilityIsTagged(search));
   return SearchOneByteStringInOneByteString(
       subject, subjectLen, search, searchLen, fromIndex);
 }
