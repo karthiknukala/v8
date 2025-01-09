@@ -319,7 +319,7 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
   Register xd = cd.X();
   Register xn = cn.X();
 
-  Gcseal(cn, xd);
+  Gcseal(xd, cn);
   Cmp(xd, xzr);
   B(eq, &not_sentry);
   Add(xn, xn, operand);
@@ -331,7 +331,7 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
 
   Bind(&not_sentry);
   Add(cn, cn, operand);
-  Gcvalue(cn, xd);
+  Gcvalue(xd, cn);
   Orr(xd, xd, 0x1); // C64 bit
   Scvalue(cd, cn, xd);
 
@@ -343,12 +343,12 @@ void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& te
   DCHECK(cd.IsC());
   Label not_sentry, done;
   // Check if we need to set the C64 bit.
-  Gcvalue(cd, tempC.X());
+  Gcvalue(tempC.X(), cd);
   And(tempC.X(), tempC.X(), 1);
   Cmp(tempC.X(), 1);
   B(eq, &done);
   // We need to OR the C64 bit.
-  Gcseal(cd, tempC.X());
+  Gcseal(tempC.X(), cd);
   Cmp(tempC.X(), xzr);
   B(eq, &not_sentry);
   // not_sentry == false => we have a sentry. Need to re-derive the capability
@@ -364,7 +364,7 @@ void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& te
   bind(&not_sentry);
   // not_sentry == true => we don't have a sentry. Simply OR the address and
   // Scvalue it.
-  Gcvalue(cd, tempC.X());
+  Gcvalue(tempC.X(), cd);
   Orr(tempC.X(), tempC.X(), 0x1);
   Scvalue(cd, cd, tempC.X());
   bind(&done);
@@ -1328,7 +1328,7 @@ void MacroAssembler::Tbz(const Register& rt, unsigned bit_pos, Label* label) {
   UseScratchRegisterScope temps(this);
   Register temp = rt.IsC() ? temps.AcquireX() : NoReg;
   if (rt.IsC()) {
-    Gcvalue(rt, temp);
+    Gcvalue(temp, rt);
   }
 #endif  // __CHERI_PURE_CAPABILITY__
   bool need_extra_instructions =
@@ -1950,7 +1950,7 @@ void MacroAssembler::AssertSmi(Register object, AbortReason reason) {
   if (object.IsC()) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    Gcvalue(object, temp);
+    Gcvalue(temp, object);
     Tst(temp, kSmiTagMask);
   }
 #else   // !__CHERI_PURE_CAPABILITY__
@@ -1967,7 +1967,7 @@ void MacroAssembler::AssertNotSmi(Register object, AbortReason reason) {
   if (object.IsC()) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    Gcvalue(object, temp);
+    Gcvalue(temp, object);
     Tst(temp, kSmiTagMask);
   }
 #else   // !__CHERI_PURE_CAPABILITY__
@@ -3940,13 +3940,13 @@ void MacroAssembler::LoadWeakValue(Register out, Register in,
     DCHECK(in.IsC());
     UseScratchRegisterScope temps(this);
     Register temp_in = temps.AcquireX();
-    Gcvalue(in, temp_in);
+    Gcvalue(temp_in, in);
 
     CompareAndBranch(temp_in.W(), Operand(kClearedWeakHeapObjectLower32), eq,
                      target_if_cleared);
 
     Register temp_out = temps.AcquireX();
-    Gcvalue(out, temp_out);
+    Gcvalue(temp_out, out);
     and_(temp_out, temp_in, Operand(~kWeakHeapObjectMask));
     Scvalue(out, out, temp_out);
     return;
@@ -4310,7 +4310,7 @@ void MacroAssembler::RecordWriteField(Register object, int offset,
     DCHECK(!AreAliased(object, value, scratch));
 #if defined(__CHERI_PURE_CAPABILITY__)
     Register temp = temps.AcquireX();
-    Gcvalue(object, temp);
+    Gcvalue(temp, object);
     Add(scratch, temp, offset - kHeapObjectTag);
 #else   // !__CHERI_PURE_CAPABILITY__
     Add(scratch, object, offset - kHeapObjectTag);

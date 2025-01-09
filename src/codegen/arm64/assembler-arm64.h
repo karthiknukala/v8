@@ -833,15 +833,14 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
             const MemOperand& src);
   // Load a capability tag field
   void gctag(const Register& rd, const Register& cn);
-  // FIXME(ds815): Rewrite for consistency.
   // Load a capability value field
-  void gcvalue(const Register& cd, const Register& rd);
+  void gcvalue(const Register& rd, const Register& cn);
   // Load a capability base field
-  void gcbase(const Register& cd, const Register& rd);
+  void gcbase(const Register& rd, const Register& cn);
   // Load a capability length field
-  void gclen(const Register& cd, const Register& rd);
+  void gclen(const Register& rd, const Register& cn);
   // Load a capability sealed flag
-  void gcseal(const Register& cd, const Register& rd);
+  void gcseal(const Register& rd, const Register& cn);
   // Store a capability value field
   void scvalue(const Register& cd, const Register& cn,
 	       const Register& rm);

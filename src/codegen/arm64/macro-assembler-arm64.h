@@ -929,11 +929,10 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
 #if defined(__CHERI_PURE_CAPABILITY__)
   inline void Cmpc(const Register& cn, const Operand& operand);
   inline void Cpy(const Register& cd, const Register& cn);
-  // FIXME(ds815): Rewrite for consistency (rd first, sources after).
-  inline void Gcvalue(const Register& cn, const Register& rd);
-  inline void Gcbase(const Register& cn, const Register& rd);
-  inline void Gclen(const Register& cn, const Register& rd);
-  inline void Gcseal(const Register& cn, const Register& rd);
+  inline void Gcvalue(const Register& rd, const Register& cn);
+  inline void Gcbase(const Register& rd, const Register& cn);
+  inline void Gclen(const Register& rd, const Register& cn);
+  inline void Gcseal(const Register& rd, const Register& cn);
   inline void Gctag(const Register& rd, const Register& cn);
   inline void Scvalue(const Register& cd, const Register& cn, const Register& rm);
   inline void Scbndse(const Register& cd, const Register& cn, const Register& rm);

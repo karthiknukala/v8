@@ -1499,25 +1499,25 @@ void Assembler::gctag(const Register& rd, const Register& cn) {
   Emit(GCTAG | CnCSP(cn) | Rd(rd));
 }
 
-void Assembler::gcvalue(const Register& cn, const Register& rd) {
+void Assembler::gcvalue(const Register& rd, const Register& cn) {
   DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
   Emit(GCVALUE | CnCSP(cn) | Rd(rd));
 }
 
-void Assembler::gclen(const Register& cn, const Register& rd) {
+void Assembler::gclen(const Register& rd, const Register& cn) {
   DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
   Emit(GCLEN | CnCSP(cn) | Rd(rd));
 }
 
-void Assembler::gcbase(const Register& cn, const Register& rd) {
+void Assembler::gcbase(const Register& rd, const Register& cn) {
   DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
   Emit(GCBASE | CnCSP(cn) | Rd(rd));
 }
 
-void Assembler::gcseal(const Register& cn, const Register& rd) {
+void Assembler::gcseal(const Register& rd, const Register& cn) {
   DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
   Emit(GCSEAL | CnCSP(cn) | Rd(rd));

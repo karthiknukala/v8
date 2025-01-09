@@ -305,32 +305,32 @@ void MacroAssembler::Gctag(const Register& rd, const Register& cn) {
   gctag(rd, cn);
 }
 
-void MacroAssembler::Gcvalue(const Register& cs, const Register& rd) {
+void MacroAssembler::Gcvalue(const Register& rd, const Register& cn) {
   DCHECK(allow_macro_instructions());
-  DCHECK(cs.Is128Bits());
+  DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
-  gcvalue(cs, rd);
+  gcvalue(rd, cn);
 }
 
-void MacroAssembler::Gclen(const Register& cs, const Register& rd) {
+void MacroAssembler::Gclen(const Register& rd, const Register& cn) {
   DCHECK(allow_macro_instructions());
-  DCHECK(cs.Is128Bits());
+  DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
-  gclen(cs, rd);
+  gclen(rd, cn);
 }
 
-void MacroAssembler::Gcbase(const Register& cs, const Register& rd) {
+void MacroAssembler::Gcbase(const Register& rd, const Register& cn) {
   DCHECK(allow_macro_instructions());
-  DCHECK(cs.Is128Bits());
+  DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
-  gcbase(cs, rd);
+  gcbase(rd, cn);
 }
 
-void MacroAssembler::Gcseal(const Register& cs, const Register& rd) {
+void MacroAssembler::Gcseal(const Register& rd, const Register& cn) {
   DCHECK(allow_macro_instructions());
-  DCHECK(cs.Is128Bits());
+  DCHECK(cn.Is128Bits());
   DCHECK(rd.Is64Bits());
-  gcseal(cs, rd);
+  gcseal(rd, cn);
 }
 
 void MacroAssembler::Scvalue(const Register& cd, const Register& cn,
@@ -1123,7 +1123,7 @@ void MacroAssembler::Lsl(const Register& rd, const Register& rn,
     // TODO(gcjenkinson): Does this case actually make sense
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    Gcvalue(rn, temp);
+    Gcvalue(temp, rn);
     lsl(temp, temp, shift);
     Scvalue(rd, rd, temp);
     return;
@@ -1141,7 +1141,7 @@ void MacroAssembler::Lsl(const Register& rd, const Register& rn,
     // TODO(gcjenkinson): Does this case actually make sense
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    Gcvalue(rn, temp);
+    Gcvalue(temp, rn);
     lslv(rd, temp, rm);
     Scvalue(rn, rn, temp);
     return;
@@ -1159,7 +1159,7 @@ void MacroAssembler::Lsr(const Register& rd, const Register& rn,
     // TODO(gcjenkinson): Does this case actually make sense
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    Gcvalue(rn, temp);
+    Gcvalue(temp, rn);
     lsr(rd, temp, shift);
     Scvalue(rn, rn, temp);
     return;
@@ -1177,7 +1177,7 @@ void MacroAssembler::Lsr(const Register& rd, const Register& rn,
     // TODO(gcjenkinson): Does this case actually make sense
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    Gcvalue(rn, temp);
+    Gcvalue(temp, rn);
     lsrv(rd, temp, rm);
     Scvalue(rn, rn, temp);
     return;
