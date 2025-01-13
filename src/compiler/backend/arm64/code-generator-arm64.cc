@@ -1493,8 +1493,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 #ifdef __CHERI_PURE_CAPABILITY__
         if ((instr->OutputAt(0)->IsCapabilityRegister()) ||
             (instr->InputAt(0)->IsCapabilityRegister())) {
-          __ Ands(i.OutputRegisterCapability(),
-                  i.InputOrZeroRegisterCapability(0), i.InputOperand2_64(1));
+          __ Ands(i.OutputRegister64(),
+                  i.InputOrZeroRegister64(0), i.InputOperand2_64(1));
           return kSuccess;
         }
 #endif  // __CHERI_PURE_CAPABILITY__
