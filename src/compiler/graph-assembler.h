@@ -549,7 +549,7 @@ class V8_EXPORT_PRIVATE GraphAssembler {
   Effect effect() const { return Effect(effect_); }
 
  protected:
-  constexpr bool Is64() const { return kSystemPointerSize == 8; }
+  constexpr bool Is64() const { return kSystemPointerAddrSize == 8; }
 
   template <typename... Vars>
   void MergeState(detail::GraphAssemblerLabelForVars<Vars...>* label,

@@ -710,22 +710,22 @@ class MachineRepresentationChecker {
 
  private:
   static bool Is32() {
-#if defined (__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kCapability32;
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kWord32;
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
   }
   static bool Is64() {
-#if defined (__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kCapability64;
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kWord64;
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   void CheckValueInputRepresentationIs(Node const* node, int index,
