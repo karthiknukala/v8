@@ -159,6 +159,7 @@ int MacroAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
                                     Register exclusion) {
   ASM_CODE_COMMENT(this);
   auto list = kCallerSaved;
+  DCHECK_EQ(list.RegisterSizeInBytes(), kSystemPointerSize);
   list.Remove(exclusion);
   list.Align();
 

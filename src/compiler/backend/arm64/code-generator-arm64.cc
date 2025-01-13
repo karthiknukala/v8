@@ -1923,12 +1923,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ Poke(i.InputSimd128Register(0), operand);
       } else if (instr->InputAt(0)->IsFPRegister()) {
         __ Poke(i.InputFloat64Register(0), operand);
-#if defined(__CHERI_PURE_CAPABILITY__)
-      } else if (instr->InputAt(0)->IsCapabilityRegister()) {
-	__ Poke(i.InputOrZeroRegisterCapability(0), operand);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
       } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+        __ Poke(i.InputOrZeroRegisterCapability(0), operand);
+#else   // !__CHERI_PURE_CAPABILITY__
         __ Poke(i.InputOrZeroRegister64(0), operand);
+#endif  // __CHERI_PURE_CAPABILITY__
       }
       break;
     }
@@ -1937,14 +1937,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (instr->InputAt(0)->IsFPRegister()) {
         __ PokePair(i.InputFloat64Register(1), i.InputFloat64Register(0),
                     slot * kSystemPointerSize);
-#if defined(__CHERI_PURE_CAPABILITY__)
-      } else if (instr->InputAt(0)->IsCapabilityRegister()) {
-	__ PokePair(i.InputRegisterCapability(1), i.InputRegisterCapability(0),
-                    slot * kSystemPointerSize);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
       } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+        __ PokePair(i.InputRegisterCapability(1), i.InputRegisterCapability(0),
+                    slot * kSystemPointerSize);
+#else   // !__CHERI_PURE_CAPABILITY__
         __ PokePair(i.InputRegister(1), i.InputRegister(0),
                     slot * kSystemPointerSize);
+#endif  // __CHERI_PURE_CAPABILITY__
       }
       break;
     }
