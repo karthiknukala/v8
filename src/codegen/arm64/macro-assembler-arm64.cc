@@ -1939,8 +1939,6 @@ void MacroAssembler::AssertSmi(Register object, AbortReason reason) {
   static_assert(kSmiTag == 0);
 #if defined(__CHERI_PURE_CAPABILITY__)
   if (object.IsC()) {
-    UseScratchRegisterScope temps(this);
-    Register temp = temps.AcquireX();
     Tst(object.X(), kSmiTagMask);
   }
 #else   // !__CHERI_PURE_CAPABILITY__
@@ -1955,8 +1953,6 @@ void MacroAssembler::AssertNotSmi(Register object, AbortReason reason) {
   static_assert(kSmiTag == 0);
 #if defined(__CHERI_PURE_CAPABILITY__)
   if (object.IsC()) {
-    UseScratchRegisterScope temps(this);
-    Register temp = temps.AcquireX();
     Tst(object.X(), kSmiTagMask);
   }
 #else   // !__CHERI_PURE_CAPABILITY__
