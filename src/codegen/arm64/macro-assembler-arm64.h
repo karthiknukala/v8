@@ -763,8 +763,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void LogicalMacro(const Register& rd, const Register& rn,
                     const Operand& operand, LogicalOp op);
 #ifdef __CHERI_PURE_CAPABILITY__
-  void CheriSub(const Register& rd, const Register& rn, const Operand& operand,
-                FlagsUpdate S);
+  void CheriAddSub(const Register& rd, const Register& rn,
+                   const Operand& operand, FlagsUpdate S, AddSubOp op);
 #endif  // __CHERI_PURE_CAPABILITY__
   void AddSubMacro(const Register& rd, const Register& rn,
                    const Operand& operand, FlagsUpdate S, AddSubOp op);

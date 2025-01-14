@@ -931,17 +931,18 @@ Operand MacroAssembler::MoveImmediateForShiftedOp(const Register& dst,
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
-void MacroAssembler::CheriSub(const Register& rd, const Register& rn,
-                              const Operand& operand, FlagsUpdate S) {
+void MacroAssembler::CheriAddSub(const Register& rd, const Register& rn,
+                                 const Operand& operand, FlagsUpdate S,
+                                 AddSubOp op) {
   // We can't scvalue using the SP register, so we need an extra register in
   // that case.
   if (rd.IsSP() || rn.code() == rd.code()) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
-    AddSub(temp, rn.X(), operand, S, SUB);
+    AddSub(temp, rn.X(), operand, S, op);
     Scvalue(rd, rn, temp);
   } else {
-    AddSub(rd.X(), rn.X(), operand, S, SUB);
+    AddSub(rd.X(), rn.X(), operand, S, op);
     Scvalue(rd, rn, rd.X());
   }
 }
@@ -1012,39 +1013,18 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
     }
 #if defined(__CHERI_PURE_CAPABILITY__)
   } else if (rd.IsC() && operand.IsShiftedRegister()) {
-    // The Morello ISA doesn't possess an instruction for subtracting an
-    // extended register from a capability register.
-    // FIXME(ds815): Once we don't see a SUB here anymore (i.e. everything is
-    // marked as a capability and generating SUB_c, drop the || in the
-    // condition.
+    // Morello doesn't have shifted register instructions for capability
+    // registers.
     if (op == SUB_c || op == SUB) {
-      CheriSub(rd, rn, operand, S);
+      CheriAddSub(rd, rn, operand, S, SUB);
     } else {
-      if (operand.shift_amount() > 4 || operand.shift() != LSL) {
-        // We can only encode a shift of 4 in Morello and extended register adds
-        // only support LSL. For any other shifted register, generate a similar
-        // sequence to SUB.
-        if (rn.code() == rd.code()) {
-          UseScratchRegisterScope temps(this);
-          Register temp = temps.AcquireX();
-          AddSub(temp, rn.X(), operand, S, ADD);
-          Scvalue(rd, rn, temp);
-        } else {
-          AddSub(rd.X(), rn.X(), operand, S, ADD);
-          Scvalue(rd, rn, rd.X());
-        }
-      } else {
-        DCHECK_EQ(op, ADD_c);
-        DCHECK((operand.shift() == LSL) && (operand.shift_amount() <= 4));
-        AddSub(rd, rn, Operand(operand.reg(), SXTW, operand.shift_amount()), S,
-               ADD_c);
-      }
+      CheriAddSub(rd, rn, operand, S, ADD);
     }
   } else if (rd.IsC() && operand.IsExtendedRegister()) {
     if (op == SUB_c) {
       // The Morello ISA doesn't possess an instruction for subtracting an
       // extended register from a capability register.
-      CheriSub(rd, rn, operand, S);
+      CheriAddSub(rd, rn, operand, S, SUB);
     } else {
       DCHECK_EQ(op, ADD_c);
       AddSub(rd, rn, operand, S, ADD_c);
