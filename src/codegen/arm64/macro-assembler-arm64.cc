@@ -2198,16 +2198,13 @@ void MacroAssembler::CopySlots(int dst, Register src, Register slot_count) {
 #endif  // __CHERI_PURE_CAPABILITY__
   DCHECK(!src.IsZero());
   UseScratchRegisterScope scope(this);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   Register dst_reg = scope.AcquireC();
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register dst_reg = scope.AcquireX();
-#endif  // __CHERI_PURE_CAPABILITY__
-#if defined(__CHERI_PURE_CAPABILITY__)
   SlotAddress(dst_reg, dst, size);
   SlotAddress(src, src, size);
   CopyCapabilities(dst_reg, src, slot_count);
 #else   // !__CHERI_PURE_CAPABILITY__
+  Register dst_reg = scope.AcquireX();
   SlotAddress(dst_reg, dst);
   SlotAddress(src, src);
   CopyDoubleWords(dst_reg, src, slot_count);
