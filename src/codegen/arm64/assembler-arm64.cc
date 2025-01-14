@@ -4494,8 +4494,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     if (IsImmLSScaled(addr.offset(), size)) {
       int offset = static_cast<int>(addr.offset());
 #ifdef __CHERI_PURE_CAPABILITY__
-      DCHECK_IMPLIES(rt.IsC(), IsAligned(offset, kSystemPointerSize) ||
-                                   IsAligned(offset + 1, kSystemPointerSize));
+      DCHECK_IMPLIES(rt.IsC(), IsAligned(offset, kSystemPointerSize));
       // Use the scaled addressing mode.
       if (rt.IsC()) {
         Emit(LoadStoreCapUnsignedOffsetCapNormalFixed | memop |
@@ -4547,12 +4546,11 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
   } else {
     // Pre-index and post-index modes.
     DCHECK_NE(rt, addr.base());
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(rt.IsC(), IsAligned(addr.offset(), kSystemPointerSize));
+#endif  // __CHERI_PURE_CAPABILITY__
     if (IsImmLSUnscaled(addr.offset())) {
       int offset = static_cast<int>(addr.offset());
-#ifdef __CHERI_PURE_CAPABILITY__
-      DCHECK_IMPLIES(rt.IsC(), IsAligned(offset, kSystemPointerSize) ||
-                                   IsAligned(offset + 1, kSystemPointerSize));
-#endif  // __CHERI_PURE_CAPABILITY__
       if (addr.IsPreIndex()) {
 #if defined(__CHERI_PURE_CAPABILITY__)
         if (rt.IsC()) {
