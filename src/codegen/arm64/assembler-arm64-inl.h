@@ -537,12 +537,12 @@ MemOperand::MemOperand(Register base, const Operand& offset, AddrMode addrmode)
     offset_ = 0;
 
     // These assertions match those in the shifted-register constructor.
-#if defined(__CHERI_PURE_CAPABILITY__)
-    DCHECK(regoffset_.Is64Bits() || regoffset_.Is128Bits() &&
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK((regoffset_.Is64Bits() || regoffset_.Is128Bits()) &&
            !regoffset_.IsSP());
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
     DCHECK(regoffset_.Is64Bits() && !regoffset_.IsSP());
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
     DCHECK(shift_ == LSL);
   } else {
     DCHECK(offset.IsExtendedRegister());
