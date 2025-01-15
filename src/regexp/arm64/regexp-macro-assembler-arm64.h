@@ -191,17 +191,29 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
   static constexpr Register current_character() { return w22; }
 
   // Register holding address of the end of the input string.
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr Register input_end() { return c25; }
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr Register input_end() { return x25; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Register holding address of the start of the input string.
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr Register input_start() { return c26; }
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr Register input_start() { return x26; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Register holding the offset from the start of the string where we should
   // start matching.
   static constexpr Register start_offset() { return w27; }
 
   // Pointer to the output array's first element.
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr Register output_array() { return c28; }
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr Register output_array() { return x28; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Register holding the frame address. Local variables, parameters and
   // regexp registers are addressed relative to this.
@@ -209,10 +221,18 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
 
   // The register containing the backtrack stack top. Provides a meaningful
   // name to the register.
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr Register backtrack_stackpointer() { return c23; }
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr Register backtrack_stackpointer() { return x23; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Register holding pointer to the current code object.
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr Register code_pointer() { return c20; }
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr Register code_pointer() { return x20; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Register holding the value used for clearing capture registers.
   static constexpr Register string_start_minus_one() { return w24; }
