@@ -1881,6 +1881,9 @@ void CodeStubAssembler::StoreExternalPointerToObject(TNode<HeapObject> object,
 
   TNode<UintPtrT> value = UncheckedCast<UintPtrT>(pointer);
   value = UncheckedCast<UintPtrT>(WordOr(pointer, UintPtrConstant(tag)));
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(value.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
   StoreNoWriteBarrier(MachineType::PointerRepresentation(), table, table_offset,
                       value);
 #else

@@ -4548,6 +4548,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     DCHECK_NE(rt, addr.base());
 #ifdef __CHERI_PURE_CAPABILITY__
     DCHECK_IMPLIES(rt.IsC(), IsAligned(addr.offset(), kSystemPointerSize));
+    DCHECK(addr.base().IsC());
 #endif  // __CHERI_PURE_CAPABILITY__
     if (IsImmLSUnscaled(addr.offset())) {
       int offset = static_cast<int>(addr.offset());
