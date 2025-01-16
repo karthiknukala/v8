@@ -44,8 +44,14 @@ ASSERT_TRIVIALLY_COPYABLE(DirectMaybeHandle<Object>);
 #ifdef DEBUG
 bool HandleBase::IsDereferenceAllowed() const {
   DCHECK_NOT_NULL(location_);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(location_));
+#endif  // __CHERI_PURE_CAPABILITY__
   Object object(*location_);
   if (object.IsSmi()) return true;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK_IMPLIES(*location_ != 0, V8_CHERI_TAG_GET(*location_));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   HeapObject heap_object = HeapObject::cast(object);
   if (IsReadOnlyHeapObject(heap_object)) return true;
   Isolate* isolate = GetIsolateFromWritableObject(heap_object);

@@ -3465,10 +3465,11 @@ void Generate_PushBoundArguments(MacroAssembler* masm) {
     Register slots_to_claim = x12;
 #if defined(__CHERI_PURE_CAPABILITY__)
     Register scratch = c10;
+    Register receiver = c14;
 #else // defined(__CHERI_PURE_CAPABILITY__)
     Register scratch = x10;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
     Register receiver = x14;
+#endif // defined(__CHERI_PURE_CAPABILITY__)
 
     __ Sub(argc, argc, kJSArgcReceiverSlots);
     __ Add(total_argc, argc, bound_argc);
