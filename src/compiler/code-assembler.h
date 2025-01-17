@@ -930,6 +930,13 @@ class V8_EXPORT_PRIVATE CodeAssembler {
     if constexpr (is_capability<Type>::value) {
       DCHECK_EQ(type.representation(), MachineType::PointerRepresentation());
     }
+
+    if constexpr (is_capability<Type>::maybe_tagged) {
+      if (type.representation() == MachineType::PointerRepresentation()) {
+        return UncheckedCast<Type>(Load(type, static_cast<Node*>(base)))
+            .MarkAsCapability();
+      }
+    }
     return UncheckedCast<Type>(Load(type, static_cast<Node*>(base)));
   }
   Node* Load(MachineType type, Node* base, Node* offset);
