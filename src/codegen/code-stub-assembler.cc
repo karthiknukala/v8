@@ -1648,7 +1648,7 @@ TNode<HeapObject> CodeStubAssembler::Allocate(TNode<IntPtrT> size_in_bytes,
 #endif
 
   TNode<IntPtrT> limit_address =
-      IntPtrAdd(ReinterpretCast<IntPtrT>(top_address),
+      IntPtrAdd(ReinterpretCast<IntPtrT>(top_address).MarkAsCapability(),
                 IntPtrConstant(kSystemPointerSize));
 
   if (flags & AllocationFlag::kDoubleAlignment) {
@@ -1898,13 +1898,14 @@ TNode<Object> CodeStubAssembler::LoadFromParentFrame(int offset) {
 
 TNode<Uint8T> CodeStubAssembler::LoadUint8Ptr(TNode<RawPtrT> ptr,
                                               TNode<IntPtrT> offset) {
-  return Load<Uint8T>(IntPtrAdd(ReinterpretCast<IntPtrT>(ptr), offset));
+  return Load<Uint8T>(
+      IntPtrAdd(ReinterpretCast<IntPtrT>(ptr).MarkAsCapability(), offset));
 }
 
 TNode<Uint64T> CodeStubAssembler::LoadUint64Ptr(TNode<RawPtrT> ptr,
                                                 TNode<IntPtrT> index) {
   return Load<Uint64T>(
-      IntPtrAdd(ReinterpretCast<IntPtrT>(ptr),
+      IntPtrAdd(ReinterpretCast<IntPtrT>(ptr).MarkAsCapability(),
                 IntPtrMul(index, IntPtrConstant(sizeof(uint64_t)))));
 }
 
@@ -5491,7 +5492,7 @@ void CodeStubAssembler::CopyFixedArrayElements(
   TNode<IntPtrT> to_array_adjusted =
       element_offset_matches
           ? IntPtrSub(BitcastTaggedToWord(to_array), first_from_element_offset)
-          : ReinterpretCast<IntPtrT>(to_array);
+          : ReinterpretCast<IntPtrT>(to_array).MarkAsCapability();
 
   Branch(WordEqual(var_from_offset.value(), limit_offset), &done, &decrement);
 
@@ -16195,9 +16196,12 @@ IntegerLiteral CodeStubAssembler::ConstexprIntegerLiteralBitwiseOr(
 void CodeStubAssembler::PerformStackCheck(TNode<Context> context) {
   Label ok(this), stack_check_interrupt(this, Label::kDeferred);
 
-  TNode<UintPtrT> stack_limit = UncheckedCast<UintPtrT>(
-      Load(MachineType::Pointer(),
-           ExternalConstant(ExternalReference::address_of_jslimit(isolate()))));
+  TNode<UintPtrT> stack_limit =
+      UncheckedCast<UintPtrT>(
+          Load(MachineType::Pointer(),
+               ExternalConstant(
+                   ExternalReference::address_of_jslimit(isolate()))))
+          .MarkAsCapability();
   TNode<BoolT> sp_within_limit = StackPointerGreaterThan(stack_limit);
 
   Branch(sp_within_limit, &ok, &stack_check_interrupt);
