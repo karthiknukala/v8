@@ -2633,7 +2633,7 @@ void OnStackReplacement(MacroAssembler* masm, OsrSourceTier source,
 #endif // defined(__CHERI_PURE_CAPABILITY__)
       __ CallRuntime(Runtime::kLogOrTraceOptimizedOSREntry, 0);
 #if defined(__CHERI_PURE_CAPABILITY__)
-      __ Pop(c0, padregc);
+      __ Pop(padregc, c0);
 #else // defined(__CHERI_PURE_CAPABILITY__)
       __ Pop(padreg, x0);
 #endif // defined(__CHERI_PURE_CAPABILITY__)
