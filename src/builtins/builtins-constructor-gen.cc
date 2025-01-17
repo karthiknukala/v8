@@ -542,9 +542,11 @@ TNode<HeapObject> ConstructorBuiltinsAssembler::CreateShallowObjectLiteral(
   CSA_DCHECK(this, IsJSObjectMap(boilerplate_map));
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  CSA_DCHECK(this, WordIsAligned(BitcastTaggedToWord(boilerplate),
+  CSA_DCHECK(this, WordIsAligned(IntPtrSub(BitcastTaggedToWord(boilerplate),
+                                           IntPtrConstant(kHeapObjectTag)),
                                  kSystemPointerSize));
-  CSA_DCHECK(this, WordIsAligned(BitcastTaggedToWord(boilerplate_map),
+  CSA_DCHECK(this, WordIsAligned(IntPtrSub(BitcastTaggedToWord(boilerplate_map),
+                                           IntPtrConstant(kHeapObjectTag)),
                                  kSystemPointerSize));
 #endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   TVARIABLE(HeapObject, var_properties);
