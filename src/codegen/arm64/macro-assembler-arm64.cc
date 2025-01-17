@@ -4226,7 +4226,6 @@ void MacroAssembler::CheckPageFlag(const Register& object, int mask,
   UseScratchRegisterScope temps(this);
   Register scratch = temps.AcquireX();
 #if defined(__CHERI_PURE_CAPABILITY__)
-  Mov(scratch.C(), object);
   And(scratch.C(), object, ~kPageAlignmentMask);
   Ldr(scratch.X(), MemOperand(scratch, BasicMemoryChunk::kFlagsOffset));
 #else   // !__CHERI_PURE_CAPABILITY__
