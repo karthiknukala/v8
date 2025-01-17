@@ -121,6 +121,11 @@ TF_BUILTIN(ConstructWithSpread, CallOrConstructBuiltinsAssembler) {
   auto args_count =
       UncheckedParameter<Int32T>(Descriptor::kActualArgumentsCount);
   auto context = Parameter<Context>(Descriptor::kContext);
+#ifndef V8_COMPRESS_POINTERS
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(target)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(new_target)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(spread)));
+#endif  // !V8_COMPRESS_POINTERS
   CallOrConstructWithSpread(target, new_target, spread, args_count, context);
 }
 
