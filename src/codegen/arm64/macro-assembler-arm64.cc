@@ -371,9 +371,11 @@ void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& te
 void MacroAssembler::PrepareC64Jump(const Register& cd) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
-  UseScratchRegisterScope temps(this);
-  Register tempC = temps.AcquireC();
-  PrepareC64JumpHelper(cd, tempC);
+  Register scratch = AreAliased(cd, c0) ? c1 : c0;
+  Push(scratch, czr);
+  DCHECK(!AreAliased(scratch, cd));
+  PrepareC64JumpHelper(cd, scratch);
+  Pop(czr, scratch);
 }
 #endif
 
@@ -3081,6 +3083,8 @@ void MacroAssembler::TailCallBuiltin(Builtin builtin, Condition cond) {
   // x17 is used to allow using "Call" (i.e. `bti c`) rather than "Jump"
   // (i.e. `bti j`) landing pads for the tail-called code.
 #if defined(__CHERI_PURE_CAPABILITY__)
+  UseScratchRegisterScope temps(this);
+  temps.Exclude(c17);
   Register temp = c17;
 #else   // !__CHERI_PURE_CAPABILITY__
   Register temp = x17;
