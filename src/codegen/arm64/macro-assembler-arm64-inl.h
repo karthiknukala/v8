@@ -1568,7 +1568,7 @@ void MacroAssembler::Poke(const CPURegister& src, const Operand& offset) {
   }
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  Str(src.C(), MemOperand(csp, offset));
+  Str(src, MemOperand(csp, offset));
 #else // !__CHERI_PURE_CAPABILITY__
   Str(src, MemOperand(sp, offset));
 #endif // __CHERI_PURE_CAPABILITY__
