@@ -279,16 +279,7 @@ void MacroAssembler::LogicalMacro(const Register& rd, const Register& rn,
         // If rd is the stack pointer we cannot use it as the destination
         // register so we use the temp register as an intermediate again.
         Logical(temp, rn, imm_operand, op);
-#if defined(__CHERI_PURE_CAPABILITY__)
-        // XXX(cheri): If we end up here using something like:
-        //  Orr(csp.X(), x0, 0x...);
-        // we will implicitly discard the .X() on the csp. While this doesn't
-        // seem like a reasonable thing to be doing in real code, the
-        // preshift_immediates test exposes this issue.
-        Mov(csp, temp);
-#else   // !__CHERI_PURE_CAPABILITY__
         Mov(sp, temp);
-#endif  // !__CHERI_PURE_CAPABILITY__
       } else {
         Logical(rd, rn, imm_operand, op);
       }
