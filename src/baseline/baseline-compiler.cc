@@ -1904,7 +1904,11 @@ void BaselineCompiler::VisitJumpLoop() {
     ASM_CODE_COMMENT_STRING(&masm_, "OSR Check Armed");
     BaselineAssembler::ScratchRegisterScope temps(&basm_);
     feedback_vector = temps.AcquireScratch();
+#ifdef __CHERI_PURE_CAPABILITY__
+    osr_state = temps.AcquireScratchX();
+#else   // !__CHERI_PURE_CAPABILITY__
     osr_state = temps.AcquireScratch();
+#endif  // __CHERI_PURE_CAPABILITY__
     LoadFeedbackVector(feedback_vector);
     __ LoadWord8Field(osr_state, feedback_vector,
                       FeedbackVector::kOsrStateOffset);
@@ -1933,7 +1937,11 @@ void BaselineCompiler::VisitJumpLoop() {
     {
       BaselineAssembler::ScratchRegisterScope temps(&basm_);
       Register scratch0 = temps.AcquireScratch();
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register scratch1 = temps.AcquireScratchX();
+#else   // !__CHERI_PURE_CAPABILITY__
       Register scratch1 = temps.AcquireScratch();
+#endif  // __CHERI_PURE_CAPABILITY__
       DCHECK_EQ(scratch0, feedback_vector);
       DCHECK_EQ(scratch1, osr_state);
       DCHECK(!AreAliased(maybe_target_code, scratch0, scratch1));
