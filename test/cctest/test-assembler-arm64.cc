@@ -9011,7 +9011,6 @@ TEST(add_sub_zero) {
   __ Sub(x2, x2, xzr);
   CHECK_EQ(0u, __ SizeOfCodeGeneratedSince(&blob1));
 
-  Register r28 = x28;
   Label blob2;
   __ Bind(&blob2);
   __ Add(w3, w3, 0);
