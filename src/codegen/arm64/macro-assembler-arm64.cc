@@ -1000,7 +1000,8 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
           MoveImmediateForShiftedOp(temp, operand.ImmediateValue(), mode);
 #ifdef __CHERI_PURE_CAPABILITY__
       if (rd.IsC() && imm_operand.shift_amount() > 4) {
-        DCHECK_NE(rd.code(), rn.code());
+        DCHECK(!AreAliased(rd, rn));
+        DCHECK_NE(rd, csp);
         AddSub(rd.X(), rn.X(), imm_operand, S, op);
         Scvalue(rd, rn, rd.X());
       } else {
