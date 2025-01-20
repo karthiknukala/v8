@@ -24,8 +24,15 @@ AllocationResult LocalHeap::AllocateRaw(int size_in_bytes, AllocationType type,
   VerifyCurrent();
   DCHECK(AllowHandleAllocation::IsAllowed());
   DCHECK(AllowHeapAllocation::IsAllowed());
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK_IMPLIES(type == AllocationType::kMap,
+                 alignment == AllocationAlignment::kTaggedAligned);
+  DCHECK_IMPLIES(type == AllocationType::kCode,
+                 alignment == AllocationAlignment::kCodeAligned);
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   DCHECK_IMPLIES(type == AllocationType::kCode || type == AllocationType::kMap,
                  alignment == AllocationAlignment::kTaggedAligned);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   Heap::HeapState state = heap()->gc_state();
   DCHECK(state == Heap::TEAR_DOWN || state == Heap::NOT_IN_GC);
   DCHECK(IsRunning());

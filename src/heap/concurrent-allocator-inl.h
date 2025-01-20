@@ -34,7 +34,11 @@ AllocationResult ConcurrentAllocator::AllocateRaw(int size_in_bytes,
   }
 
   AllocationResult result;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  if (true) {
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V
   if (USE_ALLOCATION_ALIGNMENT_BOOL && alignment != kTaggedAligned) {
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     result = AllocateInLabFastAligned(size_in_bytes, alignment);
   } else {
     result = AllocateInLabFastUnaligned(size_in_bytes);

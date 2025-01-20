@@ -316,7 +316,14 @@ Factory::CodeBuilder::AllocateConcurrentSparkplugInstructionStream(
   LocalHeap* heap = local_isolate_->heap();
   const int object_size = InstructionStream::SizeFor(code_desc_.body_size());
   HeapObject result;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  if (!heap->AllocateRaw(object_size, AllocationType::kCode,
+                         AllocationOrigin::kRuntime,
+                         AllocationAlignment::kCodeAligned)
+           .To(&result)) {
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
   if (!heap->AllocateRaw(object_size, AllocationType::kCode).To(&result)) {
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     return MaybeHandle<InstructionStream>();
   }
   CHECK(!result.is_null());
