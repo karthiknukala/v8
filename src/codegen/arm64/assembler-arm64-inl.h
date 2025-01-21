@@ -408,6 +408,18 @@ Operand Operand::ToX() const {
   return *this;
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+Operand Operand::ToC() const {
+  if (IsShiftedRegister()) {
+    return Operand(reg_.C(), shift(), shift_amount());
+  } else if (IsExtendedRegister()) {
+    return Operand(reg_.C(), extend(), shift_amount());
+  }
+  DCHECK(IsImmediate());
+  return *this;
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 Immediate Operand::immediate_for_heap_number_request() const {
   DCHECK(immediate_.rmode() == RelocInfo::FULL_EMBEDDED_OBJECT);
   return immediate_;
