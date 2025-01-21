@@ -1340,7 +1340,12 @@ void Assembler::LoadStorePair(const CPURegister& rt, const CPURegister& rt2,
   DCHECK(IsImmLSPair(addr.offset(), CalcLSPairDataSize(op, rt)));
   int offset = static_cast<int>(addr.offset());
 
-  Instr memop = op | Rt(rt) | Rt2(rt2) | RnSP(addr.base()) |
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register base = addr.base().C();
+#else   // !__CHERI_PURE_CAPABILITY__
+  Register base = addr.base();
+#endif  // __CHERI_PURE_CAPABILITY__
+  Instr memop = op | Rt(rt) | Rt2(rt2) | RnSP(base) |
                 ImmLSPair(offset, CalcLSPairDataSize(op, rt));
 
   Instr addrmodeop;
@@ -1357,8 +1362,8 @@ void Assembler::LoadStorePair(const CPURegister& rt, const CPURegister& rt2,
 #endif // __CHERI_PURE_CAPABILITY__
   } else {
     // Pre-index and post-index modes.
-    DCHECK_NE(rt, addr.base());
-    DCHECK_NE(rt2, addr.base());
+    DCHECK_NE(rt, base);
+    DCHECK_NE(rt2, base);
     DCHECK_NE(addr.offset(), 0);
     if (addr.IsPreIndex()) {
 #if defined(__CHERI_PURE_CAPABILITY__)
@@ -1408,7 +1413,12 @@ void Assembler::LoadStorePairCap(const Register& ct, const Register& ct2,
   DCHECK_EQ(STP_c | LoadStorePairLBit, LDP_c);
   int offset = static_cast<int>(addr.offset());
 
-  Instr memop = op | Ct(ct) | Ct2(ct2) | CnCSP(addr.base()) |
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register base = addr.base().C();
+#else   // !__CHERI_PURE_CAPABILITY__
+  Register base = addr.base();
+#endif  // __CHERI_PURE_CAPABILITY__
+  Instr memop = op | Ct(ct) | Ct2(ct2) | CnCSP(base) |
                 ImmLSPair(offset, CalcLSPairDataSize(op, ct));
 
   Instr addrmodeop;
@@ -1416,8 +1426,8 @@ void Assembler::LoadStorePairCap(const Register& ct, const Register& ct2,
     addrmodeop = LoadStorePairCapOffsetFixed;
   } else {
     // Pre-index and post-index modes.
-    DCHECK_NE(ct, addr.base());
-    DCHECK_NE(ct2, addr.base());
+    DCHECK_NE(ct, base);
+    DCHECK_NE(ct2, base);
     DCHECK_NE(addr.offset(), 0);
     if (addr.IsPreIndex()) {
       addrmodeop = LoadStorePairCapPreIndexFixed;
@@ -2722,7 +2732,12 @@ void Assembler::hint(SystemHint code) { Emit(HINT | ImmHint(code) | Rt(xzr)); }
 
 // NEON structure loads and stores.
 Instr Assembler::LoadStoreStructAddrModeField(const MemOperand& addr) {
-  Instr addr_field = RnSP(addr.base());
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register base = addr.base().C();
+#else   // !__CHERI_PURE_CAPABILITY__
+  Register base = addr.base();
+#endif  // __CHERI_PURE_CAPABILITY__
+  Instr addr_field = RnSP(base);
 
   if (addr.IsPostIndex()) {
     static_assert(NEONLoadStoreMultiStructPostIndex ==
@@ -4487,7 +4502,12 @@ bool Assembler::IsImmAddSub(int64_t immediate) {
 
 void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
                           LoadStoreOp op) {
-  Instr memop = op | Rt(rt) | RnSP(addr.base());
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register base = addr.base().C();
+#else   // !__CHERI_PURE_CAPABILITY__
+  Register base = addr.base();
+#endif  // __CHERI_PURE_CAPABILITY__
+  Instr memop = op | Rt(rt) | RnSP(base);
 
   if (addr.IsImmediateOffset()) {
     unsigned size = CalcLSDataSize(op, rt.IsC());
@@ -4545,10 +4565,9 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
          ExtendMode(ext) | ImmShiftLS((shift_amount > 0) ? 1 : 0));
   } else {
     // Pre-index and post-index modes.
-    DCHECK_NE(rt, addr.base());
+    DCHECK_NE(rt, base);
 #ifdef __CHERI_PURE_CAPABILITY__
     DCHECK_IMPLIES(rt.IsC(), IsAligned(addr.offset(), kSystemPointerSize));
-    DCHECK(addr.base().IsC());
 #endif  // __CHERI_PURE_CAPABILITY__
     if (IsImmLSUnscaled(addr.offset())) {
       int offset = static_cast<int>(addr.offset());
