@@ -1952,9 +1952,15 @@ void Builtins::Generate_InterpreterEntryTrampoline(
   Label do_return;
   __ Ldrb(x1, MemOperand(kInterpreterBytecodeArrayRegister,
                          kInterpreterBytecodeOffsetRegister));
+#ifdef __CHERI_PURE_CAPABILITY__
+  AdvanceBytecodeOffsetOrReturn(masm, kInterpreterBytecodeArrayRegister,
+                                kInterpreterBytecodeOffsetRegister, x1, c2, x3,
+                                &do_return);
+#else   // !__CHERI_PURE_CAPABILITY__
   AdvanceBytecodeOffsetOrReturn(masm, kInterpreterBytecodeArrayRegister,
                                 kInterpreterBytecodeOffsetRegister, x1, x2, x3,
                                 &do_return);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ B(&do_dispatch);
 
   __ bind(&do_return);
