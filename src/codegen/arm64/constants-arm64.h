@@ -1076,22 +1076,6 @@ constexpr LoadLiteralOp LDR_d_lit = LoadLiteralFixed | 0x44000000;
 using LoadStoreUnscaledOffsetOp = uint32_t;
 #if defined(__CHERI_PURE_CAPABILITY__)
 constexpr LoadStoreUnscaledOffsetOp
-    LoadStoreUnscaledOffsetAlternateFixed = 0xE2000000;
-constexpr LoadStoreUnscaledOffsetOp
-    LoadStoreUnscaledOffsetAlternateFMask = 0xFF000000;
-constexpr LoadStoreUnscaledOffsetOp
-    LoadStoreUnscaledOffsetAlternateMask = 0xFFC00C00;
-constexpr LoadStoreUnscaledOffsetOp
-    LoadStoreCapUnscaledOffsetAlternateFixed = 0xE2000000;
-constexpr LoadStoreUnscaledOffsetOp
-    LoadStoreCapUnscaledOffsetAlternateFMask = 0xFF000000;
-constexpr LoadStoreUnscaledOffsetOp
-    LoadStoreCapUnscaledOffsetAlternateMask = 0xFFC00C00;
-constexpr LoadStoreUnscaledOffsetOp
-    LoadCapUnscaledOffsetAlternate = 0x00C00C00;
-constexpr LoadStoreUnscaledOffsetOp
-    StoreCapUnscaledOffsetAlternate = 0x00800C00;
-constexpr LoadStoreUnscaledOffsetOp
     LoadStoreCapUnscaledOffsetNormalFixed = 0xA2000000;
 constexpr LoadStoreUnscaledOffsetOp
     LoadStoreCapUnscaledOffsetNormalFMask = 0xFF200C00;
@@ -1122,48 +1106,12 @@ constexpr LoadStoreUnscaledOffsetOp
 constexpr LoadStoreUnscaledOffsetOp
     LoadStoreCapUnscaledOffsetIntegerWord = 0x00800000;
 
-// 4.4.92 LDUR (capability, alternative base)
-constexpr LoadStoreUnscaledOffsetOp LDUR_c_alternate =
-  LoadStoreUnscaledOffsetAlternateFixed | LoadCapUnscaledOffsetAlternate;
 // 4.4.93 LDUR (capability, normal base)
 constexpr LoadStoreUnscaledOffsetOp LDUR_c_normal =
   LoadStoreCapUnscaledOffsetNormalFixed | LoadCapUnscaledOffsetNormal;
 // 4.4.148 STUR (capability, normal base)
 constexpr LoadStoreUnscaledOffsetOp STUR_c_normal =
   LoadStoreCapUnscaledOffsetNormalFixed | StoreCapUnscaledOffsetNormal;
-// 4.4.147 STUR (capability, alternative base)
-constexpr LoadStoreUnscaledOffsetOp STUR_c_alternate =
-  LoadStoreUnscaledOffsetAlternateFixed | StoreCapUnscaledOffsetAlternate;
-#define LS_UNSCALED_ALTERNATE_LIST(V) \
-  V(STURB, w, 0x00000000);   \
-  V(STURH, w, 0x00400000);   \
-  V(STUR, w, 0x00800000);    \
-  V(STUR, x, 0x00C00000);    \
-  V(LDURB, w, 0x00000400);   \
-  V(LDURH, w, 0x00400400);   \
-  V(LDUR, w, 0x00800400);    \
-  V(LDUR, x, 0x00C00400);    \
-  V(LDURSB, x, 0x00000800);  \
-  V(LDURSH, x, 0x00400800);  \
-  V(LDURSW, x, 0x00800800);  \
-  V(LDURSB, w, 0x00000C00);  \
-  V(LDURSH, w, 0x00400C00);  \
-  V(STUR, b, 0x00200000);    \
-  V(STUR, h, 0x00600000);    \
-  V(STUR, s, 0x00A00000);    \
-  V(STUR, d, 0x00E00000);    \
-  V(STUR, q, 0x00200800);    \
-  V(LDUR, b, 0x00200400);    \
-  V(LDUR, h, 0x00600400);    \
-  V(LDUR, s, 0x00A00400);    \
-  V(LDUR, d, 0x00E00400);    \
-  V(LDUR, q, 0x00200C00)
-#define LS_UNSCALED_ALTERNATE(A, B, C) \
-  constexpr LoadStoreUnscaledOffsetOp A##_##B##_alternate = \
-    LoadStoreUnscaledOffsetAlternateFixed | C
-LS_UNSCALED_ALTERNATE_LIST(LS_UNSCALED_ALTERNATE);
-#undef LS_UNSCALED_ALTERNATE
-#undef LS_UNSCALED_ALTERNATE_LIST
 #endif   // __CHERI_PURE_CAPABILITY__
 constexpr LoadStoreUnscaledOffsetOp LoadStoreUnscaledOffsetFixed = 0x38000000;
 constexpr LoadStoreUnscaledOffsetOp LoadStoreUnscaledOffsetFMask = 0x3B200C00;
@@ -1248,16 +1196,6 @@ LOAD_STORE_OP_LIST(LOAD_STORE_PRE_INDEX);
 using LoadStoreUnsignedOffset = uint32_t;
 #if defined(__CHERI_PURE_CAPABILITY__)
 constexpr LoadStoreUnsignedOffset
-    LoadStoreCapUnsignedOffsetCapAlternativeFixed = 0x82400000;
-constexpr LoadStoreUnsignedOffset
-    LoadStoreCapUnsignedOffsetCapAlternativeFMask = 0xFFC00000;
-constexpr LoadStoreUnsignedOffset
-    LoadStoreCapUnsignedOffsetCapAlternativeMask = 0xFFE00C00;
-constexpr LoadStoreUnsignedOffset
-    LoadCapUnsignedOffsetCapAlternative = 0x00200000;
-constexpr LoadStoreUnsignedOffset
-    StoreCapUnsignedOffsetCapAlternative = 0x00000000;
-constexpr LoadStoreUnsignedOffset
     LoadStoreCapUnsignedOffsetCapNormalFixed = 0xC2000000;
 constexpr LoadStoreUnsignedOffset
     LoadStoreCapUnsignedOffsetCapNormalFMask = 0xFF800000;
@@ -1281,14 +1219,6 @@ constexpr LoadStoreUnsignedOffset
     LoadStoreCapUnsignedOffsetIntegerWord = 0x00000800;
 constexpr LoadStoreUnsignedOffset
     LoadStoreCapUnsignedOffsetIntegerDoubleword = 0x00000C00;
-// 4.4.83 LDR (unsigned offset, capability, alternate base)
-// Load capability (unsigned offset) via alternate base determines the base
-// register to be used, derives an address from the base register, loads a
-// capability from memory, and writes the result to the destination
-// Capability register.
-constexpr LoadStoreUnsignedOffset LDR_c_unsigned_cap_alternate =
-    LoadStoreCapUnsignedOffsetCapAlternativeFixed |
-    LoadCapUnsignedOffsetCapAlternative;
 // 4.4.84 LDR (unsigned offset, capability, normal base)
 // Load capability (unsigned offset) determeines the base register to be
 // used, derives an address from the base register and an immediate
@@ -1308,12 +1238,6 @@ constexpr LoadStoreUnsignedOffset LDR_c_unsigned_d =
 constexpr LoadStoreUnsignedOffset LDR_c_unsigned_w =
     LoadStoreCapUnsignedOffsetIntegerFixed | LoadCapUnsignedOffsetInteger |
     LoadStoreCapUnsignedOffsetIntegerWord;
-// 4.4.141 STR (unsigned offset, capability, normal base)
-// Store capability (unsigned offset) stores a capability to memory from a
-// Capability register.
-constexpr LoadStoreUnsignedOffset STR_c_unsigned_cap_alternate =
-    LoadStoreCapUnsignedOffsetCapAlternativeFixed |
-    StoreCapUnsignedOffsetCapAlternative;
 // 4.4.141 STR (unsigned offset, capability, normal base)
 // Store capability (unsigned offset) stores a capability to memory from
 // a Capability register.
@@ -1345,27 +1269,6 @@ LOAD_STORE_OP_LIST(LOAD_STORE_UNSIGNED_OFFSET);
 // Load/store register offset.
 using LoadStoreRegisterOffset = uint32_t;
 #if defined(__CHERI_PURE_CAPABILITY__)
-constexpr LoadStoreRegisterOffset
-    LoadStoreCapRegisterOffsetAlternativeFixed = 0xC2E04400;
-constexpr LoadStoreRegisterOffset
-    LoadStoreCapRegisterOffsetAlternativeFMask = 0xFFE04400;
-constexpr LoadStoreRegisterOffset
-    LoadStoreCapRegisterOffsetAlternativeMask = 0xFFE04C00;
-// 4.4.79 LDR (register offset, capability, alternative base)
-// Load capability (register) via alternative base determins the base
-// register to be used, derives an address from the base register and
-// an offset register, loads a capability from memory, and writes it
-// to the destination Capability register.
-constexpr LoadStoreRegisterOffset LDR_c_reg_alt =
-    LoadStoreCapRegisterOffsetAlternativeFixed | 0x00000800;
-// 4.4.136 STR (register offset, capability, alternative base)
-// Store capability (register) via alternative base determines the base
-// register to be used, derives an address from the base register and an
-// offset register, and stores a capability to the calculated address
-// in memory.
-constexpr LoadStoreRegisterOffset STR_c_reg_alt =
-    LoadStoreCapRegisterOffsetAlternativeFixed;
-
 constexpr LoadStoreRegisterOffset
     LoadStoreCapRegisterOffsetNormalFixed = 0xA2204800;
 constexpr LoadStoreRegisterOffset

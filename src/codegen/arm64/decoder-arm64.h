@@ -24,8 +24,6 @@ namespace internal {
   V(ConditionalSelectCap)                \
   V(GetField1)                           \
   V(LoadStoreCapUnscaledOffsetNormal)    \
-  V(LoadStoreCapUnscaledOffsetAlternate) \
-  V(LoadStoreUnscaledOffsetAlternate)    \
   V(LoadStoreCapUnsignedOffsetCapNormal) \
   V(LoadStoreCapRegisterOffsetNormal)    \
   V(LoadStorePostCapIndex)               \
@@ -284,10 +282,6 @@ class Decoder : public V {
   // Decode the Morello load/store unsigned offset voa alternative base instructions,
   // and call the corresponding visitors.
   void DecodeMorelloLoadStoreUnsignedOffsetViaAlternativeBase(Instruction* instr);
-
-  // Decode the Morello load/store unscaled immediate via altenative base instructions,
-  // and call the corresponding visitors.
-  void DecodeMorelloLoadStoreUnscaledImmediateViaAlternateBase(Instruction* instr);
 
   // Decode the Morello misc instructions,
   // and call the corresponding visitors.

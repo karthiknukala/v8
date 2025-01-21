@@ -898,10 +898,6 @@ void Decoder<V>::DecodeMorello(Instruction* instr) {
 	    break;
       }
       break;
-    case 0x7:
-      // op0: 111 Morello load/store unscaled immediate via alternative base
-      DecodeMorelloLoadStoreUnscaledImmediateViaAlternateBase(instr);
-      break;
     }
   }
 }
@@ -1127,17 +1123,6 @@ void Decoder<V>::DecodeMorelloLoadStoreUnsignedOffsetViaAlternativeBase(Instruct
     V::VisitUnimplemented(instr);
   } else {
     V::VisitUnimplemented(instr);
-  }
-}
-
-template <typename V>
-void Decoder<V>::DecodeMorelloLoadStoreUnscaledImmediateViaAlternateBase(Instruction* instr) {
-  DCHECK_EQ(0xE2, instr->Bits(31, 24)); // [1110  0010][op1][V][imm9][op2][Rn][Rd]
-  if (instr->Bits(11, 10) == 0x03 && instr->Bit(23) == 0) {
-    // op1: 1x, op2: 11 LDUR STUR cap
-    V::VisitLoadStoreCapUnscaledOffsetAlternate(instr);
-  } else {
-    V::VisitLoadStoreUnscaledOffsetAlternate(instr); 
   }
 }
 

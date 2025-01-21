@@ -971,25 +971,6 @@ void DisassemblingDecoder::VisitLoadStoreUnscaledOffset(Instruction* instr) {
   }
   Format(instr, mnemonic, form);
 }
-
-#if defined(__CHERI_PURE_CAPABILITY__)
-void DisassemblingDecoder::VisitLoadStoreUnscaledOffsetAlternate(Instruction* instr) {
-  const char* mnemonic = "unimplemented";
-  const char* form = "(LoadStoreUnscaledOffsetAlternate)";
-
-  switch (instr->Mask(LoadStoreUnscaledOffsetAlternateMask)) {
-#define LS_UNSCALEDOFFSET_ALTERNATE(A, B, C) \
-  case A##_alternate:                        \
-    mnemonic = B;                            \
-    form = C ", ['Xns'ILS]";                 \
-    break;
-    LOAD_STORE_UNSCALED_LIST(LS_UNSCALEDOFFSET_ALTERNATE)
-#undef LS_UNSCALEDOFFSET_ALTERNATE
-  }
-  Format(instr, mnemonic, form);
-}
-#endif // __CHERI_PURE_CAPABILITY__
-
 #undef LOAD_STORE_UNSCALED_LIST
 
 void DisassemblingDecoder::VisitLoadLiteral(Instruction* instr) {
@@ -3917,21 +3898,6 @@ void DisassemblingDecoder::VisitLoadStoreCapUnscaledOffsetNormal(
       Format(instr, "ldur", form);
       break;
     case STUR_c_normal:
-      Format(instr, "stur", form);
-      break;
-    default:
-      UNREACHABLE();
-  }
-}
-
-void DisassemblingDecoder::VisitLoadStoreCapUnscaledOffsetAlternate(
-    Instruction* instr) {
-  const char* form = "'Yt, ['Xns'ILUC]";
-  switch(instr->Mask(LoadStoreCapUnscaledOffsetAlternateMask)) {
-    case LDUR_c_alternate:
-      Format(instr, "ldur", form);
-      break;
-    case STUR_c_alternate:
       Format(instr, "stur", form);
       break;
     default:
