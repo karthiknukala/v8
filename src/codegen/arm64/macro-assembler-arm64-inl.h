@@ -1777,12 +1777,17 @@ void MacroAssembler::CompareTaggedAndBranch(const Register& lhs,
 void MacroAssembler::TestAndBranchIfAnySet(const Register& reg,
                                            const uint64_t bit_pattern,
                                            Label* label) {
-  int bits = reg.SizeInBits();
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register reduced_reg = reg.IsC() ? reg.X() : reg;
+#else   // !__CHERI_PURE_CAPABILITY__
+  Register reduced_reg = reg;
+#endif  // __CHERI_PURE_CAPABILITY__
+  int bits = reduced_reg.SizeInBits();
   DCHECK_GT(CountSetBits(bit_pattern, bits), 0);
   if (CountSetBits(bit_pattern, bits) == 1) {
-    Tbnz(reg, MaskToBit(bit_pattern), label);
+    Tbnz(reduced_reg, MaskToBit(bit_pattern), label);
   } else {
-    Tst(reg, bit_pattern);
+    Tst(reduced_reg, bit_pattern);
     B(ne, label);
   }
 }
@@ -1790,12 +1795,17 @@ void MacroAssembler::TestAndBranchIfAnySet(const Register& reg,
 void MacroAssembler::TestAndBranchIfAllClear(const Register& reg,
                                              const uint64_t bit_pattern,
                                              Label* label) {
-  int bits = reg.SizeInBits();
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register reduced_reg = reg.IsC() ? reg.X() : reg;
+#else   // !__CHERI_PURE_CAPABILITY__
+  Register reduced_reg = reg;
+#endif  // __CHERI_PURE_CAPABILITY__
+  int bits = reduced_reg.SizeInBits();
   DCHECK_GT(CountSetBits(bit_pattern, bits), 0);
   if (CountSetBits(bit_pattern, bits) == 1) {
-    Tbz(reg, MaskToBit(bit_pattern), label);
+    Tbz(reduced_reg, MaskToBit(bit_pattern), label);
   } else {
-    Tst(reg, bit_pattern);
+    Tst(reduced_reg, bit_pattern);
     B(eq, label);
   }
 }
