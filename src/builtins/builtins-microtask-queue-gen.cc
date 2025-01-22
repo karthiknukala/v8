@@ -598,17 +598,14 @@ TF_BUILTIN(EnqueueMicrotask, MicrotaskQueueBuiltinsAssembler) {
 
   // |microtask_queue| has an unused slot to store |microtask|.
   {
-#ifdef __CHERI_PURE_CAPABILITY__
-    StoreNoWriteBarrier(MachineRepresentation::kWord64, ring_buffer,
+    StoreNoWriteBarrier(MachineType::PointerRepresentation(), ring_buffer,
                         CalculateRingBufferOffset(capacity, start, size),
                         BitcastTaggedToWord(microtask));
+#ifdef __CHERI_PURE_CAPABILITY__
     StoreNoWriteBarrier(MachineRepresentation::kWord64, microtask_queue,
                         IntPtrConstant(MicrotaskQueue::kSizeOffset),
                         IntPtrAdd(size, IntPtrConstant(1)));
 #else   // !__CHERI_PURE_CAPABILITY__
-    StoreNoWriteBarrier(MachineType::PointerRepresentation(), ring_buffer,
-                        CalculateRingBufferOffset(capacity, start, size),
-                        BitcastTaggedToWord(microtask));
     StoreNoWriteBarrier(MachineType::PointerRepresentation(), microtask_queue,
                         IntPtrConstant(MicrotaskQueue::kSizeOffset),
                         IntPtrAdd(size, IntPtrConstant(1)));
