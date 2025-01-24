@@ -312,6 +312,7 @@ void MacroAssembler::Subsc(const Register& rd, const Register& cn,
   if (cn.code() == kSPRegInternalCode) {
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireC();
+    DCHECK(!AreAliased(operand.reg(), temp));
     Cpy(temp, cn);
     subsc(rd, temp, operand);
   } else {
