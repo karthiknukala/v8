@@ -53,7 +53,7 @@ bool AllowImplicitRepresentationChange(RegisterRepresentation actual_rep,
       break;
     case RegisterRepresentation::Word64():
       // We allow implicit tagged -> untagged conversions.
-      if (kTaggedSize == kInt64Size &&
+      if (!COMPRESS_POINTERS_BOOL &&
           actual_rep == RegisterRepresentation::Tagged()) {
         return true;
       }
