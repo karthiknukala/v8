@@ -6823,7 +6823,7 @@ Heap::GcSafeTryFindInstructionStreamForInnerPointer(Address inner_pointer) {
     Page* page;
     // XXX(cheri): Not 100% sure if the code_space capability is going to always
     // cover the inner_pointer without any gaps.
-    if (__builtin_cheri_sealed_get(inner_pointer))
+    if (V8_CHERI_SEALED(inner_pointer))
       page = Page::FromSentry(code_space()->start(), inner_pointer);
     else
       page = Page::FromAddress(inner_pointer);
