@@ -2980,11 +2980,15 @@ void VisitAtomicLoad(InstructionSelector* selector, Node* node,
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+      code = kArm64CapabilityAtomicLoad;
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
       if (kTaggedSize == 8) {
         code = kArm64Word64AtomicLoadUint64;
       } else {
         code = kAtomicLoadWord32;
       }
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       break;
 #endif
     case MachineRepresentation::kCompressedPointer:  // Fall through.
@@ -3058,7 +3062,11 @@ void VisitAtomicStore(InstructionSelector* selector, Node* node,
       case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:
         DCHECK_EQ(AtomicWidthSize(width), kTaggedSize);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+        code = kArm64CapabilityAtomicStore;
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
         code = kArm64StlrCompressTagged;
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
         break;
       case MachineRepresentation::kCompressedPointer:  // Fall through.
       case MachineRepresentation::kCompressed:
