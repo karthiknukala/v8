@@ -1279,10 +1279,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         // Checking that |value| is not a cleared weakref: our write barrier
         // does not support that for now.
 #if defined(__CHERI_PURE_CAPABILITY__)
-	__ Cmp(value, Operand(kClearedWeakHeapObjectLower32));
-#else // defined(__CHERI_PURE_CAPABILITY__)
+        __ cmp(value.X(), Operand(kClearedWeakHeapObjectLower32));
+#else   // defined(__CHERI_PURE_CAPABILITY__)
         __ cmp(value, Operand(kClearedWeakHeapObjectLower32));
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // defined(__CHERI_PURE_CAPABILITY__)
         __ Check(ne, AbortReason::kOperandIsCleared);
       }
 
