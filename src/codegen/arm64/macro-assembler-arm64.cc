@@ -502,7 +502,7 @@ void MacroAssembler::Mov(const Register& rd, const Operand& operand,
     Ldr(dst, operand);
   } else if (operand.IsImmediate()) {
 #ifdef __CHERI_PURE_CAPABILITY__
-    if (dst.IsC() && __builtin_cheri_tag_get(operand.ImmediateValue())) {
+    if (dst.IsC() && V8_CHERI_TAG_GET(operand.ImmediateValue())) {
       // In the case where we have a tagged pointer, we need to generate a
       // constant pool and perform a pcrel load-literal in order to preserve the
       // tag.
