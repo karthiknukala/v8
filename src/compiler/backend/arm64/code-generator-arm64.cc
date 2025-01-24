@@ -4072,8 +4072,8 @@ AllocatedOperand CodeGenerator::Push(InstructionOperand* source) {
     frame_access_state()->IncreaseSPDelta(new_slots);
 #if defined(__CHERI_PURE_CAPABILITY__)
   } else if (source->IsCapabilityStackSlot()) {
-    UseScratchRegisterScope temps2(masm());
-    Register scratch = temps2.AcquireC();
+    UseScratchRegisterScope temps(masm());
+    Register scratch = temps.AcquireC();
     __ Ldr(scratch, g.ToMemOperand(source, masm()));
     __ Push(scratch, padregc);
     frame_access_state()->IncreaseSPDelta(new_slots);
@@ -4115,8 +4115,8 @@ void CodeGenerator::Pop(InstructionOperand* dest, MachineRepresentation rep) {
 #endif // defined(__CHERI_PURE_CAPABILITY__)
 #if defined(__CHERI_PURE_CAPABILITY__)
   } else if (dest->IsCapabilityStackSlot()) {
-    UseScratchRegisterScope temps2(masm());
-    Register scratch = temps2.AcquireC();
+    UseScratchRegisterScope temps(masm());
+    Register scratch = temps.AcquireC();
     __ Pop(padregc, scratch);
     __ Str(scratch, g.ToMemOperand(dest, masm()));
 #endif // defined(__CHERI_PURE_CAPABILITY__)
