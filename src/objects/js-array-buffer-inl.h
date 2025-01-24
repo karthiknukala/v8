@@ -330,8 +330,14 @@ void* JSTypedArray::DataPtr() {
   // See JSTypedArray::ExternalPointerCompensationForOnHeapArray() for details.
   static_assert(kOffHeapDataPtrEqualsExternalPointer);
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  return reinterpret_cast<void*>(external_pointer() +
-                                 static_cast<size_t>(base_pointer().ptr()));
+  if (V8_CHERI_TAG_GET(external_pointer())) {
+    return reinterpret_cast<void*>(external_pointer() +
+                                   static_cast<size_t>(base_pointer().ptr()));
+  } else {
+    DCHECK(V8_CHERI_TAG_GET(base_pointer().ptr()));
+    return reinterpret_cast<void*>(base_pointer().ptr() +
+                                   static_cast<size_t>(external_pointer()));
+  }
 #else
   return reinterpret_cast<void*>(external_pointer() +
                                  static_cast<Tagged_t>(base_pointer().ptr()));

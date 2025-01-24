@@ -2655,10 +2655,33 @@ TNode<RawPtrT> CodeStubAssembler::LoadJSTypedArrayDataPtr(
     // details.
     base_pointer = Signed(ChangeUint32ToWord(compressed_base));
   } else {
-    base_pointer =
-        LoadObjectField<IntPtrT>(typed_array, JSTypedArray::kBasePointerOffset);
+    base_pointer = UncheckedCast<IntPtrT>(
+                       LoadObjectField<RawPtrT>(
+                           typed_array, JSTypedArray::kBasePointerOffset))
+                       .MarkAsCapability();
   }
+  DCHECK(base_pointer.IsCapability());
+#ifdef __CHERI_PURE_CAPABILITY__
+  Label base_is_cap(this), done(this);
+  TVARIABLE(RawPtrT, result);
+  GotoIf(CapabilityIsTagged(UncheckedCast<UintPtrT>(base_pointer)),
+         &base_is_cap);
+  {
+    CSA_DCHECK(this,
+               CapabilityIsTagged(UncheckedCast<UintPtrT>(external_pointer)));
+    result = RawPtrAdd(external_pointer, base_pointer);
+    Goto(&done);
+  }
+  BIND(&base_is_cap);
+  {
+    result = UncheckedCast<RawPtrT>(IntPtrAdd(base_pointer, external_pointer));
+    Goto(&done);
+  }
+  BIND(&done);
+  return result.value();
+#else   // !__CHERI_PURE_CAPABILITY__
   return RawPtrAdd(external_pointer, base_pointer);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 TNode<BigInt> CodeStubAssembler::LoadFixedBigInt64ArrayElementAsTagged(
