@@ -1962,13 +1962,10 @@ void MacroAssembler::AssertCode(Register object) {
 
   UseScratchRegisterScope temps(this);
 #if defined(__CHERI_PURE_CAPABILITY__)
-  Register temp_object = temps.AcquireC();
-  Register temp_type = temps.AcquireX();
-
-  IsObjectType(object, temp_object, temp_type, CODE_TYPE);
+  Register temp = temps.AcquireC();
+  IsObjectType(object, temp.C(), temp.X(), CODE_TYPE);
 #else   // !__CHERI_PURE_CAPABILITY__
   Register temp = temps.AcquireX();
-
   IsObjectType(object, temp, temp, CODE_TYPE);
 #endif  // !__CHERI_PURE_CAPABILITY__
   Check(eq, AbortReason::kOperandIsNotACode);
@@ -2095,8 +2092,7 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object) {
   JumpIfRoot(object, RootIndex::kUndefinedValue, &done_checking);
   LoadMap(scratch, object);
 #if defined(__CHERI_PURE_CAPABILITY__)
-  Register temp_type = temps.AcquireX();
-  CompareInstanceType(scratch, temp_type, ALLOCATION_SITE_TYPE);
+  CompareInstanceType(scratch, scratch.X(), ALLOCATION_SITE_TYPE);
 #else   // !__CHERI_PURE_CAPABILITY__
   CompareInstanceType(scratch, scratch, ALLOCATION_SITE_TYPE);
 #endif  // !__CHERI_PURE_CAPABILITY__
