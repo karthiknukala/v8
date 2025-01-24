@@ -372,7 +372,7 @@ void MacroAssembler::Cmp(const Register& rn, const Operand& operand) {
       return;
     } else {
       DCHECK(operand.IsExtendedRegister());
-      Subsc(xzr, rn, operand);
+      Subs(xzr, rn.X(), operand.ToX());
     }
     return;
   }
