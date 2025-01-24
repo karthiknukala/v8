@@ -1782,11 +1782,31 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void StoreObjectFieldNoWriteBarrier(TNode<HeapObject> object, int offset,
                                       TNode<T> value) {
     if (CanBeTaggedPointer(MachineRepresentationOf<T>::value)) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      if constexpr (std::is_same<Smi, T>::value) {
+        OptimizedStoreFieldAssertNoWriteBarrier(MachineRepresentation::kWord64,
+                                                object, offset, value);
+      } else {
+        OptimizedStoreFieldAssertNoWriteBarrier(
+            MachineRepresentationOf<T>::value, object, offset, value);
+      }
+#else   // !__CHERI_PURE_CAPABILITY__
       OptimizedStoreFieldAssertNoWriteBarrier(MachineRepresentationOf<T>::value,
                                               object, offset, value);
+#endif  // __CHERI_PURE_CAPABILITY__
     } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+      if constexpr (std::is_same<Smi, T>::value) {
+        OptimizedStoreFieldUnsafeNoWriteBarrier(MachineRepresentation::kWord64,
+                                                object, offset, value);
+      } else {
+        OptimizedStoreFieldUnsafeNoWriteBarrier(
+            MachineRepresentationOf<T>::value, object, offset, value);
+      }
+#else   // !__CHERI_PURE_CAPABILITY__
       OptimizedStoreFieldUnsafeNoWriteBarrier(MachineRepresentationOf<T>::value,
                                               object, offset, value);
+#endif  // __CHERI_PURE_CAPABILITY__
     }
   }
 
