@@ -16,7 +16,11 @@
 
 namespace v8::internal::compiler::turboshaft {
 // Operations are stored in possibly muliple sequential storage slots.
+#ifdef __CHERI_PURE_CAPABILITY__
+using OperationStorageSlot = std::aligned_storage_t<16, 16>;
+#else   // !__CHERI_PURE_CAPABILITY__
 using OperationStorageSlot = std::aligned_storage_t<8, 8>;
+#endif  // __CHERI_PURE_CAPABILITY__
 // Operations occupy at least 2 slots, therefore we assign one id per two slots.
 constexpr size_t kSlotsPerId = 2;
 
