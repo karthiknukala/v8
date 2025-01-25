@@ -61,15 +61,27 @@ bool AllowImplicitRepresentationChange(RegisterRepresentation actual_rep,
     case RegisterRepresentation::Tagged():
       // We allow implicit untagged -> tagged conversions. This is only safe for
       // Smi values.
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (actual_rep == any_of(RegisterRepresentation::PointerSized(),
+                               RegisterRepresentation::Word64())) {
+#else   // !__CHERI_PURE_CAPABILITY__
       if (actual_rep == RegisterRepresentation::PointerSized()) {
+#endif  // __CHERI_PURE_CAPABILITY__
         return true;
       }
       break;
     case RegisterRepresentation::Compressed():
       // Compression is a no-op.
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (actual_rep == any_of(RegisterRepresentation::Tagged(),
+                               RegisterRepresentation::PointerSized(),
+                               RegisterRepresentation::Word64(),
+                               RegisterRepresentation::Word32())) {
+#else   // !__CHERI_PURE_CAPABILITY__
       if (actual_rep == any_of(RegisterRepresentation::Tagged(),
                                RegisterRepresentation::PointerSized(),
                                RegisterRepresentation::Word32())) {
+#endif  // __CHERI_PURE_CAPABILITY__
         return true;
       }
       break;
