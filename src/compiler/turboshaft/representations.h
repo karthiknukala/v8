@@ -96,16 +96,11 @@ class RegisterRepresentation {
     switch (*this) {
       case Enum::kWord32:
       case Enum::kWord64:
-        return true;
-#if defined(__CHERI_PURE_CAPABILITY__)
-      // TODO(gcjenkinson): The capability representations aren't word size
-      // for the architecture, its less clear whether the meaning here is
-      // aligned with that perspective.
+#ifdef __CHERI_PURE_CAPABILITY__
       case Enum::kCapability32:
-	[[fallthrough]];
       case Enum::kCapability64:
-	[[fallthrough]];
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
+        return true;
       case Enum::kFloat32:
       case Enum::kFloat64:
       case Enum::kTagged:
