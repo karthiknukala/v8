@@ -7568,9 +7568,15 @@ TNode<IntPtrT> CodeStubAssembler::LoadBasicMemoryChunkFlags(
     TNode<HeapObject> object) {
   TNode<IntPtrT> object_word = BitcastTaggedToWord(object);
   TNode<IntPtrT> page = PageFromAddress(object_word);
+#ifdef __CHERI_PURE_CAPABILITY__
+  return UncheckedCast<IntPtrT>(
+      Load(MachineType::IntPtr(), page,
+           IntPtrConstant(BasicMemoryChunk::kFlagsOffset)));
+#else // !__CHERI_PURE_CAPABILITY__
   return UncheckedCast<IntPtrT>(
       Load(MachineType::Pointer(), page,
            IntPtrConstant(BasicMemoryChunk::kFlagsOffset)));
+#endif // __CHERI_PURE_CAPABILITY__
 }
 
 template <typename TIndex>
