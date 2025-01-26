@@ -152,7 +152,11 @@ void BaselineAssembler::JumpIfObjectType(Condition cc, Register object,
                                          Register map, Label* target,
                                          Label::Distance) {
   ScratchRegisterScope temps(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register type = temps.AcquireScratchX();
+#else
   Register type = temps.AcquireScratch();
+#endif // __CHERI_PURE_CAPABILITY__
   __ LoadMap(map, object);
   __ Ldrh(type, FieldMemOperand(map, Map::kInstanceTypeOffset));
   JumpIf(cc, type, instance_type, target);
@@ -161,7 +165,11 @@ void BaselineAssembler::JumpIfInstanceType(Condition cc, Register map,
                                            InstanceType instance_type,
                                            Label* target, Label::Distance) {
   ScratchRegisterScope temps(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register type = temps.AcquireScratchX();
+#else
   Register type = temps.AcquireScratch();
+#endif // __CHERI_PURE_CAPABILITY__
   if (v8_flags.debug_code) {
     __ AssertNotSmi(map);
     __ CompareObjectType(map, type, type, MAP_TYPE);
