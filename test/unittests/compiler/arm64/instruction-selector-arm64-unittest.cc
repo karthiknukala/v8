@@ -5259,7 +5259,12 @@ TEST_F(InstructionSelectorTest, CompareFloat64HighGreaterThanOrEqualZero64) {
 
 TEST_F(InstructionSelectorTest, ExternalReferenceLoad1) {
   // Test offsets we can use kMode_Root for.
+#ifdef __CHERI_PURE_CAPABILITY__
+  // Don't try incoherent offsets on CHERI.
+  const int64_t kOffsets[] = {0, 1, 4};
+#else   // !__CHERI_PURE_CAPABILITY__
   const int64_t kOffsets[] = {0, 1, 4, INT32_MIN, INT32_MAX};
+#endif  // __CHERI_PURE_CAPABILITY__
   TRACED_FOREACH(int64_t, offset, kOffsets) {
     StreamBuilder m(this, MachineType::Int64());
     ExternalReference reference =
@@ -5282,7 +5287,12 @@ TEST_F(InstructionSelectorTest, ExternalReferenceLoad1) {
 TEST_F(InstructionSelectorTest, ExternalReferenceLoad2) {
   // Offset too large, we cannot use kMode_Root.
   StreamBuilder m(this, MachineType::Int64());
+#ifdef __CHERI_PURE_CAPABILITY__
+  // Don't try incoherent offsets on CHERI.
+  int64_t offset = 0x4;
+#else   // !__CHERI_PURE_CAPABILITY__
   int64_t offset = 0x100000000;
+#endif  // __CHERI_PURE_CAPABILITY__
   ExternalReference reference =
       base::bit_cast<ExternalReference>(isolate()->isolate_root() + offset);
   Node* const value =
