@@ -98,13 +98,7 @@ bool PagedSpaceBase::Contains(Address addr) const {
     return true;
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  // Page::owner() might modify a sentry, invalidate it and tag fault.
-  return V8_CHERI_INBOUNDS(allocation_info_.start(),
-                           __builtin_cheri_address_get(addr));
-#else   // !__CHERI_PURE_CAPABILITY__
   return Page::FromAddress(addr)->owner() == this;
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 bool PagedSpaceBase::Contains(Object o) const {

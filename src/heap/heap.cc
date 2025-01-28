@@ -6816,19 +6816,27 @@ Heap::GcSafeTryFindInstructionStreamForInnerPointer(Address inner_pointer) {
     return InstructionStream::unchecked_cast(large_page->GetObject());
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (V8_CHERI_SEALED(inner_pointer)) {
+    Page* page = code_space()->FindPageInSpace(inner_pointer);
+    if (page == nullptr) {
+      return {};
+    }
+
+    DCHECK(V8_CHERI_TAG_GET(page));
+    Address start =
+        page->GetCodeObjectRegistry()->GetCodeObjectStartFromInnerAddress(
+            inner_pointer);
+    return InstructionStream::unchecked_cast(HeapObject::FromAddress(start));
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
+
   if (V8_LIKELY(code_space()->Contains(inner_pointer))) {
     // Iterate through the page until we reach the end or find an object
     // starting after the inner pointer.
-#ifdef __CHERI_PURE_CAPABILITY__
-    Page* page;
-    // XXX(cheri): Not 100% sure if the code_space capability is going to always
-    // cover the inner_pointer without any gaps.
-    if (V8_CHERI_SEALED(inner_pointer))
-      page = Page::FromSentry(code_space()->start(), inner_pointer);
-    else
-      page = Page::FromAddress(inner_pointer);
-#else   // !__CHERI_PURE_CAPABILITY__
     Page* page = Page::FromAddress(inner_pointer);
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(V8_CHERI_TAG_GET(page));
 #endif  // __CHERI_PURE_CAPABILITY__
 
     Address start =

@@ -95,6 +95,25 @@ Page* Page::ConvertNewToOld(Page* old_page) {
   return new_page;
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+// FIXME(ds815): There is a FindPage() already in one of the derived classes
+// that uses what we actually want to use here. This is a temporary workaround
+// that needs to be cleaned up and optimised in the future using a
+// std::unordered_map, identical to the one in large_spaces.h.
+// This is also a very messy way to find the right page.
+Page* Space::FindPageInSpace(Address a) const {
+  ptraddr_t start_addr = static_cast<ptraddr_t>(a) & ~Page::kAlignmentMask;
+  for (const Page* page = reinterpret_cast<const Page*>(first_page());
+       page != nullptr; page = page->next_page()) {
+    if (V8_CHERI_INBOUNDS(page->area_start(), start_addr)) {
+      return const_cast<Page*>(
+          reinterpret_cast<const Page*>(V8_CHERI_ADDR_SET(page, start_addr)));
+    }
+  }
+  return nullptr;
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 size_t Page::AvailableInFreeList() {
   size_t sum = 0;
   ForAllFreeListCategories([&sum](FreeListCategory* category) {

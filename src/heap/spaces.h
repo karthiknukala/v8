@@ -198,6 +198,10 @@ class V8_EXPORT_PRIVATE Space : public BaseSpace {
     return first_page()->address();
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  Page* FindPageInSpace(Address a) const;
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #ifdef DEBUG
   virtual void Print() = 0;
 #endif
