@@ -350,9 +350,17 @@ TEST_F(DisasmArm64Test, sub_shifted) {
   COMPARE(sub(w18, w19, Operand(w20, ASR, 5)), "sub w18, w19, w20, asr #5");
   COMPARE(sub(x21, x22, Operand(x23, ASR, 6)), "sub x21, x22, x23, asr #6");
   COMPARE(cmp(w24, Operand(w25)), "cmp w24, w25");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(cmp(x26, Operand(cp, LSL, 63)), "cmp x26, x27, lsl #63");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(cmp(x26, Operand(cp, LSL, 63)), "cmp x26, cp, lsl #63");
+#endif  // __CHERI_PURE_CAPABILITY__
   COMPARE(neg(w28, Operand(w29)), "neg w28, w29");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(neg(lr.X(), Operand(x0, LSR, 62)), "neg x30, x0, lsr #62");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(neg(lr, Operand(x0, LSR, 62)), "neg lr, x0, lsr #62");
+#endif  // __CHERI_PURE_CAPABILITY__
   COMPARE(negs(w1, Operand(w2)), "negs w1, w2");
   COMPARE(negs(x3, Operand(x4, ASR, 61)), "negs x3, x4, asr #61");
 
@@ -379,7 +387,11 @@ TEST_F(DisasmArm64Test, add_extended) {
   COMPARE(add(x18, x19, Operand(x20, SXTB, 3)), "add x18, x19, w20, sxtb #3");
   COMPARE(adds(w21, w22, Operand(w23, SXTH, 2)), "adds w21, w22, w23, sxth #2");
   COMPARE(add(x24, x25, Operand(x26, SXTW, 1)), "add x24, x25, w26, sxtw #1");
-  COMPARE(adds(cp, x28, Operand(fp, SXTX)), "adds cp, x28, fp, sxtx");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(adds(cp.X(), x28, Operand(fp.X(), SXTX)), "adds x27, x28, x29, sxtx");
+#else   // !__CHERI_PURE_CAPABILITY__
+  COMPARE(adds(cp, x28, Operand(fp.X(), SXTX)), "adds cp, x28, fp, sxtx");
+#endif  // __CHERI_PURE_CAPABILITY__
   COMPARE(cmn(w0, Operand(w1, UXTB, 2)), "cmn w0, w1, uxtb #2");
   COMPARE(cmn(x2, Operand(x3, SXTH, 4)), "cmn x2, w3, sxth #4");
 
@@ -404,7 +416,11 @@ TEST_F(DisasmArm64Test, sub_extended) {
   COMPARE(sub(x18, x19, Operand(x20, SXTB, 3)), "sub x18, x19, w20, sxtb #3");
   COMPARE(subs(w21, w22, Operand(w23, SXTH, 2)), "subs w21, w22, w23, sxth #2");
   COMPARE(sub(x24, x25, Operand(x26, SXTW, 1)), "sub x24, x25, w26, sxtw #1");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(subs(cp.X(), x28, Operand(fp, SXTX)), "subs x27, x28, fp, sxtx");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(subs(cp, x28, Operand(fp, SXTX)), "subs cp, x28, fp, sxtx");
+#endif  // __CHERI_PURE_CAPABILITY__
   COMPARE(cmp(w0, Operand(w1, SXTB, 1)), "cmp w0, w1, sxtb #1");
   COMPARE(cmp(x2, Operand(x3, UXTH, 3)), "cmp x2, w3, uxth #3");
 
@@ -429,9 +445,17 @@ TEST_F(DisasmArm64Test, adc_subc_ngc) {
   COMPARE(sbcs(w18, w19, Operand(w20)), "sbcs w18, w19, w20");
   COMPARE(sbcs(x21, x22, Operand(x23)), "sbcs x21, x22, x23");
   COMPARE(ngc(w24, Operand(w25)), "ngc w24, w25");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(ngc(x26, Operand(cp.X())), "ngc x26, x27");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(ngc(x26, Operand(cp)), "ngc x26, cp");
+#endif  // __CHERI_PURE_CAPABILITY__
   COMPARE(ngcs(w28, Operand(w29)), "ngcs w28, w29");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(ngcs(lr.X(), Operand(x0)), "ngcs x30, x0");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(ngcs(lr, Operand(x0)), "ngcs lr, x0");
+#endif  // __CHERI_PURE_CAPABILITY__
 
   CLEANUP();
 }
@@ -523,7 +547,11 @@ TEST_F(DisasmArm64Test, bitfield) {
   COMPARE(asr(w20, w21, 10), "asr w20, w21, #10");
   COMPARE(asr(x22, x23, 20), "asr x22, x23, #20");
   COMPARE(lsr(w24, w25, 10), "lsr w24, w25, #10");
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(lsr(x26, cp.X(), 20), "lsr x26, x27, #20");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(lsr(x26, cp, 20), "lsr x26, cp, #20");
+#endif  // __CHERI_PURE_CAPABILITY__
   COMPARE(lsl(w28, w29, 10), "lsl w28, w29, #10");
   COMPARE(lsl(lr, x0, 20), "lsl lr, x0, #20");
 
@@ -819,6 +847,56 @@ TEST_F(DisasmArm64Test, branch) {
 TEST_F(DisasmArm64Test, load_store) {
   SET_UP_ASM();
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  COMPARE(ldr(w0, MemOperand(c1)), "ldr w0, [c1]");
+  COMPARE(ldr(w2, MemOperand(c3, 4)), "ldr w2, [c3, #4]");
+  COMPARE(ldr(w4, MemOperand(c5, 16380)), "ldr w4, [c5, #16380]");
+  COMPARE(ldr(x6, MemOperand(c7)), "ldr x6, [c7]");
+  COMPARE(ldr(x8, MemOperand(c9, 8)), "ldr x8, [c9, #8]");
+  COMPARE(ldr(x10, MemOperand(c11, 32760)), "ldr x10, [c11, #32760]");
+  COMPARE(str(w12, MemOperand(c13)), "str w12, [c13]");
+  COMPARE(str(w14, MemOperand(c15, 4)), "str w14, [c15, #4]");
+  COMPARE(str(w16, MemOperand(c17, 16380)), "str w16, [c17, #16380]");
+  COMPARE(str(x18, MemOperand(c19)), "str x18, [c19]");
+  COMPARE(str(x20, MemOperand(c21, 8)), "str x20, [c21, #8]");
+  COMPARE(str(x22, MemOperand(c23, 32760)), "str x22, [c23, #32760]");
+
+  COMPARE(ldr(w0, MemOperand(c1, 4, PreIndex)), "ldr w0, [c1, #4]!");
+  COMPARE(ldr(w2, MemOperand(c3, 255, PreIndex)), "ldr w2, [c3, #255]!");
+  COMPARE(ldr(w4, MemOperand(c5, -256, PreIndex)), "ldr w4, [c5, #-256]!");
+  COMPARE(ldr(x6, MemOperand(c7, 8, PreIndex)), "ldr x6, [c7, #8]!");
+  COMPARE(ldr(x8, MemOperand(c9, 255, PreIndex)), "ldr x8, [c9, #255]!");
+  COMPARE(ldr(x10, MemOperand(c11, -256, PreIndex)), "ldr x10, [c11, #-256]!");
+  COMPARE(str(w12, MemOperand(c13, 4, PreIndex)), "str w12, [c13, #4]!");
+  COMPARE(str(w14, MemOperand(c15, 255, PreIndex)), "str w14, [c15, #255]!");
+  COMPARE(str(w16, MemOperand(c17, -256, PreIndex)), "str w16, [c17, #-256]!");
+  COMPARE(str(x18, MemOperand(c19, 8, PreIndex)), "str x18, [c19, #8]!");
+  COMPARE(str(x20, MemOperand(c21, 255, PreIndex)), "str x20, [c21, #255]!");
+  COMPARE(str(x22, MemOperand(c23, -256, PreIndex)), "str x22, [c23, #-256]!");
+
+  COMPARE(ldr(w0, MemOperand(c1, 4, PostIndex)), "ldr w0, [c1], #4");
+  COMPARE(ldr(w2, MemOperand(c3, 255, PostIndex)), "ldr w2, [c3], #255");
+  COMPARE(ldr(w4, MemOperand(c5, -256, PostIndex)), "ldr w4, [c5], #-256");
+  COMPARE(ldr(x6, MemOperand(c7, 8, PostIndex)), "ldr x6, [c7], #8");
+  COMPARE(ldr(x8, MemOperand(c9, 255, PostIndex)), "ldr x8, [c9], #255");
+  COMPARE(ldr(x10, MemOperand(c11, -256, PostIndex)), "ldr x10, [c11], #-256");
+  COMPARE(str(w12, MemOperand(c13, 4, PostIndex)), "str w12, [c13], #4");
+  COMPARE(str(w14, MemOperand(c15, 255, PostIndex)), "str w14, [c15], #255");
+  COMPARE(str(w16, MemOperand(c17, -256, PostIndex)), "str w16, [c17], #-256");
+  COMPARE(str(x18, MemOperand(c19, 8, PostIndex)), "str x18, [c19], #8");
+  COMPARE(str(x20, MemOperand(c21, 255, PostIndex)), "str x20, [c21], #255");
+  COMPARE(str(x22, MemOperand(c23, -256, PostIndex)), "str x22, [c23], #-256");
+
+  COMPARE(ldr(w24, MemOperand(c28)), "ldr w24, [c28]");
+  COMPARE(ldr(x25, MemOperand(c28, 8)), "ldr x25, [c28, #8]");
+  COMPARE(str(w26, MemOperand(c28, 4, PreIndex)), "str w26, [c28, #4]!");
+  COMPARE(str(cp, MemOperand(c28, -8, PostIndex)), "str cp, [c28], #-8");
+
+  COMPARE(ldrsw(x0, MemOperand(c1)), "ldrsw x0, [c1]");
+  COMPARE(ldrsw(x2, MemOperand(c3, 8)), "ldrsw x2, [c3, #8]");
+  COMPARE(ldrsw(x4, MemOperand(c5, 42, PreIndex)), "ldrsw x4, [c5, #42]!");
+  COMPARE(ldrsw(x6, MemOperand(c7, -11, PostIndex)), "ldrsw x6, [c7], #-11");
+#else   // !__CHERI_PURE_CAPABILITY__
   COMPARE(ldr(w0, MemOperand(x1)), "ldr w0, [x1]");
   COMPARE(ldr(w2, MemOperand(x3, 4)), "ldr w2, [x3, #4]");
   COMPARE(ldr(w4, MemOperand(x5, 16380)), "ldr w4, [x5, #16380]");
@@ -867,6 +945,7 @@ TEST_F(DisasmArm64Test, load_store) {
   COMPARE(ldrsw(x2, MemOperand(x3, 8)), "ldrsw x2, [x3, #8]");
   COMPARE(ldrsw(x4, MemOperand(x5, 42, PreIndex)), "ldrsw x4, [x5, #42]!");
   COMPARE(ldrsw(x6, MemOperand(x7, -11, PostIndex)), "ldrsw x6, [x7], #-11");
+#endif  // __CHERI_PURE_CAPABILITY__
 
   CLEANUP();
 }
