@@ -1435,11 +1435,12 @@ void RegExpMacroAssemblerARM64::WriteStackPointerToRegister(int reg) {
 #ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c10, ref);
   __ Ldr(x10, MemOperand(c10));
+  __ Sub(x10, backtrack_stackpointer().X(), x10);
 #else   // !__CHERI_PURE_CAPABILITY__
   __ Mov(x10, ref);
   __ Ldr(x10, MemOperand(x10));
-#endif  // __CHERI_PURE_CAPABILITY__
   __ Sub(x10, backtrack_stackpointer(), x10);
+#endif  // __CHERI_PURE_CAPABILITY__
   if (v8_flags.debug_code) {
     __ Cmp(x10, Operand(w10, SXTW));
     // The stack offset needs to fit in a W register.
@@ -1454,12 +1455,13 @@ void RegExpMacroAssemblerARM64::ReadStackPointerFromRegister(int reg) {
   Register read_from = GetRegister(reg, w10);
 #ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c11, ref);
-  __ Ldr(x11, MemOperand(c11));
+  __ Ldr(c11, MemOperand(c11));
+  __ Add(backtrack_stackpointer(), c11, Operand(read_from, SXTW));
 #else   // !__CHERI_PURE_CAPABILITY__
   __ Mov(x11, ref);
   __ Ldr(x11, MemOperand(x11));
-#endif  // __CHERI_PURE_CAPABILITY__
   __ Add(backtrack_stackpointer(), x11, Operand(read_from, SXTW));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void RegExpMacroAssemblerARM64::SetCurrentPositionFromEnd(int by) {
