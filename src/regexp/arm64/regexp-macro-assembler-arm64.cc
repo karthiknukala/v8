@@ -1386,7 +1386,11 @@ void RegExpMacroAssemblerARM64::PushBacktrack(Label* label) {
     __ Mov(w10, target + InstructionStream::kHeaderSize - kHeapObjectTag);
   } else {
     __ Adr(x10, label, MacroAssembler::kAdrFar);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Sub(x10, x10, code_pointer().X());
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Sub(x10, x10, code_pointer());
+#endif  // __CHERI_PURE_CAPABILITY__
     if (v8_flags.debug_code) {
       __ Cmp(x10, kWRegMask);
       // The code offset has to fit in a W register.
@@ -1619,7 +1623,11 @@ void RegExpMacroAssemblerARM64::CallCheckStackGuardState(Register scratch) {
   // AAPCS64 requires the stack to be 16 byte aligned.
   int alignment = masm_->ActivationFrameAlignment();
   DCHECK_EQ(alignment % 16, 0);
+#ifdef __CHERI_PURE_CAPABILITY__
+  int align_mask = (alignment / kCRegSize) - 1;
+#else   // !__CHERI_PURE_CAPABILITY__
   int align_mask = (alignment / kXRegSize) - 1;
+#endif  // __CHERI_PURE_CAPABILITY__
   int xreg_to_claim = (3 + align_mask) & ~align_mask;
 
   __ Claim(xreg_to_claim);
