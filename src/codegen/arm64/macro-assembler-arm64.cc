@@ -1393,6 +1393,9 @@ void MacroAssembler::Switch(Register scratch, Register value,
   B(&fallthrough, hs);
   Adr(table, &jump_table);
   Ldr(table, MemOperand(table, value, LSL, kSystemPointerSizeLog2));
+#ifdef __CHERI_PURE_CAPABILITY__
+  PrepareC64Jump(table);
+#endif  // __CHERI_PURE_CAPABILITY__
   Br(table);
   // Emit the jump table inline, under the assumption that it's not too big.
   Align(kSystemPointerSize);
@@ -2832,7 +2835,8 @@ void MacroAssembler::JumpHelper(int64_t offset, RelocInfo::Mode rmode,
     UseScratchRegisterScope temps(this);
 #if defined(__CHERI_PURE_CAPABILITY__)
     Register temp = temps.AcquireC();
-    uint64_t imm = (reinterpret_cast<uint64_t>(pc_) + offset * kInstrSize) | 0x1;
+    uintptr_t imm =
+        (reinterpret_cast<uintptr_t>(pc_) + offset * kInstrSize) | 0x1;
 #else   // !__CHERI_PURE_CAPABILITY__
     Register temp = temps.AcquireX();
     uint64_t imm = reinterpret_cast<uint64_t>(pc_) + offset * kInstrSize;

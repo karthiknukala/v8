@@ -605,6 +605,9 @@ void BaselineAssembler::Switch(Register reg, int case_value_base,
 #endif
   constexpr int instructions_per_label = 1 + instructions_per_jump_target;
   __ Add(temp, temp, Operand(reg, UXTW, entry_size_log2));
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ PrepareC64Jump(temp);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ Br(temp);
   {
     const int instruction_count =

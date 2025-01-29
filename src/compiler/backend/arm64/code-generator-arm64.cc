@@ -3651,6 +3651,9 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
 #endif
   constexpr int instructions_per_case = 1 + instructions_per_jump_target;
   __ Add(temp, temp, Operand(input, UXTW, entry_size_log2));
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ PrepareC64Jump(temp);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ Br(temp);
   {
     const size_t instruction_count =
