@@ -6709,6 +6709,7 @@ void Builtins::Generate_DirectCEntry(MacroAssembler* masm) {
 
   __ Poke<MacroAssembler::kSignLR>(lr, 0);  // Store the return address.
 #if defined(__CHERI_PURE_CAPABILITY__)
+  __ PrepareC64Jump(c10);
   __ Blr(c10);                              // Call the C++ function.
 #else // defined(__CHERI_PURE_CAPABILITY__)
   __ Blr(x10);                              // Call the C++ function.

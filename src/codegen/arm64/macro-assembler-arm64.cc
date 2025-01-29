@@ -2910,6 +2910,9 @@ void MacroAssembler::Jump(const ExternalReference& reference) {
 
 void MacroAssembler::Call(Register target) {
   BlockPoolsScope scope(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  PrepareC64Jump(target);
+#endif  // __CHERI_PURE_CAPABILITY__
   Blr(target);
 }
 
@@ -3178,6 +3181,7 @@ void MacroAssembler::StoreReturnAddressAndCall(Register target) {
     Cmp(c16, c17);
     Check(eq, AbortReason::kReturnAddressNotFoundInFrame);
   }
+  PrepareC64Jump(target);
 #else  // !__CHERI_PURE_CAPABILITY__
   temps.Exclude(x16, x17);
   DCHECK(!AreAliased(x16, x17, target));
@@ -3208,8 +3212,15 @@ void MacroAssembler::StoreReturnAddressAndCall(Register target) {
 void MacroAssembler::IndirectCall(Address target, RelocInfo::Mode rmode) {
   ASM_CODE_COMMENT(this);
   UseScratchRegisterScope temps(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register temp = temps.AcquireC();
+#else   // !__CHERI_PURE_CAPABILITY__
   Register temp = temps.AcquireX();
+#endif  // __CHERI_PURE_CAPABILITY__
   Mov(temp, Immediate(target, rmode));
+#ifdef __CHERI_PURE_CAPABILITY__
+  PrepareC64Jump(temp);
+#endif  // __CHERI_PURE_CAPABILITY__
   Blr(temp);
 }
 
