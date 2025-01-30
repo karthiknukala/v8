@@ -854,13 +854,14 @@ void RegExpMacroAssemblerARM64::PopRegExpBasePointer(Register stack_pointer_out,
     UseScratchRegisterScope temps(masm_.get());
     Register temp = temps.AcquireX();
     __ Gctag(temp, scratch);
-    __ Tst(temp, 1);
     __ CompareAndBranch(temp, Operand(1), eq, &scratch_tagged);
     if (v8_flags.debug_code) {
       HardAbortScope hard_abort(masm_.get());  // Avoid calls to Abort.
+      Label good;
       __ Gctag(temp, stack_pointer_out);
-      __ Tst(temp, 1);
-      __ Check(eq, AbortReason::kUnexpectedStackPointer);
+      __ Tbnz(temp, 0, &good);
+      __ Abort(AbortReason::kUnexpectedStackPointer);
+      __ Bind(&good);
     }
     __ Add(stack_pointer_out, stack_pointer_out, scratch);
     __ B(&done);
