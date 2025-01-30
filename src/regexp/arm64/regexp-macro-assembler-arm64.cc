@@ -1897,6 +1897,20 @@ void RegExpMacroAssemblerARM64::RestoreLinkRegister() {
   __ Pop<MacroAssembler::kAuthLR>(padreg, lr);
 #endif  // __CHERI_PURE_CAPABILITY__
   __ Add(lr, lr, Operand(masm_->CodeObject()));
+#ifdef __CHERI_PURE_CAPABILITY__
+  {
+    Label done;
+    UseScratchRegisterScope temps(masm_.get());
+    Register temp = temps.AcquireC();
+    // FIXME(ds815): This probably doesn't work in every case -- the capability
+    // returned by adr might be in a different mapping from the return point.
+    __ Gcseal(temp.X(), lr);
+    __ Tbz(temp.X(), 0, &done);
+    __ adr(temp, 0);
+    __ Scvalue(lr, temp, lr.X());
+    __ Bind(&done);
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 
