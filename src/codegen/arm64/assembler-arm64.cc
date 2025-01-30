@@ -4171,28 +4171,27 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
     // or their 64-bit register equivalents, convert the operand from shifted to
     // extended register mode, and emit an add/sub extended instruction.
     if (rn.IsSP() || rd.IsSP()) {
- #if defined(__CHERI_PURE_CAPABILITY__)
+#if defined(__CHERI_PURE_CAPABILITY__)
       if (rn.IsC()) {
         DCHECK(rd.IsC());
         Instr dest_reg = (S == SetFlags) ? Cd(rd) : CdCSP(rd);
         Emit(ADD_c_ext | Rm(operand.ToExtendedRegister().reg()) |
              ExtendMode(operand.ToExtendedRegister().extend()) |
-	     ImmExtendShift(operand.shift_amount()) |
-             dest_reg | CnCSP(rn));
+             ImmExtendShift(operand.shift_amount()) | dest_reg | CnCSP(rn));
         return;
       }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
       DCHECK(!(rd.IsSP() && (S == SetFlags)));
       DataProcExtendedRegister(rd, rn, operand.ToExtendedRegister(), S,
                                AddSubExtendedFixed | op);
 #if defined(__CHERI_PURE_CAPABILITY__)
     } else if (rn.IsC()) {
       DCHECK(rd.IsC());
+      DCHECK_LE(operand.shift_amount(), 4);
       Emit(ADD_c_ext | Rm(operand.ToExtendedRegister().reg()) |
            ExtendMode(operand.ToExtendedRegister().extend()) |
-           ImmExtendShift(operand.shift_amount()) |
-           Cd(rd) | Cn(rn));
-#endif // __CHERI_PURE_CAPABILITY__
+           ImmExtendShift(operand.shift_amount()) | Cd(rd) | Cn(rn));
+#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       DataProcShiftedRegister(rd, rn, operand, S, AddSubShiftedFixed | op);
     }
@@ -4201,9 +4200,8 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
 #if defined(__CHERI_PURE_CAPABILITY__)
     if (rn.IsC() && rd.IsC()) {
       Instr dest_reg = (S == SetFlags) ? Cd(rd) : CdCSP(rd);
-      Emit(ADD_c_ext | Rm(operand.reg()) |
-           ExtendMode(operand.extend()) | ImmExtendShift(operand.shift_amount()) |
-           dest_reg | CnCSP(rn));
+      Emit(ADD_c_ext | Rm(operand.reg()) | ExtendMode(operand.extend()) |
+           ImmExtendShift(operand.shift_amount()) | dest_reg | CnCSP(rn));
       return;
     }
 #endif // __CHERI_PURE_CAPABILITY__
