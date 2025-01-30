@@ -848,7 +848,29 @@ void RegExpMacroAssemblerARM64::PopRegExpBasePointer(Register stack_pointer_out,
          MemOperand(frame_pointer(), kRegExpStackBasePointerOffset));
   __ Mov(scratch, ref);
   __ Ldr(scratch, MemOperand(scratch));
+#ifdef __CHERI_PURE_CAPABILITY__
+  Label scratch_tagged, done;
+  {
+    UseScratchRegisterScope temps(masm_.get());
+    Register temp = temps.AcquireX();
+    __ Gctag(temp, scratch);
+    __ Tst(temp, 1);
+    __ CompareAndBranch(temp, Operand(1), eq, &scratch_tagged);
+    if (v8_flags.debug_code) {
+      HardAbortScope hard_abort(masm_.get());  // Avoid calls to Abort.
+      __ Gctag(temp, stack_pointer_out);
+      __ Tst(temp, 1);
+      __ Check(eq, AbortReason::kUnexpectedStackPointer);
+    }
+    __ Add(stack_pointer_out, stack_pointer_out, scratch);
+    __ B(&done);
+  }
+  __ Bind(&scratch_tagged);
+  __ Add(stack_pointer_out, scratch, stack_pointer_out);
+  __ Bind(&done);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Add(stack_pointer_out, stack_pointer_out, scratch);
+#endif  // __CHERI_PURE_CAPABILITY__
   StoreRegExpStackPointerToMemory(stack_pointer_out, scratch);
 }
 
