@@ -4185,8 +4185,8 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
            ImmExtendShift(operand.shift_amount()) | dest_reg | CnCSP(rn));
       return;
     }
-#endif // __CHERI_PURE_CAPABILITY__
     DCHECK(!rd.IsC());
+#endif // __CHERI_PURE_CAPABILITY__
     DataProcExtendedRegister(rd, rn, operand, S, AddSubExtendedFixed | op);
   }
 }
