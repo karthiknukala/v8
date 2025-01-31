@@ -1006,7 +1006,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
       Mov(temp, operand);
       AddSub(rd, rn, temp, S, op);
     }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   } else if (rd.IsC() && operand.IsShiftedRegister()) {
     // Morello doesn't have shifted register instructions for capability
     // registers.
@@ -1024,7 +1024,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
       DCHECK_EQ(op, ADD_c);
       AddSub(rd, rn, operand, S, ADD_c);
     }
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     AddSub(rd, rn, operand, S, op);
   }
