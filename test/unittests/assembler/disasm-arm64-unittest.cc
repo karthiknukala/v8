@@ -40,6 +40,9 @@
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
+// Disable disassembler tests for now.
+#ifndef __CHERI_PURE_CAPABILITY__
+
 namespace v8 {
 namespace internal {
 
@@ -5205,3 +5208,4 @@ TEST_F(DisasmArm64Test, neon_shift_immediate) {
 
 }  // namespace internal
 }  // namespace v8
+#endif  // !__CHERI_PURE_CAPABILITY__
