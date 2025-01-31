@@ -4188,6 +4188,7 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
     } else if (rn.IsC()) {
       DCHECK(rd.IsC());
       DCHECK_LE(operand.shift_amount(), 4);
+      DCHECK_EQ(operand.shift(), LSL);
       Emit(ADD_c_ext | Rm(operand.ToExtendedRegister().reg()) |
            ExtendMode(operand.ToExtendedRegister().extend()) |
            ImmExtendShift(operand.shift_amount()) | Cd(rd) | Cn(rn));

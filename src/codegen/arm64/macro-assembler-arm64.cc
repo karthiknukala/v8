@@ -1010,6 +1010,14 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
   } else if (rd.IsC() && operand.IsShiftedRegister()) {
     // Morello doesn't have shifted register instructions for capability
     // registers.
+    DCHECK(!operand.IsExtendedRegister());
+    // If the shift amount is <= 4, we can use an extended register add.
+    if (operand.shift_amount() <= 4 && op != SUB_c && op != SUB &&
+        operand.shift() == LSL) {
+      AddSub(rd, rn, Operand(operand.reg().X(), UXTX, operand.shift_amount()),
+             S, ADD_c);
+      return;
+    }
     if (op == SUB_c || op == SUB) {
       CheriAddSub(rd, rn, operand, S, SUB);
     } else {
