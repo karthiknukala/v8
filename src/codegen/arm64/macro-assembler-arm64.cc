@@ -933,10 +933,10 @@ void MacroAssembler::CheriAddSub(const Register& rd, const Register& rn,
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
     DCHECK(!AreAliased(rn, temp));
-    AddSub(temp, rn.X(), operand, S, op);
+    AddSub(temp, rn.X(), operand.ToX(), S, op);
     Scvalue(rd, rn, temp);
   } else {
-    AddSub(rd.X(), rn.X(), operand, S, op);
+    AddSub(rd.X(), rn.X(), operand.ToX(), S, op);
     Scvalue(rd, rn, rd.X());
   }
 }
@@ -991,17 +991,25 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
       Operand imm_operand =
           MoveImmediateForShiftedOp(temp, operand.ImmediateValue(), mode);
 #ifdef __CHERI_PURE_CAPABILITY__
-      if (rd.IsC() && imm_operand.shift_amount() > 4) {
-        DCHECK(!AreAliased(rd, rn));
+      if (rd.IsC()) {
         DCHECK_NE(rd, csp);
-        AddSub(rd.X(), rn.X(), imm_operand, S, op);
-        Scvalue(rd, rn, rd.X());
-      } else {
-        AddSub(rd, rn, imm_operand, S, op);
+        DCHECK(imm_operand.IsShiftedRegister());
+        if (imm_operand.shift_amount() <= 4 && (op == ADD || op == ADD_c) &&
+            imm_operand.shift() == LSL) {
+          AddSub(
+              rd, rn,
+              Operand(imm_operand.reg().X(), UXTX, imm_operand.shift_amount()),
+              S, ADD_c);
+        } else {
+          DCHECK(!AreAliased(rd, rn));
+          DCHECK_NE(rd, csp);
+          AddSub(rd.X(), rn.X(), imm_operand.ToX(), S, op);
+          Scvalue(rd, rn, rd.X());
+        }
+        return;
       }
-#else   // !__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
       AddSub(rd, rn, imm_operand, S, op);
-#endif  // !__CHERI_PURE_CAPABILITY__
     } else {
       Mov(temp, operand);
       AddSub(rd, rn, temp, S, op);
@@ -1012,7 +1020,7 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
     // registers.
     DCHECK(!operand.IsExtendedRegister());
     // If the shift amount is <= 4, we can use an extended register add.
-    if (operand.shift_amount() <= 4 && op != SUB_c && op != SUB &&
+    if (operand.shift_amount() <= 4 && (op == ADD || op == ADD_c) &&
         operand.shift() == LSL) {
       AddSub(rd, rn, Operand(operand.reg().X(), UXTX, operand.shift_amount()),
              S, ADD_c);
@@ -4528,11 +4536,7 @@ void MacroAssembler::RecordWrite(Register object, Operand offset,
     DCHECK(!AreAliased(object, value, temp));
     Add(temp, object, offset);
     LoadTaggedField(temp, MemOperand(temp));
-#if defined(__CHERI_PURE_CAPABILITY__)
-    Cmp(temp.X(), value);
-#else   // !__CHERI_PURE_CAPABILITY__
     Cmp(temp, value);
-#endif  // !__CHERI_PURE_CAPABILITY__
     Check(eq, AbortReason::kWrongAddressOrValuePassedToRecordWrite);
   }
 

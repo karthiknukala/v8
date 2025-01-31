@@ -4155,10 +4155,9 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
          ImmAddSub(static_cast<int>(immediate)) | dest_reg | RnSP(rn));
   } else if (operand.IsShiftedRegister()) {
 #ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK((operand.reg().SizeInBits(), rd.SizeInBits()) ||
-           (operand.reg().SizeInBits() == kXRegSizeInBits &&
-            rd.SizeInBits() == kCRegSizeInBits));
-#else
+    DCHECK_IMPLIES(!operand.reg().IsC(),
+                   operand.reg().SizeInBits() == rd.SizeInBits());
+#else   // !__CHERI_PURE_CAPABILITY__
     DCHECK_EQ(operand.reg().SizeInBits(), rd.SizeInBits());
 #endif  // __CHERI_PURE_CAPABILITY__
     DCHECK_NE(operand.shift(), ROR);
@@ -4171,28 +4170,9 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
     // or their 64-bit register equivalents, convert the operand from shifted to
     // extended register mode, and emit an add/sub extended instruction.
     if (rn.IsSP() || rd.IsSP()) {
-#ifdef __CHERI_PURE_CAPABILITY__
-      if (rn.IsC()) {
-        DCHECK(rd.IsC());
-        Instr dest_reg = (S == SetFlags) ? Cd(rd) : CdCSP(rd);
-        Emit(ADD_c_ext | Rm(operand.ToExtendedRegister().reg()) |
-             ExtendMode(operand.ToExtendedRegister().extend()) |
-             ImmExtendShift(operand.shift_amount()) | dest_reg | CnCSP(rn));
-        return;
-      }
-#endif  // __CHERI_PURE_CAPABILITY__
       DCHECK(!(rd.IsSP() && (S == SetFlags)));
       DataProcExtendedRegister(rd, rn, operand.ToExtendedRegister(), S,
                                AddSubExtendedFixed | op);
-#ifdef __CHERI_PURE_CAPABILITY__
-    } else if (rn.IsC()) {
-      DCHECK(rd.IsC());
-      DCHECK_LE(operand.shift_amount(), 4);
-      DCHECK_EQ(operand.shift(), LSL);
-      Emit(ADD_c_ext | Rm(operand.ToExtendedRegister().reg()) |
-           ExtendMode(operand.ToExtendedRegister().extend()) |
-           ImmExtendShift(operand.shift_amount()) | Cd(rd) | Cn(rn));
-#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       DataProcShiftedRegister(rd, rn, operand, S, AddSubShiftedFixed | op);
     }
@@ -4206,6 +4186,7 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
       return;
     }
 #endif // __CHERI_PURE_CAPABILITY__
+    DCHECK(!rd.IsC());
     DataProcExtendedRegister(rd, rn, operand, S, AddSubExtendedFixed | op);
   }
 }
