@@ -566,7 +566,7 @@ hooks = [
     'name': 'clang',
     'pattern': '.',
     # clang not supported on aix
-    'condition': 'host_os != "aix"',
+    'condition': 'host_os != "aix" and host_os != "freebsd"',
     'action': ['python3', 'tools/clang/scripts/update.py'],
   },
   {
