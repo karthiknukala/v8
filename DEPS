@@ -49,6 +49,8 @@ vars = {
   'download_prebuilt_bazel': False,
   'check_v8_header_includes': False,
 
+  'ctsrd_cheri_url': 'https://github.com/CTSRD-CHERI',
+
   # By default, download the fuchsia sdk from the public sdk directory.
   'fuchsia_sdk_cipd_prefix': 'fuchsia/sdk/gn/',
 
@@ -220,7 +222,7 @@ deps = {
     'condition': 'checkout_android',
   },
   'third_party/depot_tools':
-    Var('chromium_url') + '/chromium/tools/depot_tools.git' + '@' + '4d73c057d82ac5994d992f0b1f57ca6d513c3554',
+    Var('ctsrd_cheri_url') + '/depot_tools.git' + '@' + '64627e0fa5f1d07e86ba4f173ecd4c4997859cd4',
   'third_party/fuchsia-sdk/sdk': {
     'packages': [
         {
