@@ -262,7 +262,7 @@ deps = {
       }
     ],
     'dep_type': 'cipd',
-    'condition': 'host_cpu != "s390" and host_cpu != "ppc"'
+    'condition': 'host_cpu != "s390" and host_cpu != "ppc" and host_os != freebsd'
   },
   'third_party/perfetto':
     Var('android_url') + '/platform/external/perfetto.git' + '@' + '0d180f46481a96cbe8340734fa5cdce3bba636c8',
@@ -287,7 +287,7 @@ deps = {
           'version': Var('luci_go'),
         },
       ],
-      'condition': 'host_cpu != "s390" and host_os != "aix"',
+      'condition': 'host_cpu != "s390" and host_os != "aix" and host_os != freebsd',
       'dep_type': 'cipd',
   },
 }
