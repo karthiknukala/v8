@@ -933,10 +933,11 @@ void MacroAssembler::CheriAddSub(const Register& rd, const Register& rn,
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireX();
     DCHECK(!AreAliased(rn, temp));
-    AddSub(temp, rn.X(), operand.ToX(), S, op);
+    AddSub(temp, rn.X(), operand.reg().IsC() ? operand.ToX() : operand, S, op);
     Scvalue(rd, rn, temp);
   } else {
-    AddSub(rd.X(), rn.X(), operand.ToX(), S, op);
+    AddSub(rd.X(), rn.X(), operand.reg().IsC() ? operand.ToX() : operand, S,
+           op);
     Scvalue(rd, rn, rd.X());
   }
 }
