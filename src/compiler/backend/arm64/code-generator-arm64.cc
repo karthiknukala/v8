@@ -985,15 +985,15 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           instr->HasCallDescriptorFlag(CallDescriptor::kFixedTargetRegister),
           reg == kJavaScriptCallCodeStartRegister);
       UseScratchRegisterScope temps(masm());
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
       temps.Exclude(c17);
       __ Mov(c17, reg);
       __ Jump(c17);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
       temps.Exclude(x17);
       __ Mov(x17, reg);
       __ Jump(x17);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
       unwinding_info_writer_.MarkBlockWillExit();
       frame_access_state()->ClearSPDelta();
       frame_access_state()->SetFrameAccessToDefault();
@@ -4161,15 +4161,15 @@ void CodeGenerator::MoveToTempLocation(InstructionOperand* source,
   // Temporarily exclude the reserved scratch registers while we pick one to
   // resolve the move cycle. Re-include them immediately afterwards as they
   // might be needed for the move to the temp location.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   if (IsCapability(rep)) {
     temps.Exclude(CPURegList(ElementSizeInBits(rep), move_cycle_.scratch_regs));
   } else {
     temps.Exclude(CPURegList(64, move_cycle_.scratch_regs));
   }
-#else   // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
   temps.Exclude(CPURegList(64, move_cycle_.scratch_regs));
-#endif  // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
   temps.ExcludeFP(CPURegList(64, move_cycle_.scratch_fp_regs));
   if (!IsFloatingPoint(rep)) {
     if (temps.CanAcquire()) {
@@ -4202,15 +4202,15 @@ void CodeGenerator::MoveToTempLocation(InstructionOperand* source,
     VRegister scratch = move_cycle_.temps->AcquireQ();
     move_cycle_.scratch_reg.emplace(scratch);
   }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   if (IsCapability(rep)) {
-    temps.Exclude(CPURegList(ElementSizeInBits(rep), move_cycle_.scratch_regs));
+    temps.Include(CPURegList(ElementSizeInBits(rep), move_cycle_.scratch_regs));
   } else {
-    temps.Exclude(CPURegList(64, move_cycle_.scratch_regs));
+    temps.Include(CPURegList(64, move_cycle_.scratch_regs));
   }
-#else   // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
   temps.Include(CPURegList(64, move_cycle_.scratch_regs));
-#endif  // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
   temps.IncludeFP(CPURegList(64, move_cycle_.scratch_fp_regs));
   if (move_cycle_.scratch_reg.has_value()) {
     // A scratch register is available for this rep.
