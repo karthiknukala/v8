@@ -3833,7 +3833,9 @@ void CodeGenerator::AssembleConstructFrame() {
     required_slots -= saves.Count();
 #if defined(__CHERI_PURE_CAPABILITY__)
     DCHECK((kDRegSizeInBits * 2) == kCRegSizeInBits);
-    required_slots -= saves_fp.Count() / (kCRegSizeInBits / kDRegSize);
+    const size_t divisor = kCRegSizeInBits / kDRegSizeInBits;
+    DCHECK_EQ(saves_fp.Count() % divisor, 0);
+    required_slots -= saves_fp.Count() / divisor;
 #else // defined(__CHERI_PURE_CAPABILITY__)
     required_slots -= saves_fp.Count();
 #endif // defined(__CHERI_PURE_CAPABILITY__)
@@ -3854,10 +3856,9 @@ void CodeGenerator::AssembleConstructFrame() {
                StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
 #if defined(__CHERI_PURE_CAPABILITY__)
         __ Push(scratch.C(), padregc);
-        DCHECK_GE(required_slots, 0);
-        if (required_slots > 1) __ Claim(required_slots - 1);
-#else // _CHERI_PURE_CAPABILITY__
+#else   // _CHERI_PURE_CAPABILITY__
         __ Push(scratch, padreg);
+#endif  // _CHERI_PURE_CAPABILITY__
         // One of the extra slots has just been claimed when pushing the frame
         // type marker above. We also know that we have at least one slot to
         // claim here, as the typed frame has an odd number of fixed slots, and
@@ -3865,7 +3866,6 @@ void CodeGenerator::AssembleConstructFrame() {
         // {required_slots} to be odd.
         DCHECK_GE(required_slots, 1);
         __ Claim(required_slots - 1);
-#endif // _CHERI_PURE_CAPABILITY__
         break;
       }
 #if V8_ENABLE_WEBASSEMBLY
