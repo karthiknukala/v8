@@ -419,7 +419,8 @@ void RegExpMacroAssemblerARM64::CheckNotBackReferenceIgnoreCase(
 
     __ Bind(&success);
     // Compute new value of character position after the matched part.
-    __ Sub(current_input_offset().X(), current_position_address, input_end());
+    __ Sub(current_input_offset().X(), current_position_address.X(),
+           input_end());
     if (read_backward) {
       __ Sub(current_input_offset().X(), current_input_offset().X(),
              Operand(capture_length, SXTW));
@@ -569,7 +570,7 @@ void RegExpMacroAssemblerARM64::CheckNotBackReference(int start_reg,
   __ B(lt, &loop);
 
   // Move current character position to position after match.
-  __ Sub(current_input_offset().X(), current_position_address, input_end());
+  __ Sub(current_input_offset().X(), current_position_address.X(), input_end());
   if (read_backward) {
     __ Sub(current_input_offset().X(), current_input_offset().X(),
            Operand(capture_length, SXTW));
