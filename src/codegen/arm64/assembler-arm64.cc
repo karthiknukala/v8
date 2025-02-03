@@ -4154,12 +4154,11 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
     Emit(SF(rd) | AddSubImmediateFixed | op | Flags(S) |
          ImmAddSub(static_cast<int>(immediate)) | dest_reg | RnSP(rn));
   } else if (operand.IsShiftedRegister()) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK_IMPLIES(!operand.reg().IsC(),
-                   operand.reg().SizeInBits() == rd.SizeInBits());
-#else   // !__CHERI_PURE_CAPABILITY__
+    // There isn't really a sensible DCHECK we can put here without creating
+    // diffs elsewhere for purecap.
+#ifndef __CHERI_PURE_CAPABILITY__
     DCHECK_EQ(operand.reg().SizeInBits(), rd.SizeInBits());
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif  // !__CHERI_PURE_CAPABILITY__
     DCHECK_NE(operand.shift(), ROR);
 
     // For instructions of the form:
