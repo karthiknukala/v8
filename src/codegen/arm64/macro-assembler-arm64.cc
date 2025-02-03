@@ -993,8 +993,8 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
           MoveImmediateForShiftedOp(temp, operand.ImmediateValue(), mode);
 #ifdef __CHERI_PURE_CAPABILITY__
       if (rd.IsC()) {
-        DCHECK_NE(rd, csp);
         DCHECK(imm_operand.IsShiftedRegister());
+        DCHECK(rn.IsC());
         if (imm_operand.shift_amount() <= 4 && (op == ADD || op == ADD_c) &&
             imm_operand.shift() == LSL) {
           AddSub(
@@ -1002,10 +1002,20 @@ void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
               Operand(imm_operand.reg().X(), UXTX, imm_operand.shift_amount()),
               S, ADD_c);
         } else {
-          DCHECK(!AreAliased(rd, rn));
-          DCHECK_NE(rd, csp);
-          AddSub(rd.X(), rn.X(), imm_operand.ToX(), S, op);
-          Scvalue(rd, rn, rd.X());
+          if (op == SUB_c) {
+            op = SUB;
+          } else {
+            DCHECK_EQ(op, ADD_c);
+            op = ADD;
+          }
+          if (AreAliased(rd, rn)) {
+            Register tempX = temps.AcquireX();
+            AddSub(tempX, rn.X(), imm_operand.ToX(), S, op);
+            Scvalue(rd, rn, tempX);
+          } else {
+            AddSub(rd.X(), rn.X(), imm_operand.ToX(), S, op);
+            Scvalue(rd, rn, rd.X());
+          }
         }
         return;
       }
