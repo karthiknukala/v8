@@ -166,16 +166,16 @@ template <>
 struct SmiTagging<16> {
   enum { kSmiShiftSize = 31, kSmiValueSize = 32 };
 
-  static constexpr intptr_t kSmiMinValue =
-      static_cast<intptr_t>(kUintptrAllBitsSet << (kSmiValueSize - 1));
-  static constexpr intptr_t kSmiMaxValue = -(kSmiMinValue + 1);
+  static constexpr int64_t kSmiMinValue =
+      static_cast<int64_t>(kUintptrAllBitsSet << (kSmiValueSize - 1));
+  static constexpr int64_t kSmiMaxValue = -(kSmiMinValue + 1);
 
-  V8_INLINE static int SmiToInt(const internal::Address value) {
+  V8_INLINE static int SmiToInt(const int64_t value) {
     int shift_bits = kSmiTagSize + kSmiShiftSize;
     // Shift down and throw away top 32 bits.
-    return static_cast<int>(static_cast<intptr_t>(value) >> shift_bits);
+    return static_cast<int>(static_cast<int64_t>(value) >> shift_bits);
   }
-  V8_INLINE static constexpr bool IsValidSmi(intptr_t value) {
+  V8_INLINE static constexpr bool IsValidSmi(int64_t value) {
     // To be representable as a long smi, the value must be a 32-bit integer.
     return (value == static_cast<int32_t>(value));
   }
