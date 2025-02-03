@@ -222,7 +222,7 @@ deps = {
     'condition': 'checkout_android',
   },
   'third_party/depot_tools':
-    Var('ctsrd_cheri_url') + '/depot_tools.git' + '@' + '64627e0fa5f1d07e86ba4f173ecd4c4997859cd4',
+    Var('ctsrd_cheri_url') + '/depot_tools.git' + '@' + '3f56b6cd5ec3f38232ab81a8cab2e3794d7d2149',
   'third_party/fuchsia-sdk/sdk': {
     'packages': [
         {
@@ -329,6 +329,16 @@ hooks = [
         'python3',
         'third_party/depot_tools/update_depot_tools_toggle.py',
         '--disable',
+    ],
+  },
+  {
+    'name': 'gn_link_system',
+    'pattern': '.',
+    'condition': 'host_os == "freebsd"',
+    'action': [ 'python3',
+                'third_party/depot_tools/link_system_dependencies.py',
+                '--source', '/usr/local64/bin/gn',
+                '--target', 'buildtools/freebsd/gn',
     ],
   },
   {
