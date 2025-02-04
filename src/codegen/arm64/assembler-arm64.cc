@@ -4144,6 +4144,7 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
     DCHECK(IsImmAddSub(immediate));
 #ifdef __CHERI_PURE_CAPABILITY__
     if (rd.IsC()) {
+      // XXX(ds815): Double-check this encoding. ImmAddSub() smells.
       DCHECK(rn.IsC());
       Emit(AddSubCapImmediateFixed | op |
            ImmAddSub(static_cast<int>(immediate)) | CdCSP(rd) | CnCSP(rn));
