@@ -5288,7 +5288,11 @@ void PatchingAssembler::PatchAdrFar(int64_t target_offset) {
   movz(scratch, (target_offset >> 16) & 0xFFFF, 16);
   movk(scratch, (target_offset >> 32) & 0xFFFF, 32);
   DCHECK_EQ(target_offset >> 48, 0);
+#ifdef __CHERI_PURE_CAPABILITY__
+  add(rd, rd, Operand(scratch, UXTX, 0));
+#else   // !__CHERI_PURE_CAPABILITY__
   add(rd, rd, scratch);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void PatchingAssembler::PatchSubSp(uint32_t immediate) {
