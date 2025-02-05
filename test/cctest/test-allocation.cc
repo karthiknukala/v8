@@ -86,6 +86,7 @@ void OnAlignedAllocOOM(const char* location, const char* message) {
 
 }  // namespace
 
+#ifndef __CHERI_PURE_CAPABILITY__
 TEST_WITH_PLATFORM(AccountingAllocatorOOM, AllocationPlatform) {
   v8::internal::AccountingAllocator allocator;
   CHECK(!platform.oom_callback_called);
@@ -95,6 +96,7 @@ TEST_WITH_PLATFORM(AccountingAllocatorOOM, AllocationPlatform) {
   // On a few systems, allocation somehow succeeds.
   CHECK_EQ(result == nullptr, platform.oom_callback_called);
 }
+#endif  // !__CHERI_PURE_CAPABILITY__
 
 // We use |AllocateAtLeast| in the accounting allocator, so we check only that
 // we have _at least_ the expected amount of memory allocated.
@@ -136,6 +138,7 @@ TEST_WITH_PLATFORM(MallocedOperatorNewOOM, AllocationPlatform) {
   CHECK_EQ(result == nullptr, platform.oom_callback_called);
 }
 
+#ifndef __CHERI_PURE_CAPABILITY__
 TEST_WITH_PLATFORM(NewArrayOOM, AllocationPlatform) {
   CHECK(!platform.oom_callback_called);
   CcTest::isolate()->SetFatalErrorHandler(OnNewArrayOOM);
@@ -173,6 +176,7 @@ TEST_WITH_PLATFORM(AlignedAllocVirtualMemoryOOM, AllocationPlatform) {
   // On a few systems, allocation somehow succeeds.
   CHECK_IMPLIES(!result.IsReserved(), platform.oom_callback_called);
 }
+#endif  // !__CHERI_PURE_CAPABILITY__
 
 #endif  // !defined(V8_USE_ADDRESS_SANITIZER) && !defined(MEMORY_SANITIZER) &&
         // !defined(THREAD_SANITIZER)
