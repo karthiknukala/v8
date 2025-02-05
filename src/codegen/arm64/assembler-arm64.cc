@@ -1649,9 +1649,15 @@ void Assembler::ldr(const CPURegister& rt, const Immediate& imm) {
 }
 
 void Assembler::ldar(const Register& rt, const Register& rn) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? LDAR_w : LDAR_x;
+  Emit(op | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt.X()));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? LDAR_w : LDAR_x;
   Emit(op | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
@@ -1662,9 +1668,15 @@ void Assembler::ldar_c(const Register& ct, const Register& cn) {
 #endif  // __CHERI_PURE_CAPABILITY__
 
 void Assembler::ldaxr(const Register& rt, const Register& rn) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? LDAXR_w : LDAXR_x;
+  Emit(op | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt.X()));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? LDAXR_w : LDAXR_x;
   Emit(op | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
@@ -1675,9 +1687,15 @@ void Assembler::ldaxr_c(const Register& ct, const Register& cn) {
 #endif  // __CHERI_PURE_CAPABILITY__
 
 void Assembler::stlr(const Register& rt, const Register& rn) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? STLR_w : STLR_x;
+  Emit(op | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt.X()));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? STLR_w : STLR_x;
   Emit(op | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
@@ -1689,10 +1707,18 @@ void Assembler::stlr_c(const Register& ct, const Register& cn) {
 
 void Assembler::stlxr(const Register& rs, const Register& rt,
                       const Register& rn) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK(rs != rt && rs != rn);
   LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? STLXR_w : STLXR_x;
+#ifdef __CHERI_PURE_CAPABILITY__
+  Emit(op | Rs(rs) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt.X()));
+#else   // !__CHERI_PURE_CAPABILITY__
   Emit(op | Rs(rs) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 #ifdef __CHERI_PURE_CAPABILITY__
@@ -1706,56 +1732,96 @@ void Assembler::stlxr_c(const Register& rs, const Register& ct,
 
 void Assembler::ldarb(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(LDAR_b | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   Emit(LDAR_b | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::ldaxrb(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(LDAXR_b | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   Emit(LDAXR_b | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::stlrb(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(STLR_b | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   Emit(STLR_b | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::stlxrb(const Register& rs, const Register& rt,
                        const Register& rn) {
   DCHECK(rs.Is32Bits());
   DCHECK(rt.Is32Bits());
-  DCHECK(rn.Is64Bits());
   DCHECK(rs != rt && rs != rn);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(STLXR_b | Rs(rs) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits());
   Emit(STLXR_b | Rs(rs) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::ldarh(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(LDAR_h | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   Emit(LDAR_h | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::ldaxrh(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(LDAXR_h | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   Emit(LDAXR_h | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::stlrh(const Register& rt, const Register& rn) {
   DCHECK(rt.Is32Bits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(STLR_h | Rs(x31) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(rn.Is64Bits());
   Emit(STLR_h | Rs(x31) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::stlxrh(const Register& rs, const Register& rt,
                        const Register& rn) {
   DCHECK(rs.Is32Bits());
   DCHECK(rt.Is32Bits());
-  DCHECK(rn.Is64Bits());
   DCHECK(rs != rt && rs != rn);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits() || rn.IsC());
+  Emit(STLXR_h | Rs(rs) | Rt2(x31) | CnCSP(rn.C()) | Rt(rt));
+#else   // !__CHERI_PURE_CAPABILITY__
+  DCHECK(rn.Is64Bits());
   Emit(STLXR_h | Rs(rs) | Rt2(x31) | RnSP(rn) | Rt(rt));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 #define COMPARE_AND_SWAP_W_X_LIST(V) \
@@ -1801,6 +1867,23 @@ COMPARE_AND_SWAP_W_LIST(DEFINE_ASM_FUNC)
   V(caspl, CASPL)                     \
   V(caspal, CASPAL)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DEFINE_ASM_FUNC(FN, OP)                                              \
+  void Assembler::FN(const Register& rs, const Register& rs1,                \
+                     const Register& rt, const Register& rt1,                \
+                     const MemOperand& src) {                                \
+    DCHECK(IsEnabled(LSE));                                                  \
+    DCHECK(src.IsImmediateOffset() && (src.offset() == 0));                  \
+    DCHECK(AreEven(rs, rt));                                                 \
+    DCHECK(AreConsecutive(rs, rs1));                                         \
+    DCHECK(AreConsecutive(rt, rt1));                                         \
+    LoadStoreAcquireReleaseOp op = rt.Is32Bits() ? OP##_w : OP##_x;          \
+    if (rs.IsC() || rt.IsC())                                                \
+      Emit(op | Rs(rs.X()) | Rt(rt.X()) | Rt2_mask | CnCSP(src.base().C())); \
+    else                                                                     \
+      Emit(op | Rs(rs) | Rt(rt) | Rt2_mask | CnCSP(src.base().C()));         \
+  }
+#else // !__CHERI_PURE_CAPABILITY__
 #define DEFINE_ASM_FUNC(FN, OP)                                     \
   void Assembler::FN(const Register& rs, const Register& rs1,       \
                      const Register& rt, const Register& rt1,       \
@@ -1814,6 +1897,7 @@ COMPARE_AND_SWAP_W_LIST(DEFINE_ASM_FUNC)
     LoadStoreAcquireReleaseOp op = rt.Is64Bits() ? OP##_x : OP##_w; \
     Emit(op | Rs(rs) | Rt(rt) | Rt2_mask | RnSP(src.base()));       \
   }
+#endif // __CHERI_PURE_CAPABILITY__
 COMPARE_AND_SWAP_PAIR_LIST(DEFINE_ASM_FUNC)
 #undef DEFINE_ASM_FUNC
 
