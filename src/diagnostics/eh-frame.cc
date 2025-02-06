@@ -243,7 +243,8 @@ void EhFrameWriter::WritePaddingToAlignedSize(int unpadded_size) {
   int padding_size = RoundUp(unpadded_size, kSystemPointerSize) - unpadded_size;
 
   uint8_t nop = static_cast<uint8_t>(EhFrameConstants::DwarfOpcodes::kNop);
-  static const uint8_t kPadding[] = {nop, nop, nop, nop, nop, nop, nop, nop};
+  static const uint8_t kPadding[] = {nop, nop, nop, nop, nop, nop, nop, nop,
+                                     nop, nop, nop, nop, nop, nop, nop, nop};
   DCHECK_LE(padding_size, static_cast<int>(sizeof(kPadding)));
   WriteBytes(&kPadding[0], padding_size);
 }
