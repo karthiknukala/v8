@@ -12444,7 +12444,8 @@ void CodeStubAssembler::TrapAllocationMemento(TNode<JSObject> object,
       object_word, IntPtrConstant(kMementoLastWordOffset - kHeapObjectTag));
   TNode<IntPtrT> memento_last_word_page = PageFromAddress(memento_last_word);
 
-  TNode<IntPtrT> new_space_top = Load<IntPtrT>(new_space_top_address);
+  TNode<IntPtrT> new_space_top =
+      Load<IntPtrT>(new_space_top_address).MarkAsCapability();
   TNode<IntPtrT> new_space_top_page = PageFromAddress(new_space_top);
 
   // If the object is in new space, we need to check whether respective
@@ -12481,7 +12482,10 @@ void CodeStubAssembler::TrapAllocationMemento(TNode<JSObject> object,
 
 TNode<IntPtrT> CodeStubAssembler::PageFromAddress(TNode<IntPtrT> address) {
   DCHECK(!V8_ENABLE_THIRD_PARTY_HEAP_BOOL);
-  return WordAnd(address, IntPtrConstant(~kPageAlignmentMask));
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(address.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
+  return WordAnd(address, IntPtrConstant(~kPageAlignmentMask)).MarkAsCapability();
 }
 
 TNode<AllocationSite> CodeStubAssembler::CreateAllocationSiteInFeedbackVector(
