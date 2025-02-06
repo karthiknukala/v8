@@ -68,6 +68,7 @@ class RegExpMacroAssemblerTracer: public RegExpMacroAssembler {
                                 int eats_at_least) override;
   void PopCurrentPosition() override;
   void PopRegister(int register_index) override;
+  void Break() override;
   void PushBacktrack(Label* label) override;
   void PushCurrentPosition() override;
   void PushRegister(int register_index,

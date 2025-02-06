@@ -34,6 +34,7 @@ class V8_EXPORT_PRIVATE RegExpBytecodeGenerator : public RegExpMacroAssembler {
   void PushCurrentPosition() override;
   void Backtrack() override;
   void GoTo(Label* label) override;
+  void Break() override;
   void PushBacktrack(Label* label) override;
   bool Succeed() override;
   void Fail() override;

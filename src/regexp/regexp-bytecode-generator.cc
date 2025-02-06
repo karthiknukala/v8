@@ -151,6 +151,8 @@ void RegExpBytecodeGenerator::GoTo(Label* l) {
   }
 }
 
+void RegExpBytecodeGenerator::Break() { Emit(BC_BREAK, 0); }
+
 void RegExpBytecodeGenerator::PushBacktrack(Label* l) {
   Emit(BC_PUSH_BT, 0);
   EmitOrLink(l);

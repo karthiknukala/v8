@@ -145,6 +145,7 @@ class RegExpMacroAssembler {
   virtual void PopRegister(int register_index) = 0;
   // Pushes the label on the backtrack stack, so that a following Backtrack
   // will go to this label. Always checks the backtrack stack limit.
+  virtual void Break() = 0;
   virtual void PushBacktrack(Label* label) = 0;
   virtual void PushCurrentPosition() = 0;
   enum StackCheckFlag { kNoStackLimitCheck = false, kCheckStackLimit = true };

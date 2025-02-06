@@ -75,6 +75,7 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
                                      int character_count) override;
   void PopCurrentPosition() override;
   void PopRegister(int register_index) override;
+  void Break() override;
   void PushBacktrack(Label* label) override;
   void PushCurrentPosition() override;
   void PushRegister(int register_index,

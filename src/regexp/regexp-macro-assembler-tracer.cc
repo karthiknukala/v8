@@ -73,6 +73,10 @@ void RegExpMacroAssemblerTracer::GoTo(Label* label) {
   assembler_->GoTo(label);
 }
 
+void RegExpMacroAssemblerTracer::Break() {
+  PrintF(" Break;\n\n");
+  assembler_->Break();
+}
 
 void RegExpMacroAssemblerTracer::PushBacktrack(Label* label) {
   PrintF(" PushBacktrack(label[%08x]);\n", LabelToInt(label));

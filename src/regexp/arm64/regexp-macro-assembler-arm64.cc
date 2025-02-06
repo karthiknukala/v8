@@ -1403,6 +1403,9 @@ void RegExpMacroAssemblerARM64::PopRegister(int register_index) {
   StoreRegister(register_index, w10);
 }
 
+void RegExpMacroAssemblerARM64::Break() {
+  __ DebugBreak();
+}
 
 void RegExpMacroAssemblerARM64::PushBacktrack(Label* label) {
   if (label->is_bound()) {
