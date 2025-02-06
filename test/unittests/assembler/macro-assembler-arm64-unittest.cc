@@ -177,7 +177,11 @@ TEST_P(MacroAssemblerTestMoveObjectAndSlot, MoveObjectAndSlot) {
       AssemblerBufferWriteScope rw_buffer_scope(*buffer);
 
       __ CodeEntry();
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ Push(c0, padregc);
+#else   // !__CHERI_PURE_CAPABILITY__
       __ Push(x0, padreg);
+#endif  // __CHERI_PURE_CAPABILITY__
       __ Mov(test_case.object, x1);
 
       Register src_object = test_case.object;
@@ -207,8 +211,13 @@ TEST_P(MacroAssemblerTestMoveObjectAndSlot, MoveObjectAndSlot) {
 
       // The `result` pointer was saved on the stack.
       UseScratchRegisterScope temps(&masm);
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register scratch = temps.AcquireC();
+      __ Pop(padregc, scratch);
+#else   // !__CHERI_PURE_CAPABILITY__
       Register scratch = temps.AcquireX();
       __ Pop(padreg, scratch);
+#endif  // __CHERI_PURE_CAPABILITY__
       __ Str(dst_object, MemOperand(scratch));
       __ Str(dst_slot, MemOperand(scratch, kSystemPointerSize));
 
