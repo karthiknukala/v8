@@ -1056,7 +1056,8 @@ TF_BUILTIN(CopyDataPropertiesWithExcludedPropertiesOnStack,
   auto excluded_property_count =
       UncheckedParameter<IntPtrT>(Descriptor::kExcludedPropertyCount);
   auto excluded_properties =
-      UncheckedParameter<IntPtrT>(Descriptor::kExcludedPropertyBase);
+      UncheckedParameter<IntPtrT>(Descriptor::kExcludedPropertyBase)
+          .MarkAsCapability();
   auto context = Parameter<Context>(Descriptor::kContext);
 
   // first check undefine or null
@@ -1075,9 +1076,10 @@ TF_BUILTIN(CopyDataPropertiesWithExcludedPropertiesOnStack,
   CSA_DCHECK(this, IntPtrEqual(WordAnd(excluded_properties,
                                        IntPtrConstant(kSmiTagMask)),
                                IntPtrConstant(kSmiTag)));
-  TailCallRuntime(Runtime::kCopyDataPropertiesWithExcludedPropertiesOnStack,
-                  context, source, SmiTag(excluded_property_count),
-                  BitcastWordToTaggedSigned(excluded_properties));
+  TailCallRuntime(
+      Runtime::kCopyDataPropertiesWithExcludedPropertiesOnStack, context,
+      source, SmiTag(excluded_property_count),
+      BitcastWordToTaggedSigned(excluded_properties).MarkAsInteger());
 }
 
 TF_BUILTIN(CopyDataPropertiesWithExcludedProperties,
