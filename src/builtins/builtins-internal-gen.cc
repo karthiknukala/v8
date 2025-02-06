@@ -406,6 +406,9 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
           ExternalReference::write_barrier_marking_from_code_function());
       TNode<IntPtrT> object = BitcastTaggedToWord(
           UncheckedParameter<Object>(WriteBarrierDescriptor::kObject));
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(object.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
       CallCFunctionWithCallerSavedRegisters(
           function, MachineTypeOf<Int32T>::value, fp_mode,
           std::make_pair(MachineTypeOf<IntPtrT>::value, object),
@@ -426,6 +429,9 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
           ExternalReference::write_barrier_marking_from_code_function());
       TNode<IntPtrT> object = BitcastTaggedToWord(
           UncheckedParameter<Object>(WriteBarrierDescriptor::kObject));
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(object.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
       CallCFunctionWithCallerSavedRegisters(
           function, MachineTypeOf<Int32T>::value, fp_mode,
           std::make_pair(MachineTypeOf<IntPtrT>::value, object),
@@ -465,6 +471,10 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
     TNode<IntPtrT> object = BitcastTaggedToWord(
         UncheckedParameter<Object>(WriteBarrierDescriptor::kObject));
     TNode<IntPtrT> value = BitcastTaggedToWord(Load<HeapObject>(slot));
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(object.IsCapability());
+    DCHECK(value.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
 
     // Without a shared heap, all objects are local. This is the fast path
     // always used when no shared heap exists.
