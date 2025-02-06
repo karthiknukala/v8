@@ -1123,7 +1123,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
         }
         // The output pointer advances for a possible global match.
         __ Stp(capture_start, capture_end,
-               MemOperand(output_array(), kSystemPointerSize, PostIndex));
+               MemOperand(output_array(), kSystemPointerAddrSize, PostIndex));
       }
 
       // Only carry on if there are more than kNumCachedRegisters capture
@@ -1147,7 +1147,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
         if (num_registers_left_on_stack <= kNumRegistersToUnroll) {
           for (int i = 0; i < num_registers_left_on_stack / 2; i++) {
             __ Ldp(capture_end, capture_start,
-                   MemOperand(base, -kSystemPointerSize, PostIndex));
+                   MemOperand(base, -kSystemPointerAddrSize, PostIndex));
             if ((i == 0) && global_with_zero_length_check()) {
               // Keep capture start for the zero-length check later.
               __ Mov(first_capture_start, capture_start);
@@ -1163,15 +1163,16 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
               __ Add(capture_end, input_length, capture_end);
             }
             // The output pointer advances for a possible global match.
-            __ Stp(capture_start, capture_end,
-                   MemOperand(output_array(), kSystemPointerSize, PostIndex));
+            __ Stp(
+                capture_start, capture_end,
+                MemOperand(output_array(), kSystemPointerAddrSize, PostIndex));
           }
         } else {
           Label loop, start;
           __ Mov(x11, num_registers_left_on_stack);
 
           __ Ldp(capture_end, capture_start,
-                 MemOperand(base, -kSystemPointerSize, PostIndex));
+                 MemOperand(base, -kSystemPointerAddrSize, PostIndex));
           if (global_with_zero_length_check()) {
             __ Mov(first_capture_start, capture_start);
           }
@@ -1179,7 +1180,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
 
           __ Bind(&loop);
           __ Ldp(capture_end, capture_start,
-                 MemOperand(base, -kSystemPointerSize, PostIndex));
+                 MemOperand(base, -kSystemPointerAddrSize, PostIndex));
           __ Bind(&start);
           if (mode_ == UC16) {
             __ Add(capture_start, input_length, Operand(capture_start, ASR, 1));
@@ -1190,7 +1191,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
           }
           // The output pointer advances for a possible global match.
           __ Stp(capture_start, capture_end,
-                 MemOperand(output_array(), kSystemPointerSize, PostIndex));
+                 MemOperand(output_array(), kSystemPointerAddrSize, PostIndex));
           __ Sub(x11, x11, 2);
           __ Cbnz(x11, &loop);
         }
@@ -1587,7 +1588,7 @@ void RegExpMacroAssemblerARM64::ClearRegisters(int reg_from, int reg_to) {
       __ Mov(x11, num_registers);
       __ Bind(&loop);
       __ Str(twice_non_position_value(),
-             MemOperand(base, -kSystemPointerSize, PostIndex));
+             MemOperand(base, -kSystemPointerAddrSize, PostIndex));
       __ Sub(x11, x11, 2);
       __ Cbnz(x11, &loop);
     } else {
