@@ -14,7 +14,11 @@ static const int kLrDwarfCode = 30;
 static const int kSpDwarfCode = 31;
 
 const int EhFrameConstants::kCodeAlignmentFactor = 4;
+#ifdef __CHERI_PURE_CAPABILITY__
+const int EhFrameConstants::kDataAlignmentFactor = -16;
+#else   //  !__CHERI_PURE_CAPABILITY__
 const int EhFrameConstants::kDataAlignmentFactor = -8;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 void EhFrameWriter::WriteReturnAddressRegisterCode() {
   WriteULeb128(kLrDwarfCode);
