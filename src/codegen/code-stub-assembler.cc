@@ -2668,7 +2668,8 @@ TNode<RawPtrT> CodeStubAssembler::LoadJSTypedArrayDataPtr(
          &base_is_cap);
   {
     CSA_DCHECK(this,
-               CapabilityIsTagged(UncheckedCast<UintPtrT>(external_pointer)));
+               Word32Or(CapabilityIsTagged(external_pointer),
+                        IntPtrEqual(external_pointer, IntPtrConstant(0))));
     result = RawPtrAdd(external_pointer, base_pointer);
     Goto(&done);
   }

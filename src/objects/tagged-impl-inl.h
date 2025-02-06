@@ -209,7 +209,7 @@ HeapObject TaggedImpl<kRefType, StorageType>::GetHeapObject() const {
   if (kCanBeWeak) {
     DCHECK(!IsCleared());
 #ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(V8_CHERI_TAG_GET(ptr_));
+    DCHECK_IMPLIES(ptr_ != 0, V8_CHERI_TAG_GET(ptr_));
 #endif  //__CHERI_PURE_CAPABILITY__
     return HeapObject::cast(Object(ptr_ & ~kWeakHeapObjectMask));
   } else {
