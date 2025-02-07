@@ -472,7 +472,7 @@ class RegisterIndex final {
     return index_;
   }
 
-  uintptr_t ToBit(MachineRepresentation rep) const {
+  ScaledInt ToBit(MachineRepresentation rep) const {
     if (kFPAliasing != AliasingKind::kCombine ||
         rep != MachineRepresentation::kSimd128) {
       return 1ull << ToInt();
@@ -1320,11 +1320,11 @@ class RegisterBitVector {
 
  private:
   friend std::ostream& operator<<(std::ostream&, RegisterBitVector);
-  explicit RegisterBitVector(uintptr_t bits) : bits_(bits) {}
+  explicit RegisterBitVector(ScaledInt bits) : bits_(bits) {}
 
-  static_assert(RegisterConfiguration::kMaxRegisters <= sizeof(uintptr_t) * 8,
-                "Maximum registers must fit in uintptr_t bitmap");
-  uintptr_t bits_;
+  static_assert(RegisterConfiguration::kMaxRegisters <= sizeof(ScaledInt) * 8,
+                "Maximum registers must fit in ScaledInt bitmap");
+  ScaledInt bits_;
 };
 
 std::ostream& operator<<(std::ostream& os, RegisterBitVector register_bits) {
