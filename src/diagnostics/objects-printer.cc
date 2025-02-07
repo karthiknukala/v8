@@ -453,7 +453,12 @@ void PrintFixedArrayElements(std::ostream& os, T array) {
     if (previous_index != i - 1) {
       ss << '-' << (i - 1);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    os << std::setw(12) << ss.str() << ": " << Brief(previous_value)
+       << (V8_CHERI_TAG_GET(previous_value.ptr()) ? "" : " [INVALID]");
+#else
     os << std::setw(12) << ss.str() << ": " << Brief(previous_value);
+#endif  // __CHERI_PURE_CAPABILITY__
     previous_index = i;
     previous_value = value;
   }
@@ -504,7 +509,12 @@ void PrintEmbedderData(Isolate* isolate, std::ostream& os,
   os << Brief(value);
   void* raw_pointer;
   if (slot.ToAlignedPointer(isolate, &raw_pointer)) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    os << ", aligned pointer: " << raw_pointer
+       << (V8_CHERI_TAG_GET(raw_pointer) ? "" : " [INVALID]");
+#else   // !__CHERI_PURE_CAPABILITY__
     os << ", aligned pointer: " << raw_pointer;
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 }
 
@@ -635,9 +645,18 @@ void JSExternalObject::JSExternalObjectPrint(std::ostream& os) {
 
 void JSGeneratorObject::JSGeneratorObjectPrint(std::ostream& os) {
   JSObjectPrintHeader(os, *this, "JSGeneratorObject");
+#ifdef __CHERI_PURE_CAPABILITY__
+  os << "\n - function: " << Brief(function())
+     << (V8_CHERI_TAG_GET(function().ptr()) ? "" : " [INVALID]");
+  os << "\n - context: " << Brief(context())
+     << (V8_CHERI_TAG_GET(context().ptr()) ? "" : " [INVALID]");
+  os << "\n - receiver: " << Brief(receiver())
+     << (V8_CHERI_TAG_GET(receiver().ptr()) ? "" : " [INVALID]");
+#else   // !__CHERI_PURE_CAPABILITY__
   os << "\n - function: " << Brief(function());
   os << "\n - context: " << Brief(context());
   os << "\n - receiver: " << Brief(receiver());
+#endif  // __CHERI_PURE_CAPABILITY__
   if (is_executing() || is_closed()) {
     os << "\n - input: " << Brief(input_or_debug_pos());
   } else {
@@ -881,7 +900,12 @@ void Context::ContextPrint(std::ostream& os) {
 
 void NativeContext::NativeContextPrint(std::ostream& os) {
   PrintContextWithHeader(os, *this, "NativeContext");
+#ifdef __CHERI_PURE_CAPABILITY__
+  os << " - microtask_queue: " << microtask_queue()
+     << (V8_CHERI_TAG_GET(microtask_queue()) ? "" : " [INVALID]") << "\n";
+#else   // !__CHERI_PURE_CAPABILITY__
   os << " - microtask_queue: " << microtask_queue() << "\n";
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 namespace {
