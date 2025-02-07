@@ -2161,11 +2161,13 @@ void Builtins::Generate_InterpreterPushArgsThenCallImpl(
   Register num_args = x0;
 #if defined(__CHERI_PURE_CAPABILITY__)
   Register first_arg_index = c2;
+  Register spread_arg_out =
+      (mode == InterpreterPushArgsMode::kWithFinalSpread) ? c2 : no_reg;
 #else // defined(__CHERI_PURE_CAPABILITY__)
   Register first_arg_index = x2;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
   Register spread_arg_out =
       (mode == InterpreterPushArgsMode::kWithFinalSpread) ? x2 : no_reg;
+#endif // defined(__CHERI_PURE_CAPABILITY__)
   GenerateInterpreterPushArgs(masm, num_args, first_arg_index, spread_arg_out,
                               receiver_mode, mode);
 
