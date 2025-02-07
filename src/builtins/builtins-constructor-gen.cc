@@ -136,6 +136,11 @@ TF_BUILTIN(ConstructWithSpread_Baseline, CallOrConstructBuiltinsAssembler) {
   auto args_count =
       UncheckedParameter<Int32T>(Descriptor::kActualArgumentsCount);
   auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
+#ifndef V8_COMPRESS_POINTERS
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(target)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(new_target)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(spread)));
+#endif  // !V8_COMPRESS_POINTERS
   return BuildConstructWithSpread(
       target, new_target, spread, args_count,
       [=] { return LoadContextFromBaseline(); },
@@ -152,6 +157,13 @@ TF_BUILTIN(ConstructWithSpread_WithFeedback, CallOrConstructBuiltinsAssembler) {
   auto context = Parameter<Context>(Descriptor::kContext);
   auto feedback_vector = Parameter<HeapObject>(Descriptor::kFeedbackVector);
   auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
+#ifndef V8_COMPRESS_POINTERS
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(target)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(new_target)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(spread)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(feedback_vector)));
+  CSA_DCHECK(this, CapabilityIsTagged(BitcastTaggedToWord(context)));
+#endif  // !V8_COMPRESS_POINTERS
 
   return BuildConstructWithSpread(
       target, new_target, spread, args_count, [=] { return context; },

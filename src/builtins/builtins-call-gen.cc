@@ -527,6 +527,11 @@ TF_BUILTIN(CallWithSpread, CallOrConstructBuiltinsAssembler) {
   auto spread = Parameter<Object>(Descriptor::kSpread);
   auto args_count = UncheckedParameter<Int32T>(Descriptor::kArgumentsCount);
   auto context = Parameter<Context>(Descriptor::kContext);
+#ifndef V8_COMPRESS_POINTERS
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(context)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(spread)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(target)));
+#endif  // V8_COMPRESS_POINTERS
   CallOrConstructWithSpread(target, new_target, spread, args_count, context);
 }
 
@@ -538,6 +543,11 @@ TF_BUILTIN(CallWithSpread_Baseline, CallOrConstructBuiltinsAssembler) {
   auto context = LoadContextFromBaseline();
   auto feedback_vector = LoadFeedbackVectorFromBaseline();
   auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
+#ifndef V8_COMPRESS_POINTERS
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(context)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(spread)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(target)));
+#endif  // V8_COMPRESS_POINTERS
   CodeStubArguments args(this, args_count);
   CollectCallFeedback(
       target, [=] { return args.GetReceiver(); }, context, feedback_vector,
@@ -554,6 +564,14 @@ TF_BUILTIN(CallWithSpread_WithFeedback, CallOrConstructBuiltinsAssembler) {
   auto feedback_vector = Parameter<FeedbackVector>(Descriptor::kFeedbackVector);
   auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
   auto receiver = Parameter<Object>(Descriptor::kReceiver);
+#ifndef V8_COMPRESS_POINTERS
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(context)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(spread)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(target)));
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(receiver)));
+  CSA_DCHECK(this,
+             CapabilityIsTagged(ReinterpretCast<UintPtrT>(feedback_vector)));
+#endif  // V8_COMPRESS_POINTERS
   CollectCallFeedback(
       target, [=] { return receiver; }, context, feedback_vector, slot);
   CallOrConstructWithSpread(target, new_target, spread, args_count, context);

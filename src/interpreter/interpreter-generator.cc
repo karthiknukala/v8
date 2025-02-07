@@ -2330,6 +2330,9 @@ IGNITION_HANDLER(CreateArrayLiteral, InterpreterAssembler) {
     TNode<JSArray> result = constructor_assembler.CreateShallowArrayLiteral(
         CAST(feedback_vector), slot, context, TRACK_ALLOCATION_SITE,
         &call_runtime);
+#ifndef V8_COMPRESS_POINTERS
+    CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(result)));
+#endif  // V8_COMPRESS_POINTERS
     SetAccumulator(result);
     Dispatch();
   }
@@ -2344,6 +2347,9 @@ IGNITION_HANDLER(CreateArrayLiteral, InterpreterAssembler) {
     TNode<Object> result =
         CallRuntime(Runtime::kCreateArrayLiteral, context, feedback_vector,
                     slot, constant_elements, flags);
+#ifndef V8_COMPRESS_POINTERS
+    CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(result)));
+#endif  // V8_COMPRESS_POINTERS
     SetAccumulator(result);
     Dispatch();
   }
