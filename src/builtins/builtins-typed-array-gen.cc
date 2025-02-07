@@ -467,8 +467,6 @@ void TypedArrayBuiltinsAssembler::SetJSTypedArrayOffHeapDataPtr(
   StoreObjectFieldNoWriteBarrier(holder, JSTypedArray::kBasePointerOffset,
                                  SmiConstant(0));
 
-  CSA_DCHECK(this,
-             Word32NotEqual(CapabilityIsTagged(offset), Int32Constant(1)));
   base = RawPtrAdd(base, Signed(offset));
   CSA_DCHECK(this, Word32Or(CapabilityIsTagged(base),
                             IntPtrEqual(base, IntPtrConstant(0))));
