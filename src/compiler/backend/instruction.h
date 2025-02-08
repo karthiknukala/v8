@@ -123,10 +123,21 @@ class V8_EXPORT_PRIVATE INSTRUCTION_OPERAND_ALIGN InstructionOperand {
       // Pending operands are only equal if they are the same operand.
       return this == &that;
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    return this->value_ == that.value_ &&
+           this->value_intptr_ == that.value_intptr_;
+#else   // !__CHERI_PURE_CAPABILITY__
     return this->value_ == that.value_;
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   bool Compare(const InstructionOperand& that) const {
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (this->value_intptr_ != 0) {
+      DCHECK_NE(that.value_intptr_, 0);
+      return this->value_intptr_ < that.value_intptr_;
+    }
+#endif  // __CHERI_PURE_CAPABILITY__
     return this->value_ < that.value_;
   }
 
@@ -156,13 +167,21 @@ class V8_EXPORT_PRIVATE INSTRUCTION_OPERAND_ALIGN InstructionOperand {
   }
 
  protected:
+#ifdef __CHERI_PURE_CAPABILITY__
+  explicit InstructionOperand(Kind kind)
+      : value_(KindField::encode(kind)), value_intptr_(0) {}
+#else   // !__CHERI_PURE_CAPABILITY__
   explicit InstructionOperand(Kind kind) : value_(KindField::encode(kind)) {}
+#endif  // __CHERI_PURE_CAPABILITY__
 
   inline uint64_t GetCanonicalizedValue() const;
 
   using KindField = base::BitField64<Kind, 0, 3>;
 
   uint64_t value_;
+#ifdef __CHERI_PURE_CAPABILITY__
+  uintptr_t value_intptr_;
+#endif  // __CHERI_PURE_CAPABILITY__
 };
 
 using InstructionOperandVector = ZoneVector<InstructionOperand>;
@@ -466,17 +485,25 @@ class PendingOperand : public InstructionOperand {
 
   void set_next(PendingOperand* next) {
     DCHECK_NULL(this->next());
+#ifdef __CHERI_PURE_CAPABILITY__
+    value_intptr_ = reinterpret_cast<uintptr_t>(next);
+#else   // !__CHERI_PURE_CAPABILITY__
     uintptr_t shifted_value =
         reinterpret_cast<uintptr_t>(next) >> kPointerShift;
     DCHECK_EQ(reinterpret_cast<uintptr_t>(next),
               shifted_value << kPointerShift);
     value_ |= NextOperandField::encode(static_cast<uint64_t>(shifted_value));
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   PendingOperand* next() const {
+#ifdef __CHERI_PURE_CAPABILITY__
+    return reinterpret_cast<PendingOperand*>(value_intptr_);
+#else   // !__CHERI_PURE_CAPABILITY__
     uintptr_t shifted_value =
         static_cast<uint64_t>(NextOperandField::decode(value_));
     return reinterpret_cast<PendingOperand*>(shifted_value << kPointerShift);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   static PendingOperand* New(Zone* zone, PendingOperand* previous_operand) {
