@@ -148,6 +148,13 @@ void VerifyPointersVisitor::VerifyPointersImpl(TSlot start, TSlot end) {
     typename TSlot::TObject object = slot.load(cage_base());
     HeapObject heap_object;
     if (object.GetHeapObject(&heap_object)) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (!V8_CHERI_TAG_GET(object.ptr()) &&
+          ((object.ptr() & kZapValue) == object.ptr())) {
+        continue;
+      }
+      DCHECK(V8_CHERI_TAG_GET(object.ptr()));
+#endif  // __CHERI_PURE_CAPABILITY__
       VerifyHeapObjectImpl(heap_object);
     } else {
       CHECK(object.IsSmi() || object.IsCleared() ||
@@ -448,6 +455,13 @@ class SlotVerifyingVisitor : public ObjectVisitorWithCageBases {
   void VisitPointers(HeapObject host, MaybeObjectSlot start,
                      MaybeObjectSlot end) final {
     for (MaybeObjectSlot slot = start; slot < end; ++slot) {
+      MaybeObject object = slot.load(cage_base());
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (!V8_CHERI_TAG_GET(object.ptr()) &&
+          ((object.ptr() & kZapValue) == object.ptr()))
+        continue;
+      DCHECK_IMPLIES(!object.IsSmi(), V8_CHERI_TAG_GET(object.ptr()));
+#endif  // __CHERI_PURE_CAPABILITY__
       if (ShouldHaveBeenRecorded(host, slot.load(cage_base()))) {
         CHECK_GT(untyped_->count(slot.address()), 0);
       }
