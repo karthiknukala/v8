@@ -330,6 +330,9 @@ class ActivationsFinder : public ThreadVisitor {
           // TODO(v8:10026): avoid replacing a signed pointer.
           Address* pc_addr = it.frame()->pc_address();
           Address new_pc = code.instruction_start() + trampoline_pc;
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(V8_TARGET_ARCH_ARM64)
+          new_pc |= 1;
+#endif  // __CHERI_PURE_CAPABILITY__ && V8_TARGET_ARCH_ARM64
           PointerAuthentication::ReplacePC(pc_addr, new_pc, kSystemPointerSize);
         }
       }
