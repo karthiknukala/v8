@@ -334,7 +334,9 @@ void* JSTypedArray::DataPtr() {
     return reinterpret_cast<void*>(external_pointer() +
                                    static_cast<size_t>(base_pointer().ptr()));
   } else {
-    DCHECK(V8_CHERI_TAG_GET(base_pointer().ptr()));
+    DCHECK_IMPLIES(base_pointer().ptr() != 0,
+                   V8_CHERI_TAG_GET(base_pointer().ptr()));
+    DCHECK_IMPLIES(base_pointer().ptr() == 0, external_pointer() == 0);
     return reinterpret_cast<void*>(base_pointer().ptr() +
                                    static_cast<size_t>(external_pointer()));
   }
@@ -346,8 +348,19 @@ void* JSTypedArray::DataPtr() {
 
 void JSTypedArray::SetOffHeapDataPtr(Isolate* isolate, void* base,
                                      Address offset) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  Address address;
+  if (V8_CHERI_TAG_GET(base)) {
+    address = reinterpret_cast<Address>(base) + static_cast<size_t>(offset);
+  } else {
+    DCHECK_IMPLIES(offset != 0, V8_CHERI_TAG_GET(offset));
+    DCHECK_IMPLIES(offset == 0, base == 0);
+    address = offset + reinterpret_cast<size_t>(base);
+  }
+#else   // !__CHERI_PURE_CAPABILITY__
   Address address =
       reinterpret_cast<Address>(base) + static_cast<size_t>(offset);
+#endif  // __CHERI_PURE_CAPABILITY__
   set_external_pointer(isolate, address);
   // This is the only spot in which the `base_pointer` field can be mutated
   // after object initialization. Note this can happen at most once, when
