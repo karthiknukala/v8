@@ -24,7 +24,11 @@ inline void MarkingBitmap::SetBitsInCell<AccessMode::NON_ATOMIC>(
 template <>
 inline void MarkingBitmap::SetBitsInCell<AccessMode::ATOMIC>(
     uint32_t cell_index, MarkBit::CellType mask) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  base::AsAtomic64::SetBits(cells() + cell_index, mask, mask);
+#else   // !__CHERI_PURE_CAPABILITY__
   base::AsAtomicWord::SetBits(cells() + cell_index, mask, mask);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 template <>
@@ -36,14 +40,23 @@ inline void MarkingBitmap::ClearBitsInCell<AccessMode::NON_ATOMIC>(
 template <>
 inline void MarkingBitmap::ClearBitsInCell<AccessMode::ATOMIC>(
     uint32_t cell_index, MarkBit::CellType mask) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  base::AsAtomic64::SetBits(cells() + cell_index,
+                            static_cast<MarkBit::CellType>(0u), mask);
+#else   // !__CHERI_PURE_CAPABILITY__
   base::AsAtomicWord::SetBits(cells() + cell_index,
                               static_cast<MarkBit::CellType>(0u), mask);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 template <>
 inline void MarkingBitmap::ClearCellRangeRelaxed<AccessMode::ATOMIC>(
     uint32_t start_cell_index, uint32_t end_cell_index) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  base::Atomic64* cell_base = reinterpret_cast<base::Atomic64*>(cells());
+#else
   base::AtomicWord* cell_base = reinterpret_cast<base::AtomicWord*>(cells());
+#endif  // __CHERI_PURE_CAPABILITY__
   for (uint32_t i = start_cell_index; i < end_cell_index; i++) {
     base::Relaxed_Store(cell_base + i, 0);
   }
@@ -60,7 +73,11 @@ inline void MarkingBitmap::ClearCellRangeRelaxed<AccessMode::NON_ATOMIC>(
 template <>
 inline void MarkingBitmap::SetCellRangeRelaxed<AccessMode::ATOMIC>(
     uint32_t start_cell_index, uint32_t end_cell_index) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  base::Atomic64* cell_base = reinterpret_cast<base::Atomic64*>(cells());
+#else   // !__CHERI_PURE_CAPABILITY__
   base::AtomicWord* cell_base = reinterpret_cast<base::AtomicWord*>(cells());
+#endif  // __CHERI_PURE_CAPABILITY__
   for (uint32_t i = start_cell_index; i < end_cell_index; i++) {
     base::Relaxed_Store(cell_base + i,
                         std::numeric_limits<MarkBit::CellType>::max());

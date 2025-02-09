@@ -20,7 +20,11 @@ namespace {
 
 // Track whether this V8 instance has ever called v8::Locker. This allows the
 // API code to verify that the lock is always held when V8 is being entered.
+#ifdef __CHERI_PURE_CAPABILITY__
+base::Atomic64 g_locker_was_ever_used_ = 0;
+#else   // !__CHERI_PURE_CAPABILITY__
 base::AtomicWord g_locker_was_ever_used_ = 0;
+#endif  // __CHERI_PURE_CAPABILITY__
 
 }  // namespace
 

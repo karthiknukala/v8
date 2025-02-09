@@ -35,55 +35,29 @@ class AtomicValue {
   }
 
  private:
-#if defined(__CHERI_PURE_CAPABILITY__)
-  static_assert(sizeof(T) <= sizeof(base::AtomicIntPtr));
-#else   // __CHERI_PURE_CAPABILITY__
   static_assert(sizeof(T) <= sizeof(base::AtomicWord));
-#endif  // __CHERI_PURE_CAPABILITY__
 
   template <typename S>
   struct cast_helper {
-#ifdef __CHERI_PURE_CAPABILITY__
-    static base::AtomicIntPtr to_storage_type(S value) {
-      return static_cast<base::AtomicIntPtr>(value);
-    }
-    static S to_return_type(base::AtomicIntPtr value) {
-      return static_cast<S>(value);
-    }
-#else   // !__CHERI_PURE_CAPABILITY__
     static base::AtomicWord to_storage_type(S value) {
       return static_cast<base::AtomicWord>(value);
     }
     static S to_return_type(base::AtomicWord value) {
       return static_cast<S>(value);
     }
-#endif  // __CHERI_PURE_CAPABILITY__
   };
 
   template <typename S>
   struct cast_helper<S*> {
-#ifdef __CHERI_PURE_CAPABILITY__
-    static base::AtomicIntPtr to_storage_type(S* value) {
-      return reinterpret_cast<base::AtomicIntPtr>(value);
-    }
-    static S* to_return_type(base::AtomicIntPtr value) {
-      return reinterpret_cast<S*>(value);
-    }
-#else   // !__CHERI_PURE_CAPABILITY__
     static base::AtomicWord to_storage_type(S* value) {
       return reinterpret_cast<base::AtomicWord>(value);
     }
     static S* to_return_type(base::AtomicWord value) {
       return reinterpret_cast<S*>(value);
     }
-#endif  // __CHERI_PURE_CAPABILITY__
   };
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  base::AtomicIntPtr value_;
-#else   // !__CHERI_PURE_CAPABILITY__
   base::AtomicWord value_;
-#endif  // __CHERI_PURE_CAPABILITY__
 };
 
 // Provides atomic operations for a values stored at some address.
@@ -228,6 +202,9 @@ class AsAtomicImpl {
 using AsAtomic8 = AsAtomicImpl<base::Atomic8>;
 using AsAtomic16 = AsAtomicImpl<base::Atomic16>;
 using AsAtomic32 = AsAtomicImpl<base::Atomic32>;
+#ifdef __CHERI_PURE_CAPABILITY__
+using AsAtomic64 = AsAtomicImpl<base::Atomic64>;
+#endif  // __CHERI_PURE_CAPABILITY__
 using AsAtomicWord = AsAtomicImpl<base::AtomicWord>;
 
 template <int Width>
@@ -249,6 +226,13 @@ template <>
 struct AtomicTypeFromByteWidth<8> {
   using type = base::Atomic64;
 };
+
+#ifdef __CHERI_PURE_CAPABILITY__
+template <>
+struct AtomicTypeFromByteWidth<16> {
+  using type = base::AtomicIntPtr;
+};
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif
 
 // This is similar to AsAtomicWord but it explicitly deletes functionality

@@ -67,7 +67,11 @@ const int g_category_categories_exhausted = 1;
 const int g_num_builtin_categories = 3;
 
 // Skip default categories.
+#ifdef __CHERI_PURE_CAPABILITY__
+v8::base::Atomic64 g_category_index = g_num_builtin_categories;
+#else   // !__CHERI_PURE_CAPABILITY__
 v8::base::AtomicWord g_category_index = g_num_builtin_categories;
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif  // !defined(V8_USE_PERFETTO)
 
 TracingController::TracingController() { mutex_.reset(new base::Mutex()); }

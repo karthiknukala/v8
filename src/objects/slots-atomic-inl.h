@@ -32,7 +32,11 @@ class AtomicSlot : public SlotBase<AtomicSlot, Tagged_t> {
   // read/write operations for the actual memory accesses.
   class Reference {
    public:
-    explicit Reference(Tagged_t* address) : address_(address) {}
+    explicit Reference(Tagged_t* address) : address_(address) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(V8_CHERI_TAG_GET(address));
+#endif  // __CHERI_PURE_CAPABILITY__
+    }
     Reference(const Reference&) V8_NOEXCEPT = default;
 
     Reference& operator=(const Reference& other) V8_NOEXCEPT {
@@ -47,7 +51,12 @@ class AtomicSlot : public SlotBase<AtomicSlot, Tagged_t> {
 
     // Values of type AtomicSlot::reference must be implicitly convertible
     // to AtomicSlot::value_type.
-    operator Tagged_t() const { return AsAtomicTagged::Relaxed_Load(address_); }
+    operator Tagged_t() const {
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(V8_CHERI_TAG_GET(address_));
+#endif  // __CHERI_PURE_CAPABILITY__
+      return AsAtomicTagged::Relaxed_Load(address_);
+    }
 
     void swap(Reference& other) {
       Tagged_t tmp = value();
@@ -64,7 +73,12 @@ class AtomicSlot : public SlotBase<AtomicSlot, Tagged_t> {
     }
 
    private:
-    Tagged_t value() const { return AsAtomicTagged::Relaxed_Load(address_); }
+    Tagged_t value() const {
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(V8_CHERI_TAG_GET(address_));
+#endif  // __CHERI_PURE_CAPABILITY__
+      return AsAtomicTagged::Relaxed_Load(address_);
+    }
 
     Tagged_t* address_;
   };

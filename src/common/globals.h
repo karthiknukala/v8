@@ -535,11 +535,7 @@ constexpr int kTaggedAlignmentMask = kTaggedSize - 1;
 // These types define raw and atomic storage types for tagged values stored
 // on V8 heap.
 using Tagged_t = Address;
-#if defined(__CHERI_PURE_CAPABILITY__)
-using AtomicTagged_t = base::AtomicIntPtr;
-#else
 using AtomicTagged_t = base::AtomicWord;
-#endif // __CHERI_PURE_CAPABILITY__
 
 #endif  // V8_COMPRESS_POINTERS
 

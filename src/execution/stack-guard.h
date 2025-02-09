@@ -162,35 +162,22 @@ class V8_EXPORT_PRIVATE V8_NODISCARD StackGuard final {
 
     // jslimit_ and climit_ can be read without any lock.
     // Writing requires the ExecutionAccess lock.
-#if defined(__CHERI_PURE_CAPABILITY__)
-    base::AtomicIntPtr jslimit_ = kIllegalLimit;
-    base::AtomicIntPtr climit_ = kIllegalLimit;
-#else   // __CHERI_PURE_CAPABILITY__
     base::AtomicWord jslimit_ = kIllegalLimit;
     base::AtomicWord climit_ = kIllegalLimit;
-#endif  // __CHERI_PURE_CAPABILITY__
 
     uintptr_t jslimit() {
       return base::bit_cast<uintptr_t>(base::Relaxed_Load(&jslimit_));
     }
     void set_jslimit(uintptr_t limit) {
       return base::Relaxed_Store(&jslimit_,
-#ifdef __CHERI_PURE_CAPABILITY__
-                                 static_cast<base::AtomicIntPtr>(limit));
-#else
                                  static_cast<base::AtomicWord>(limit));
-#endif
     }
     uintptr_t climit() {
       return base::bit_cast<uintptr_t>(base::Relaxed_Load(&climit_));
     }
     void set_climit(uintptr_t limit) {
       return base::Relaxed_Store(&climit_,
-#ifdef __CHERI_PURE_CAPABILITY__
-                                 static_cast<base::AtomicIntPtr>(limit));
-#else
                                  static_cast<base::AtomicWord>(limit));
-#endif
     }
 
     InterruptsScope* interrupt_scopes_ = nullptr;

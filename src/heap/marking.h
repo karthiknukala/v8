@@ -19,12 +19,13 @@ class Page;
 
 class MarkBit final {
  public:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   using CellType = size_t;
-#else   // !__CHERI_PIRE_CAPABILITY__
+  static_assert(sizeof(CellType) == sizeof(base::Atomic64));
+#else   // !__CHERI_PURE_CAPABILITY__
   using CellType = uintptr_t;
-#endif  // !__CHERI_PIRE_CAPABILITY__
   static_assert(sizeof(CellType) == sizeof(base::AtomicWord));
+#endif  // __CHERI_PURE_CAPABILITY__
 
   V8_ALLOW_UNUSED static inline MarkBit From(Address);
   V8_ALLOW_UNUSED static inline MarkBit From(HeapObject);
@@ -66,7 +67,11 @@ inline bool MarkBit::Set<AccessMode::NON_ATOMIC>() {
 
 template <>
 inline bool MarkBit::Set<AccessMode::ATOMIC>() {
+#ifdef __CHERI_PURE_CAPABILITY__
+  return base::AsAtomic64::SetBits(cell_, mask_, mask_);
+#else   // !__CHERI_PURE_CAPABILITY__
   return base::AsAtomicWord::SetBits(cell_, mask_, mask_);
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 template <>
@@ -76,8 +81,13 @@ inline bool MarkBit::Get<AccessMode::NON_ATOMIC>() {
 
 template <>
 inline bool MarkBit::Get<AccessMode::ATOMIC>() {
+#ifdef __CHERI_PURE_CAPABILITY__
+  return (base::AsAtomic64::Acquire_Load(cell_) &
+          static_cast<size_t>(mask_)) != 0;
+#else   // !__CHERI_PURE_CAPABILITY__
   return (base::AsAtomicWord::Acquire_Load(cell_) &
           static_cast<size_t>(mask_)) != 0;
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 inline bool MarkBit::Clear() {

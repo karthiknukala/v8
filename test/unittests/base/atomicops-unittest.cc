@@ -241,33 +241,51 @@ static void TestLoadAtomic8() {
 
 TEST(Atomicops, AtomicIncrement) {
   TestAtomicIncrement<Atomic32>();
+#ifdef __CHERI_PURE_CAPABILITY__
+  TestAtomicIncrement<Atomic64>();
+#endif  // __CHERI_PURE_CAPABILITY__
   TestAtomicIncrement<AtomicWord>();
 }
 
 TEST(Atomicops, CompareAndSwap) {
   TestCompareAndSwap<Atomic32>();
+#ifdef __CHERI_PURE_CAPABILITY__
+  TestCompareAndSwap<Atomic64>();
+#endif  // __CHERI_PURE_CAPABILITY__
   TestCompareAndSwap<AtomicWord>();
 }
 
 TEST(Atomicops, AtomicExchange) {
   TestAtomicExchange<Atomic32>();
+#ifdef __CHERI_PURE_CAPABILITY__
+  TestAtomicExchange<Atomic64>();
+#endif  // __CHERI_PURE_CAPABILITY__
   TestAtomicExchange<AtomicWord>();
 }
 
 TEST(Atomicops, AtomicIncrementBounds) {
   TestAtomicIncrementBounds<Atomic32>();
+#ifdef __CHERI_PURE_CAPABILITY__
+  TestAtomicIncrementBounds<Atomic64>();
+#endif  // __CHERI_PURE_CAPABILITY__
   TestAtomicIncrementBounds<AtomicWord>();
 }
 
 TEST(Atomicops, Store) {
   TestStoreAtomic8();
   TestStore<Atomic32>();
+#ifdef __CHERI_PURE_CAPABILITY__
+  TestStore<Atomic64>();
+#endif  // __CHERI_PURE_CAPABILITY__
   TestStore<AtomicWord>();
 }
 
 TEST(Atomicops, Load) {
   TestLoadAtomic8();
   TestLoad<Atomic32>();
+#ifdef __CHERI_PURE_CAPABILITY__
+  TestLoad<Atomic64>();
+#endif  // __CHERI_PURE_CAPABILITY__
   TestLoad<AtomicWord>();
 }
 

@@ -65,7 +65,6 @@ using Atomic64 = int64_t;
 #else
 #if defined(__CHERI_PURE_CAPABILITY__)
 using Atomic64 = int64_t;
-using AtomicIntPtr = intptr_t;
 #else   // !__CHERI_PURE_CAPABILITY__
 using Atomic64 = intptr_t;
 #endif  // !__CHERI_PURE_CAPABILITY__
@@ -77,7 +76,11 @@ using AtomicIntPtr = intptr_t;
 // Use AtomicWord for a machine-sized pointer. It will use the Atomic32 or
 // Atomic64 routines below, depending on your architecture.
 #if defined(V8_HOST_ARCH_64_BIT)
+#ifdef __CHERI_PURE_CAPABILITY__
+using AtomicWord = AtomicIntPtr;
+#else   // !__CHERI_PURE_CAPABILITY__
 using AtomicWord = Atomic64;
+#endif  // __CHERI_PURE_CAPABILITY__
 #else
 using AtomicWord = Atomic32;
 #endif
@@ -324,6 +327,14 @@ inline Atomic64 Relaxed_AtomicExchange(volatile Atomic64* ptr,
                                        std::memory_order_relaxed);
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+inline AtomicIntPtr Relaxed_AtomicExchange(volatile AtomicIntPtr* ptr,
+                                           AtomicIntPtr new_value) {
+  return std::atomic_exchange_explicit(helper::to_std_atomic(ptr), new_value,
+                                       std::memory_order_relaxed);
+}
+#endif  // __CHERI_PURE_CAPABILITY__
+
 inline Atomic64 SeqCst_AtomicExchange(volatile Atomic64* ptr,
                                       Atomic64 new_value) {
   return std::atomic_exchange_explicit(helper::to_std_atomic(ptr), new_value,
@@ -344,6 +355,15 @@ inline Atomic64 Relaxed_AtomicIncrement(volatile Atomic64* ptr,
          std::atomic_fetch_add_explicit(helper::to_std_atomic(ptr), increment,
                                         std::memory_order_relaxed);
 }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+inline AtomicIntPtr Relaxed_AtomicIncrement(volatile AtomicIntPtr* ptr,
+                                            AtomicIntPtr increment) {
+  return std::atomic_fetch_add_explicit(helper::to_std_atomic(ptr), increment,
+                                        std::memory_order_relaxed) +
+         static_cast<ssize_t>(increment);
+}
+#endif // __CHERI_PURE_CAPABILITY__
 
 inline Atomic64 Acquire_CompareAndSwap(volatile Atomic64* ptr,
                                        Atomic64 old_value, Atomic64 new_value) {

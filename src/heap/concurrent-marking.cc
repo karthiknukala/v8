@@ -391,8 +391,13 @@ void ConcurrentMarking::RunMajor(JobDelegate* delegate,
       }
       if (objects_processed > 0) another_ephemeron_iteration = true;
       marked_bytes += current_marked_bytes;
+#ifdef __CHERI_PURE_CAPABILITY__
+      base::AsAtomic64::Relaxed_Store<size_t>(&task_state->marked_bytes,
+                                              marked_bytes);
+#else   // !__CHERI_PURE_CAPABILITY__
       base::AsAtomicWord::Relaxed_Store<size_t>(&task_state->marked_bytes,
                                                 marked_bytes);
+#endif  // __CHERI_PURE_CAPABILITY__
       if (delegate->ShouldYield()) {
         TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.gc"),
                      "ConcurrentMarking::RunMajor Preempted");
@@ -411,7 +416,11 @@ void ConcurrentMarking::RunMajor(JobDelegate* delegate,
 
     local_marking_worklists.Publish();
     local_weak_objects.Publish();
+#ifdef __CHERI_PURE_CAPABILITY__
+    base::AsAtomic64::Relaxed_Store<size_t>(&task_state->marked_bytes, 0);
+#else   // !__CHERI_PURE_CAPABILITY__
     base::AsAtomicWord::Relaxed_Store<size_t>(&task_state->marked_bytes, 0);
+#endif  // __CHERI_PURE_CAPABILITY__
     total_marked_bytes_ += marked_bytes;
 
     if (another_ephemeron_iteration) {
@@ -495,8 +504,13 @@ void ConcurrentMarking::RunMinor(JobDelegate* delegate) {
         }
       }
       marked_bytes += current_marked_bytes;
+#ifdef __CHERI_PURE_CAPABILITY__
+      base::AsAtomic64::Relaxed_Store<size_t>(&task_state->marked_bytes,
+                                              marked_bytes);
+#else   // !__CHERI_PURE_CAPABILITY__
       base::AsAtomicWord::Relaxed_Store<size_t>(&task_state->marked_bytes,
                                                 marked_bytes);
+#endif  // __CHERI_PURE_CAPABILITY__
       if (delegate->ShouldYield()) {
         TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.gc"),
                      "ConcurrentMarking::RunMinor Preempted");
@@ -505,7 +519,11 @@ void ConcurrentMarking::RunMinor(JobDelegate* delegate) {
     }
 
     local_marking_worklists.Publish();
+#ifdef __CHERI_PURE_CAPABILITY__
+    base::AsAtomic64::Relaxed_Store<size_t>(&task_state->marked_bytes, 0);
+#else   // !__CHERI_PURE_CAPABILITY__
     base::AsAtomicWord::Relaxed_Store<size_t>(&task_state->marked_bytes, 0);
+#endif  // __CHERI_PURE_CAPABILITY__
     total_marked_bytes_ += marked_bytes;
   }
   if (v8_flags.trace_concurrent_marking) {
@@ -658,8 +676,13 @@ void ConcurrentMarking::ClearMemoryChunkData(MemoryChunk* chunk) {
 size_t ConcurrentMarking::TotalMarkedBytes() {
   size_t result = 0;
   for (size_t i = 1; i < task_state_.size(); i++) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    result +=
+        base::AsAtomic64::Relaxed_Load<size_t>(&task_state_[i]->marked_bytes);
+#else   // !__CHERI_PURE_CAPABILITY__
     result +=
         base::AsAtomicWord::Relaxed_Load<size_t>(&task_state_[i]->marked_bytes);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
   result += total_marked_bytes_;
   return result;
