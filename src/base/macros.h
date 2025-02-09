@@ -28,6 +28,10 @@
 #define V8_CHERI_ADDR_GET(cap) __builtin_cheri_address_get(cap)
 #define V8_CHERI_ADDR_SET(cap, addr) __builtin_cheri_address_set(cap, addr)
 
+// Is the capability executable?
+#define V8_CHERI_IS_EXECUTABLE(cap) \
+  (V8_CHERI_PERMS(cap) & __CHERI_CAP_PERMISSION_PERMIT_EXECUTE__)
+
 // Get the top of a capability
 #define V8_CHERI_TOP_GET(cap)                        \
   __extension__({                                    \

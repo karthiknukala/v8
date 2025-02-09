@@ -152,12 +152,13 @@ class GeneratedCode {
     return fn(args...);
 #else
 #ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(V8_CHERI_TAG_GET(fn_ptr_));
     // C64 jump bit.
     if (!V8_CHERI_SEALED(reinterpret_cast<Address>(fn_ptr_))) {
       fn_ptr_ =
           reinterpret_cast<Signature*>(reinterpret_cast<Address>(fn_ptr_) | 1);
     }
+    DCHECK(V8_CHERI_TAG_GET(fn_ptr_));
+    DCHECK(V8_CHERI_IS_EXECUTABLE(fn_ptr_));
 #endif
     return fn_ptr_(args...);
 #endif  // ABI_USES_FUNCTION_DESCRIPTORS
