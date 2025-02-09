@@ -3165,31 +3165,18 @@ void CreateFillerObjectAtImpl(Heap* heap, Address addr, int size,
                  IsAligned(addr, kObjectAlignment8GbHeap));
   DCHECK_IMPLIES(V8_COMPRESS_POINTERS_8GB_BOOL,
                  IsAligned(size, kObjectAlignment8GbHeap));
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(IsAligned(addr, kTaggedSize));
+  DCHECK(IsAligned(size, kTaggedSize));
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
   CodePageMemoryModificationScope memory_modification_scope(
       BasicMemoryChunk::FromAddress(addr));
 
   // TODO(v8:13070): Filler sizes are irrelevant for 8GB+ heaps. Adding them
   // should be avoided in this mode.
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  if (!IsAligned(addr, kTaggedSize)) {
-    Address aligned_addr = RoundUp(addr, kTaggedSize);
-    size_t bytes_before_filler = aligned_addr - addr;
-    DCHECK(IsAligned(addr, kIntSize));
-    for (auto i = 0; i < bytes_before_filler / kIntSize; i++) {
-      Memory<int>(addr + i * kIntSize) = heap->ZapValue();
-    }
-    addr = aligned_addr;
-    size -= bytes_before_filler;
-    DCHECK_GE(size, kTaggedSize);
-    DCHECK(IsAligned(size, kTaggedSize));
-  }
-#endif
   HeapObject filler = HeapObject::FromAddress(addr);
   ReadOnlyRoots roots(heap);
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  DCHECK(IsAligned(filler.address(), kTaggedSize));
-#endif
   if (size == kTaggedSize) {
     filler.set_map_after_allocation(roots.unchecked_one_pointer_filler_map(),
                                     SKIP_WRITE_BARRIER);
