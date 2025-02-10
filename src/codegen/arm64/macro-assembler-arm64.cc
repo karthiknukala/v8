@@ -3167,6 +3167,9 @@ void MacroAssembler::JumpCodeObject(Register code_object, JumpMode jump_mode) {
   ASM_CODE_COMMENT(this);
   DCHECK_EQ(JumpMode::kJump, jump_mode);
   LoadCodeInstructionStart(code_object, code_object);
+#ifdef __CHERI_PURE_CAPABILITY__
+  PrepareC64Jump(code_object);
+#endif  // __CHERI_PURE_CAPABILITY__
   UseScratchRegisterScope temps(this);
 #if defined(__CHERI_PURE_CAPABILITY__)
   if (code_object != c17) {
