@@ -795,7 +795,11 @@ int Assembler::ConstantPoolSizeAt(Instruction* instr) {
 void Assembler::EmitPoolGuard() {
   // We must generate only one instruction as this is used in scopes that
   // control the size of the code generated.
+#ifdef __CHERI_PURE_CAPABILITY__
+  Emit(BLR | Rn(czr));
+#else // !__CHERI_PURE_CAPABILITY__
   Emit(BLR | Rn(xzr));
+#endif // __CHERI_PURE_CAPABILITY__
 }
 
 void Assembler::StartBlockVeneerPool() { ++veneer_pool_blocked_nesting_; }
