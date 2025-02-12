@@ -1923,25 +1923,31 @@ Object Isolate::UnwindAndFindHandler() {
   Object exception = pending_exception();
 
   auto FoundHandler = [&](Context context, Address instruction_start,
-                          intptr_t handler_offset,
+                          ScaledInt handler_offset,
                           Address constant_pool_address, Address handler_sp,
                           Address handler_fp, int num_frames_above_handler) {
     // Store information to be consumed by the CEntry.
     thread_local_top()->pending_handler_context_ = context;
-#ifdef __CHERI_PURE_CAPABILITY__
-    // FIXME(ds815): We might not be re-deriving this from the PCC.
-    if (__builtin_cheri_sealed_get(instruction_start)) {
-      Address pcc =
-          reinterpret_cast<Address>(__builtin_cheri_program_counter_get());
-      instruction_start = __builtin_cheri_address_set(
-          pcc, __builtin_cheri_address_get(instruction_start));
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(V8_TARGET_ARCH_ARM64)
+    if (V8_CHERI_SEALED(instruction_start)) {
+      // Ensure the tag wasn't invalidated for some reason.
+      CHECK(V8_CHERI_TAG_GET(instruction_start));
+      DCHECK(V8_CHERI_INBOUNDS(
+          V8_CHERI_PCC,
+          V8_CHERI_ADDR_GET(reinterpret_cast<void*>(instruction_start))));
+      instruction_start = reinterpret_cast<Address>(V8_CHERI_ADDR_SET(
+          V8_CHERI_PCC,
+          V8_CHERI_ADDR_GET(reinterpret_cast<void*>(instruction_start))));
+      thread_local_top()->pending_handler_entrypoint_ =
+          V8_CHERI_TO_SENTRY((instruction_start + handler_offset) | 1);
+    } else {
+      thread_local_top()->pending_handler_entrypoint_ =
+          (instruction_start + handler_offset) | 1;
     }
-    thread_local_top()->pending_handler_entrypoint_ =
-        __builtin_cheri_seal_entry(instruction_start + handler_offset);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else   // !(__CHERI_PURE_CAPABILITY__ && V8_TARGET_ARCH_ARM64)
     thread_local_top()->pending_handler_entrypoint_ =
         instruction_start + handler_offset;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__ && V8_TARGET_ARCH_ARM64
     thread_local_top()->pending_handler_constant_pool_ = constant_pool_address;
     thread_local_top()->pending_handler_fp_ = handler_fp;
     thread_local_top()->pending_handler_sp_ = handler_sp;
