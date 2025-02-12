@@ -342,11 +342,19 @@ void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& te
 void MacroAssembler::PrepareC64Jump(const Register& cd) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
-  Register scratch = AreAliased(cd, c0) ? c1 : c0;
-  Push(scratch, czr);
-  DCHECK(!AreAliased(scratch, cd));
-  PrepareC64JumpHelper(cd, scratch);
-  Pop(czr, scratch);
+  UseScratchRegisterScope temps(this);
+  if (temps.CanAcquire()) {
+    Register scratch = temps.AcquireC();
+    DCHECK(!AreAliased(scratch, cd));
+    PrepareC64JumpHelper(cd, scratch);
+  } else {
+    // No registers available, spill c0 or c1.
+    Register scratch = AreAliased(cd, c0) ? c1 : c0;
+    Push(scratch, czr);
+    DCHECK(!AreAliased(scratch, cd));
+    PrepareC64JumpHelper(cd, scratch);
+    Pop(czr, scratch);
+  }
 }
 #endif
 
