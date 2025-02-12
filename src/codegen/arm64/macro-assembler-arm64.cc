@@ -330,13 +330,19 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
 void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& tempC) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
-  Label not_sentry, done;
+  Label not_sentry, done, ok;
   // We need to OR the C64 bit.
   Gcseal(tempC.X(), cd);
   Tbnz(tempC.X(), 0, &done);
   Orr(tempC.X(), cd.X(), 0x1);
   Scvalue(cd, cd, tempC.X());
   bind(&done);
+  if (v8_flags.debug_code) {
+    Tbnz(cd.X(), 0, &ok);
+    // Can't call Abort here because it will call back into this helper.
+    Trap();
+  }
+  bind(&ok);
 }
 
 void MacroAssembler::PrepareC64Jump(const Register& cd) {
