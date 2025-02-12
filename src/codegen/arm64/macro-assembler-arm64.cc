@@ -312,13 +312,11 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
   Register xn = cn.X();
 
   Gcseal(xd, cn);
-  Cmp(xd, xzr);
-  B(eq, &not_sentry);
+  Tbz(xd, 0, &not_sentry);
   Add(xn, xn, operand);
   Orr(xn, xn, 0x1);  // C64 bit
   adr(cd, 0);
   Scvalue(cd, cd, xn);
-  Seal(cd, cd, Cheri::kSealFormRb);
   B(&sentry_done);
 
   Bind(&not_sentry);
