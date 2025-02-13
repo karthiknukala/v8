@@ -541,9 +541,9 @@ class String : public TorqueGeneratedString<String, Name> {
     const uint16_t* start = chars;
     const uint16_t* limit = chars + length;
 
-    if (static_cast<size_t>(length) >= kUIntptrSize) {
+    if (static_cast<size_t>(length) >= kScaledUintSize) {
       // Check unaligned chars.
-      while (!IsAligned(reinterpret_cast<Address>(chars), kUIntptrSize)) {
+      while (!IsAligned(reinterpret_cast<Address>(chars), kScaledUintSize)) {
         if (*chars > unibrow::Latin1::kMaxChar) {
           return static_cast<int>(chars - start);
         }
@@ -553,16 +553,17 @@ class String : public TorqueGeneratedString<String, Name> {
       // Check aligned words.
       static_assert(unibrow::Latin1::kMaxChar == 0xFF);
 #ifdef V8_TARGET_LITTLE_ENDIAN
-      const uintptr_t non_one_byte_mask = kUintptrAllBitsSet / 0xFFFF * 0xFF00;
+      const uintptr_t non_one_byte_mask =
+          kScaledUintAllBitsSet / 0xFFFF * 0xFF00;
 #else
-      const uintptr_t non_one_byte_mask = kUintptrAllBitsSet / 0xFFFF * 0x00FF;
+      const uintptr_t non_one_byte_mask = kScaledUintSize / 0xFFFF * 0x00FF;
 #endif
-      while (chars + sizeof(uintptr_t) <= limit) {
-        if (*reinterpret_cast<const uintptr_t*>(chars) &
+      while (chars + sizeof(ScaledUint) <= limit) {
+        if (*reinterpret_cast<const ScaledUint*>(chars) &
             static_cast<size_t>(non_one_byte_mask)) {
           break;
         }
-        chars += (sizeof(uintptr_t) / sizeof(base::uc16));
+        chars += (sizeof(ScaledUint) / sizeof(base::uc16));
       }
     }
 

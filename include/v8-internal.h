@@ -46,6 +46,20 @@ constexpr size_t TB = size_t{GB} * 1024;
 typedef uintptr_t ptraddr_t;
 #endif
 
+#ifdef V8_HOST_ARCH_64_BIT
+using ScaledInt = int64_t;
+using ScaledUint = uint64_t;
+
+constexpr int kScaledIntSize = 8;
+constexpr int kScaledUintSize = 8;
+#else   // !V8_HOST_ARCH_64_BIT
+using ScaledInt = int32_t;
+using ScaledUint = uint32_t;
+
+constexpr int kScaledIntSize = 4;
+constexpr int kScaledUintSize = 4;
+#endif  // V8_HOST_ARCH_64_BIT
+
 /**
  * Configuration of tagging scheme.
  */
@@ -96,6 +110,10 @@ struct SmiTagging;
 constexpr intptr_t kIntptrAllBitsSet = intptr_t{-1};
 constexpr uintptr_t kUintptrAllBitsSet =
     static_cast<uintptr_t>(kIntptrAllBitsSet);
+
+constexpr ScaledInt kScaledIntAllBitsSet = ScaledInt{-1};
+constexpr ScaledUint kScaledUintAllBitsSet =
+    static_cast<ScaledUint>(kIntptrAllBitsSet);
 
 // Smi constants for systems where tagged pointer is a 32-bit value.
 template <>

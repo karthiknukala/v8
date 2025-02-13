@@ -430,10 +430,6 @@ constexpr uint32_t kDefaultMaxWasmCodeSpaceSizeMb = 1024;
 #endif
 
 #if V8_HOST_ARCH_64_BIT
-using ScaledInt = int64_t;
-
-constexpr int kScaledIntSize = 8;
-
 #if defined(__CHERI_PURE_CAPABILITY__)
 constexpr int kSystemPointerSizeLog2 = 4;
 #else // !__CHERI_PURE_CAPABILITY__
@@ -471,10 +467,6 @@ constexpr size_t kReservedCodeRangePages = 0;
 #endif
 
 #else  // V8_HOST_ARCH_64_BIT
-using ScaledInt = int32_t;
-
-constexpr int kScaledIntSize = 4;
-
 constexpr int kSystemPointerSizeLog2 = 2;
 constexpr intptr_t kIntptrSignBit = 0x80000000;
 #if (V8_HOST_ARCH_PPC || V8_HOST_ARCH_PPC64) && \
