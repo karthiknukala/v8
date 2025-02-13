@@ -27,8 +27,10 @@ v8_enable_sandboxed_external_pointers = false
 # Needed because we don't use the wrapper on FreeBSD Morello builds.
 clang_base_path                       = "/usr/local64"
 #cc_wrapper                            = "env CCACHE_PREFIX=distcc CCACHE_SLOPPINESS=time_macros ccache" # Uncomment for distcc and ccache
-extra_cxxflags                        = "-I/usr/include -I/usr/include/c++/v1 --target=aarch64c-unknown-freebsd -mabi=purecap -march=morello -Xclang -morello-vararg=new"
-extra_cflags                          = "-I/usr/include -I/usr/include/c++/v1 --target=aarch64c-unknown-freebsd -mabi=purecap -march=morello -Xclang -morello-vararg=new"
+extra_cxxflags                        = "-I/usr/include -I/usr/include/c++/v1 --target=aarch64c-unknown-freebsd -mabi=purecap -march=morello -Xclang -morello-vararg=new -fno-stack-protector -Wno-unr
+eachable-code -Wno-unused-private-field -Wno-shorten-64-to-32 -Wno-format -Wno-self-assign -Wno-tautological-compare"
+extra_cflags                          = "-I/usr/include -I/usr/include/c++/v1 --target=aarch64c-unknown-freebsd -mabi=purecap -march=morello -Xclang -morello-vararg=new -fno-stack-protector -Wno-unr
+eachable-code -Wno-unused-private-field -Wno-shorten-64-to-32 -Wno-format -Wno-self-assign -Wno-tautological-compare"
 extra_ldflags                         = "-mabi=purecap"
 extra_asmflags                        = "-march=morello -mabi=purecap"
 
@@ -41,3 +43,20 @@ v8_enable_snapshot_code_comments      = false # broken on purecap
 v8_verify_deterministic_mksnapshot    = false # broken on purecap
 v8_value_deserializer_hard_fail       = true
 v8_enable_verify_csa                  = false # broken on purecap
+v8_enable_verify_heap                 = true
+
+v8_enable_gdbjit                      = false # for now
+
+v8_cheri_debug                        = true
+
+# Jitless V8
+#v8_jitless                           = true
+#v8_enable_turbofan                   = false
+#v8_enable_maglev                     = false
+
+# Optimised build
+
+#is_official_build                    = true
+#chrome_pgo_phase                     = 0
+#use_thin_lto                         = false
+#target_os                            = "freebsd"
