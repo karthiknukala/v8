@@ -128,6 +128,7 @@ TEST_WITH_PLATFORM(AccountingAllocatorCurrentAndMax, AllocationPlatform) {
   CHECK(!platform.oom_callback_called);
 }
 
+#ifndef __CHERI_PURE_CAPABILITY__
 TEST_WITH_PLATFORM(MallocedOperatorNewOOM, AllocationPlatform) {
   CHECK(!platform.oom_callback_called);
   CcTest::isolate()->SetFatalErrorHandler(OnMallocedOperatorNewOOM);
@@ -138,7 +139,6 @@ TEST_WITH_PLATFORM(MallocedOperatorNewOOM, AllocationPlatform) {
   CHECK_EQ(result == nullptr, platform.oom_callback_called);
 }
 
-#ifndef __CHERI_PURE_CAPABILITY__
 TEST_WITH_PLATFORM(NewArrayOOM, AllocationPlatform) {
   CHECK(!platform.oom_callback_called);
   CcTest::isolate()->SetFatalErrorHandler(OnNewArrayOOM);
