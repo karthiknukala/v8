@@ -1083,6 +1083,10 @@ Reduction LoadElimination::ReduceLoadElement(Node* node) {
     case MachineRepresentation::kTaggedSigned:
     case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
+#ifdef __CHERI_PURE_CAPABILITY__
+    case MachineRepresentation::kCapability64:
+    case MachineRepresentation::kCapability32:
+#endif  // __CHERI_PURE_CAPABILITY__
     case MachineRepresentation::kMapWord:
       if (Node* replacement = state->LookupElement(
               object, index, access.machine_type.representation())) {
@@ -1141,6 +1145,10 @@ Reduction LoadElimination::ReduceStoreElement(Node* node) {
     case MachineRepresentation::kTaggedSigned:
     case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
+#ifdef __CHERI_PURE_CAPABILITY__
+    case MachineRepresentation::kCapability64:
+    case MachineRepresentation::kCapability32:
+#endif  // __CHERI_PURE_CAPABILITY__
     case MachineRepresentation::kMapWord:
       state = state->AddElement(object, index, new_value,
                                 access.machine_type.representation(), zone());
@@ -1436,6 +1444,10 @@ LoadElimination::IndexRange LoadElimination::FieldIndexOf(
     case MachineRepresentation::kTaggedSigned:
     case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
+#ifdef __CHERI_PURE_CAPABILITY__
+    case MachineRepresentation::kCapability64:
+    case MachineRepresentation::kCapability32:
+#endif  // __CHERI_PURE_CAPABILITY__
     case MachineRepresentation::kMapWord:
     case MachineRepresentation::kCompressedPointer:
     case MachineRepresentation::kCompressed:

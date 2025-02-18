@@ -396,6 +396,10 @@ class OperandGenerator {
           case MachineRepresentation::kTaggedPointer:
           case MachineRepresentation::kCompressed:
           case MachineRepresentation::kCompressedPointer:
+#ifdef __CHERI_PURE_CAPABILITY__
+          case MachineRepresentation::kCapability64:
+          case MachineRepresentation::kCapability32:
+#endif  // __CHERI_PURE_CAPABILITY__
             return Constant(static_cast<int32_t>(0));
           case MachineRepresentation::kWord64:
             return Constant(static_cast<int64_t>(0));
