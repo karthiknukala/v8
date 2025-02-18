@@ -3710,7 +3710,11 @@ class RepresentationSelector {
       }
 
       case IrOpcode::kAllocate: {
+#ifdef __CHERI_PURE_CAPABILITY__
+        ProcessInput<T>(node, 0, UseInfo::Word64());
+#else   // !__CHERI_PURE_CAPABILITY__
         ProcessInput<T>(node, 0, UseInfo::Word());
+#endif  // __CHERI_PURE_CAPABILITY__
         ProcessRemainingInputs<T>(node, 1);
         SetOutput<T>(node, MachineRepresentation::kTaggedPointer);
         return;
