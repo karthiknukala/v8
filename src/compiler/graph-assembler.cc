@@ -61,6 +61,12 @@ GraphAssembler::GraphAssembler(
 GraphAssembler::~GraphAssembler() { DCHECK_EQ(loop_nesting_level_, 0); }
 
 Node* GraphAssembler::IntPtrConstant(intptr_t value) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (V8_CHERI_TAG_GET(value)) {
+    return AddClonedNode(
+        graph()->NewNode(common()->Capability64Constant(value)));
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   return AddClonedNode(mcgraph()->IntPtrConstant(value));
 }
 
@@ -85,6 +91,11 @@ Node* GraphAssembler::Uint64Constant(uint64_t value) {
 }
 
 Node* GraphAssembler::UniqueIntPtrConstant(intptr_t value) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (V8_CHERI_TAG_GET(value)) {
+    return AddNode(graph()->NewNode(common()->Capability64Constant(value)));
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   return AddNode(graph()->NewNode(
       machine()->Is64()
           ? common()->Int64Constant(value)
@@ -183,12 +194,27 @@ TNode<BoolT> GraphAssembler::UintPtrLessThanOrEqual(TNode<UintPtrT> left,
 
 TNode<UintPtrT> GraphAssembler::UintPtrAdd(TNode<UintPtrT> left,
                                            TNode<UintPtrT> right) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (left.IsCapability()) {
+    return TNode<UintPtrT>::UncheckedCast(CapAdd(left, right))
+        .MarkAsCapability();
+  } else if (right.IsCapability()) {
+    return TNode<UintPtrT>::UncheckedCast(CapAdd(right, left))
+        .MarkAsCapability();
+  }
+#endif // __CHERI_PURE_CAPABILITY__
   return kSystemPointerAddrSize == 8
              ? TNode<UintPtrT>::UncheckedCast(Int64Add(left, right))
              : TNode<UintPtrT>::UncheckedCast(Int32Add(left, right));
 }
 TNode<UintPtrT> GraphAssembler::UintPtrSub(TNode<UintPtrT> left,
                                            TNode<UintPtrT> right) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (left.IsCapability()) {
+    return TNode<UintPtrT>::UncheckedCast(CapSub(left, right))
+        .MarkAsCapability();
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   return kSystemPointerAddrSize == 8
              ? TNode<UintPtrT>::UncheckedCast(Int64Sub(left, right))
              : TNode<UintPtrT>::UncheckedCast(Int32Sub(left, right));
