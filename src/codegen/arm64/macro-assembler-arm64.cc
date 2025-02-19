@@ -3687,13 +3687,14 @@ void MacroAssembler::TruncateDoubleToI(Isolate* isolate, Zone* zone,
 
   // If we fell through then inline version didn't succeed - call stub instead.
   if (lr_status == kLRHasNotBeenSaved) {
-    Push<MacroAssembler::kSignLR>(lr, double_input);
-#if defined(__CHERI_PURE_CAPABILITY__)
-    Push<MacroAssembler::kSignLR>(lr);
-    Push(padregx, double_input);
+#ifdef __CHERI_PURE_CAPABILITY__
+    // Make sure we're dealing with a D register here.
+    DCHECK(double_input.Is64Bits());
+    Push<MacroAssembler::kSignLR>(lr, czr);
+    Push(padreg, double_input);
 #else   // !__CHERI_PURE_CAPABILITY__
     Push<MacroAssembler::kSignLR>(lr, double_input);
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     Push<MacroAssembler::kDontStoreLR>(xzr, double_input);
   }
@@ -3719,13 +3720,18 @@ void MacroAssembler::TruncateDoubleToI(Isolate* isolate, Zone* zone,
 
   if (lr_status == kLRHasNotBeenSaved) {
     // Pop into xzr here to drop the double input on the stack:
-#if defined(__CHERI_PURE_CAPABILITY__)
-    Pop<MacroAssembler::kAuthLR>(lr);
+#ifdef __CHERI_PURE_CAPABILITY__
+    Pop(xzr, xzr);
+    Pop<MacroAssembler::kAuthLR>(czr, lr);
 #else   // !__CHERI_PURE_CAPABILITY__
     Pop<MacroAssembler::kAuthLR>(xzr, lr);
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+    Drop(1);  // double_input + xzr
+#else   // !__CHERI_PURE_CAPABILITY__
     Drop(2);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   Bind(&done);
