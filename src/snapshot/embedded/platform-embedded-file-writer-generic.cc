@@ -111,6 +111,11 @@ void PlatformEmbeddedFileWriterGeneric::DeclareLabel(const char* name) {
   fprintf(fp_, "%s%s:\n", SYMBOL_PREFIX, name);
 }
 
+void PlatformEmbeddedFileWriterGeneric::DeclareType(const char* name,
+                                                    const char* which) {
+  fprintf(fp_, ".type %s, %s\n", name, which);
+}
+
 void PlatformEmbeddedFileWriterGeneric::SourceInfo(int fileid,
                                                    const char* filename,
                                                    int line) {

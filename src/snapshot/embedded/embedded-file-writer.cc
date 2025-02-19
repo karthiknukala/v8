@@ -159,6 +159,12 @@ void EmbeddedFileWriter::WriteCodeSection(PlatformEmbeddedFileWriterBase* w,
   w->AlignToCodeAlignment();
   w->DeclareSymbolGlobal(EmbeddedBlobCodeSymbol().c_str());
   w->DeclareLabel(EmbeddedBlobCodeSymbol().c_str());
+#ifdef __CHERI_PURE_CAPABILITY__
+  // Work around the fact that Morello LLVM 15 now does the correct thing for
+  // non-function types, while LLVM 14 always generates sentries. In the future,
+  // we will remove this and generate sentries properly from V8 itself.
+  w->DeclareType(EmbeddedBlobCodeSymbol().c_str(), "%function");
+#endif  // __CHERI_PURE_CAPABILITY__
 
   static_assert(Builtins::kAllBuiltinsAreIsolateIndependent);
   // We will traversal builtins in embedded snapshot order instead of builtin id

@@ -29,7 +29,8 @@
 #define V8_CHERI_ADDR_SET(cap, addr) __builtin_cheri_address_set(cap, addr)
 #define V8_CHERI_PCC __builtin_cheri_program_counter_get()
 #define V8_CHERI_TO_SENTRY(cap) __builtin_cheri_seal_entry(cap)
-
+#define V8_CHERI_SET_BOUNDS_EXACT(cap, len) \
+  __builtin_cheri_bounds_set_exact(cap, len)
 
 // Is the capability executable?
 #define V8_CHERI_IS_EXECUTABLE(cap) \

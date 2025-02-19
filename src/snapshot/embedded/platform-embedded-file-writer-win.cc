@@ -649,6 +649,11 @@ void PlatformEmbeddedFileWriterWin::DeclareLabel(const char* name) {
   fprintf(fp_, "%s%s:\n", SYMBOL_PREFIX, name);
 }
 
+void PlatformEmbeddedFileWriterWin::DeclareType(const char* name,
+                                                const char* which) {
+  UNREACHABLE();
+}
+
 void PlatformEmbeddedFileWriterWin::SourceInfo(int fileid, const char* filename,
                                                int line) {
   // BUG(9944): Use .cv_loc to ensure CodeView information is used on

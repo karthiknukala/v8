@@ -89,6 +89,11 @@ void PlatformEmbeddedFileWriterAIX::DeclareLabel(const char* name) {
   fprintf(fp_, "%s:\n", name);
 }
 
+void PlatformEmbeddedFileWriterAIX::DeclareType(const char* name,
+                                                const char* which) {
+  UNREACHABLE();
+}
+
 void PlatformEmbeddedFileWriterAIX::SourceInfo(int fileid, const char* filename,
                                                int line) {
   fprintf(fp_, ".xline %d, \"%s\"\n", line, filename);

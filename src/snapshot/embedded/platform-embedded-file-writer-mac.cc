@@ -97,6 +97,11 @@ void PlatformEmbeddedFileWriterMac::DeclareLabel(const char* name) {
   fprintf(fp_, "_%s:\n", name);
 }
 
+void PlatformEmbeddedFileWriterMac::DeclareType(const char* name,
+                                                const char* which) {
+  UNREACHABLE();
+}
+
 void PlatformEmbeddedFileWriterMac::SourceInfo(int fileid, const char* filename,
                                                int line) {
   fprintf(fp_, ".loc %d %d\n", fileid, line);

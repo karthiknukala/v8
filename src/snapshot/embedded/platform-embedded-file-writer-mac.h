@@ -32,6 +32,7 @@ class PlatformEmbeddedFileWriterMac : public PlatformEmbeddedFileWriterBase {
 
   void DeclareSymbolGlobal(const char* name) override;
   void DeclareLabel(const char* name) override;
+  void DeclareType(const char* name, const char* which) override;
 
   void SourceInfo(int fileid, const char* filename, int line) override;
   void DeclareFunctionBegin(const char* name, uint32_t size) override;
