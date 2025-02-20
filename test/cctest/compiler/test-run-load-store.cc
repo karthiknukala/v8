@@ -271,6 +271,9 @@ void RunLoadImmIndex(MachineType type, TestAlignment t) {
       BufferedRawMachineAssemblerTester<CType> m;
       CType* base_pointer = reinterpret_cast<CType*>(
           ComputeOffset(&buffer[0], offset * sizeof(CType)));
+#ifdef __CHERI_PURE_CAPABILITY__
+      CHECK(V8_CHERI_TAG_GET(base_pointer));
+#endif  // __CHERI_PURE_CAPABILITY__
 #ifdef V8_COMPRESS_POINTERS
       if (type.IsTagged()) {
         // When pointer compression is enabled then we need to access only
