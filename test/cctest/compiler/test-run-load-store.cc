@@ -254,13 +254,13 @@ void InitBuffer(CType* buffer, size_t length, MachineType type) {
 
 template <typename CType>
 void RunLoadImmIndex(MachineType type, TestAlignment t) {
-  const int kNumElems = 16;
+  const int kNumElems = 1000;
   CType buffer[kNumElems];
 
   InitBuffer(buffer, kNumElems, type);
 
   // Test with various large and small offsets.
-  for (int offset = -1; offset <= 200000; offset *= -5) {
+  for (int offset = -1; offset <= kNumElems * sizeof(CType); offset *= -5) {
     for (int i = 0; i < kNumElems; i++) {
       BufferedRawMachineAssemblerTester<CType> m;
       CType* base_pointer = reinterpret_cast<CType*>(
