@@ -62,14 +62,20 @@ void RunLoadInt32(const TestAlignment t) {
 
 void RunLoadInt32Offset(TestAlignment t) {
   int32_t p1 = 0;  // loads directly from this location.
-
+#ifdef __CHERI_PURE_CAPABILITY__
+  int32_t offsets[] = {-200, -100, -101, 1, 3, 7, 120, 2000, 200, 0xFF};
+#else   // !__CHERI_PURE_CAPABILITY__
   int32_t offsets[] = {-2000000, -100, -101, 1,          3,
                        7,        120,  2000, 2000000000, 0xFF};
+#endif  // __CHERI_PURE_CAPABILITY__
 
   for (size_t i = 0; i < arraysize(offsets); i++) {
     RawMachineAssemblerTester<int32_t> m;
     int32_t offset = offsets[i];
     uint8_t* pointer = ComputeOffset(&p1, offset);
+#ifdef __CHERI_PURE_CAPABILITY__
+    CHECK(V8_CHERI_TAG_GET(pointer));
+#endif  // __CHERI_PURE_CAPABILITY__
 
     // generate load [#base + #index]
     if (t == TestAlignment::kAligned) {
