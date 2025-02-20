@@ -89,7 +89,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* IntPtrConstant(intptr_t value) {
     // TODO(dcarney): mark generated code as unserializable if value != 0.
 #ifdef __CHERI_PURE_CAPABILITY__
-    if (__builtin_cheri_tag_get(value)) return Capability64Constant(value);
+    if (V8_CHERI_TAG_GET(value)) return Capability64Constant(value);
 #endif  // __CHERI_PURE_CAPABILITY__
     return kSystemPointerAddrSize == 8 ? Int64Constant(value)
                                        : Int32Constant(static_cast<int>(value));

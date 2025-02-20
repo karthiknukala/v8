@@ -244,7 +244,7 @@ TNode<Int64T> CodeAssembler::Int64Constant(int64_t value) {
 
 TNode<IntPtrT> CodeAssembler::IntPtrConstant(intptr_t value) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  if (__builtin_cheri_tag_get(value))
+  if (V8_CHERI_TAG_GET(value))
     return UncheckedCast<IntPtrT>(jsgraph()->Capability64Constant(value))
         .MarkAsCapability();
 #endif  // __CHERI_PURE_CAPABILITY__

@@ -41,7 +41,7 @@ static const Operator* IntPtrConstant(CommonOperatorBuilder* common,
                                       intptr_t value) {
 #ifdef __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(kSystemPointerSize, 16);
-  if (__builtin_cheri_tag_get(value)) {
+  if (V8_CHERI_TAG_GET(value)) {
     return common->Capability64Constant(value);
   }
 #endif  // __CHERI_PURE_CAPABILITY__
