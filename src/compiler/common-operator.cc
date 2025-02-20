@@ -1306,6 +1306,11 @@ const Operator* CommonOperatorBuilder::NumberConstant(double value) {
 }
 
 const Operator* CommonOperatorBuilder::PointerConstant(intptr_t value) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (V8_CHERI_TAG_GET(value)) {
+    return Capability64Constant(value);
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   return zone()->New<Operator1<intptr_t>>(          // --
       IrOpcode::kPointerConstant, Operator::kPure,  // opcode
       "PointerConstant",                            // name
