@@ -5673,8 +5673,13 @@ TEST(RunTestIntPtrArithmetic) {
   for (int i = 0; i < kInputSize; i++) {
     m.Store(MachineRepresentation::kWord32, output,
             m.Load(MachineType::Int32(), input), kNoWriteBarrier);
+#ifdef __CHERI_PURE_CAPABILITY__
+    input = m.CapAdd(input, elem_size);
+    output = m.CapSub(output, elem_size);
+#else
     input = m.IntPtrAdd(input, elem_size);
     output = m.IntPtrSub(output, elem_size);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
   m.Return(input);
   CHECK_EQ(&inputs[kInputSize], m.Call());
