@@ -6097,7 +6097,11 @@ void Builtins::Generate_DoubleToI(MacroAssembler* masm) {
   DoubleRegister double_scratch = temps.AcquireD();
 
   // Account for saved regs.
+#ifdef __CHERI_PURE_CAPABILITY__
+  const int kArgumentOffset = 2 * kSystemPointerAddrSize + 8;
+#else   // !__CHERI_PURE_CAPABILITY__
   const int kArgumentOffset = 2 * kSystemPointerSize;
+#endif  // __CHERI_PURE_CAPABILITY__
 
   __ Push(result, scratch1);  // scratch1 is also pushed to preserve alignment.
   __ Peek(double_scratch, kArgumentOffset);
