@@ -999,7 +999,12 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
     DCHECK(use_info.type_check() == TypeCheckKind::kSignedSmall ||
            use_info.type_check() == TypeCheckKind::kSigned32);
     return node;
+#ifdef __CHERI_PURE_CAPABILITY__
+  } else if (output_rep == MachineRepresentation::kWord64 ||
+             output_rep == MachineRepresentation::kCapability64) {
+#else   // !__CHERI_PURE_CAPABILITY__
   } else if (output_rep == MachineRepresentation::kWord64) {
+#endif  // __CHERI_PURE_CAPABILITY__
     if (output_type.Is(Type::Signed32()) ||
         (output_type.Is(Type::Unsigned32()) &&
          use_info.type_check() == TypeCheckKind::kNone) ||
@@ -1095,6 +1100,15 @@ Node* RepresentationChanger::GetBitRepresentationFor(
     }
     return jsgraph()->graph()->NewNode(machine()->Word32Equal(), node,
                                        jsgraph()->Int32Constant(0));
+#ifdef __CHERI_PURE_CAPABILITY__
+  } else if (output_rep == MachineRepresentation::kCapability64) {
+    // XXX(ds815): Use regular integers here for now. It's currently unclear if
+    // we need to use capabilities here.
+    node = jsgraph()->graph()->NewNode(machine()->Word64Equal(), node,
+                                       jsgraph()->Int64Constant(0));
+    return jsgraph()->graph()->NewNode(machine()->Word32Equal(), node,
+                                       jsgraph()->Int32Constant(0));
+#endif  // __CHERI_PURE_CAPABILITY__
   } else if (IsWord(output_rep)) {
     node = jsgraph()->graph()->NewNode(machine()->Word32Equal(), node,
                                        jsgraph()->Int32Constant(0));
