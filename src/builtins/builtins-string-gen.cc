@@ -1974,12 +1974,27 @@ TNode<String> StringBuiltinsAssembler::SubString(TNode<String> string,
   // Handle external string.
   BIND(&external_string);
   {
+    Label regular_call(this);
     const TNode<RawPtrT> fake_sequential_string =
         to_direct.PointerToString(&runtime);
 
-    var_result = AllocAndCopyStringCharacters(
-        fake_sequential_string, instance_type, offset, substr_length);
+    GotoIf(CapabilityIsTagged(fake_sequential_string), &regular_call);
+    {
+      const TNode<RawPtrT> real_sequential_string =
+          ReinterpretCast<RawPtrT>(offset).MarkAsCapability();
+      CSA_DCHECK(this, CapabilityIsTagged(real_sequential_string));
+      var_result = AllocAndCopyStringCharacters(
+          real_sequential_string, instance_type,
+          UncheckedCast<IntPtrT>(fake_sequential_string).MarkAsInteger(),
+          substr_length);
+      Goto(&end);
+    }
 
+    BIND(&regular_call);
+    {
+      var_result = AllocAndCopyStringCharacters(
+          fake_sequential_string, instance_type, offset, substr_length);
+    }
     Goto(&end);
   }
 
