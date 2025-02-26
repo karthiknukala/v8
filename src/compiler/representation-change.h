@@ -88,6 +88,12 @@ class V8_EXPORT_PRIVATE RepresentationChanger final {
                                    UseInfo use_info);
   Node* GetBitRepresentationFor(Node* node, MachineRepresentation output_rep,
                                 Type output_type);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Node* GetCapability64RepresentationFor(Node* node,
+                                         MachineRepresentation output_rep,
+                                         Type output_type, Node* use_node,
+                                         UseInfo use_info);
+#endif  // __CHERI_PURE_CAPABILITY__
   Node* GetWord64RepresentationFor(Node* node, MachineRepresentation output_rep,
                                    Type output_type, Node* use_node,
                                    UseInfo use_info);
