@@ -166,10 +166,12 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
 
   void GetMarkBit(TNode<IntPtrT> object, TNode<IntPtrT>* cell,
                   TNode<IntPtrT>* mask) {
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    DCHECK(object.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     TNode<IntPtrT> page = PageFromAddress(object);
     TNode<IntPtrT> bitmap =
-        IntPtrAdd(BitcastCapabilityToAddress<IntPtrT>(page),
-                  IntPtrConstant(MemoryChunk::kMarkingBitmapOffset));
+        IntPtrAdd(page, IntPtrConstant(MemoryChunk::kMarkingBitmapOffset));
 
     {
       // Temp variable to calculate cell offset in bitmap.
@@ -231,9 +233,11 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
   }
 
   TNode<IntPtrT> LoadSlotSet(TNode<IntPtrT> page, Label* slow_path) {
-    TNode<IntPtrT> slot_set = UncheckedCast<IntPtrT>(
-        Load(MachineType::Pointer(), page,
-             IntPtrConstant(MemoryChunk::kOldToNewSlotSetOffset)));
+    TNode<IntPtrT> slot_set =
+        UncheckedCast<IntPtrT>(
+            Load(MachineType::Pointer(), page,
+                 IntPtrConstant(MemoryChunk::kOldToNewSlotSetOffset)))
+            .MarkAsCapability();
     GotoIf(WordEqual(slot_set, IntPtrConstant(0)), slow_path);
     return slot_set;
   }
