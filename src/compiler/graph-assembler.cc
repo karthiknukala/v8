@@ -992,6 +992,10 @@ Node* GraphAssembler::CapSub(Node* a, Node* b) {
   return AddNode(graph()->NewNode(machine()->CapSub(), a, b));
 }
 
+Node* GraphAssembler::CapabilityIsTagged(Node* maybe_cap) {
+  return AddNode(graph()->NewNode(machine()->CapabilityIsTagged(), maybe_cap));
+}
+
 Node* GraphAssembler::AlignU(Node* a, Node* b) {
   return AddNode(graph()->NewNode(machine()->AlignU(), a, b));
 }

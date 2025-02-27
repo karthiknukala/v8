@@ -7450,7 +7450,21 @@ Node* EffectControlLinearizer::BuildTypedArrayDataPointer(Node* base,
       // details.
       base = ChangeUint32ToUintPtr(base);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    auto end = __ MakeLabel(MachineRepresentation::kCapability64);
+    auto base_is_tagged = __ MakeLabel();
+
+    __ GotoIf(__ CapabilityIsTagged(base), &base_is_tagged);
+    { __ Goto(&end, __ CapAdd(external, base)); }
+
+    __ Bind(&base_is_tagged);
+    { __ Goto(&end, __ CapAdd(base, external)); }
+
+    __ Bind(&end);
+    return end.PhiAt(0);
+#else   // !__CHERI_PURE_CAPABILITY__
     return __ IntPtrAdd(base, external);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 }
 
