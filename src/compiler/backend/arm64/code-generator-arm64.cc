@@ -172,31 +172,31 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
     UNREACHABLE();
   }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
-   Register InputRegisterCapability(size_t index) {
-     return ToRegister(instr_->InputAt(index)).C();
-   }
-
-   Register InputOrZeroRegisterCapability(size_t index) {
-     DCHECK(instr_->InputAt(index)->IsRegister() ||
-           (instr_->InputAt(index)->IsImmediate() && (InputInt64(index) == 0)));
-     if (instr_->InputAt(index)->IsImmediate()) {
-       return czr;
-     }
-     return InputRegisterCapability(index);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register InputRegisterCapability(size_t index) {
+    return ToRegister(instr_->InputAt(index)).C();
   }
 
-   Operand InputOperandCapability(size_t index) {
-     InstructionOperand* op = instr_->InputAt(index);
-     if (op->IsRegister()) {
-       return Operand(ToRegister(op).C());
-     }
-     return ToImmediate(op);
-   }
+  Register InputOrZeroRegisterCapability(size_t index) {
+    DCHECK(instr_->InputAt(index)->IsRegister() ||
+           (instr_->InputAt(index)->IsImmediate() && (InputInt64(index) == 0)));
+    if (instr_->InputAt(index)->IsImmediate()) {
+      return czr;
+    }
+    return InputRegisterCapability(index);
+  }
 
-   Register OutputRegisterCapability(size_t index) {
-     return ToRegister(instr_->OutputAt(index)).C();
-   }
+  Operand InputOperandCapability(size_t index) {
+    InstructionOperand* op = instr_->InputAt(index);
+    if (op->IsRegister()) {
+      return Operand(ToRegister(op).C());
+    }
+    return ToImmediate(op);
+  }
+
+  Register OutputRegisterCapability(size_t index) {
+    return ToRegister(instr_->OutputAt(index)).C();
+  }
 
   Register OutputRegisterCapability() { return OutputRegister().C(); }
 
@@ -210,16 +210,16 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
         return InputOperandCapability(index);
       case kMode_Operand2_R_LSL_I:
         return Operand(InputRegisterCapability(index), LSL,
-		       InputInt6(index + 1));
+                       InputInt6(index + 1));
       case kMode_Operand2_R_LSR_I:
         return Operand(InputRegisterCapability(index), LSR,
-		       InputInt6(index + 1));
+                       InputInt6(index + 1));
       case kMode_Operand2_R_ASR_I:
         return Operand(InputRegisterCapability(index), ASR,
-		       InputInt6(index + 1));
+                       InputInt6(index + 1));
       case kMode_Operand2_R_ROR_I:
         return Operand(InputRegisterCapability(index), ROR,
-		       InputInt6(index + 1));
+                       InputInt6(index + 1));
       case kMode_Operand2_R_UXTB:
         return Operand(InputRegisterCapability(index), UXTB);
       case kMode_Operand2_R_UXTH:
@@ -237,7 +237,7 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
     }
     UNREACHABLE();
   }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // FIXME(cheri): This breaks the build on non-CHERI. Create a shim for
   // capability helpers.
