@@ -1514,6 +1514,10 @@ Node* RepresentationChanger::GetWord64RepresentationFor(
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kWord64);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+  } else if (output_rep == MachineRepresentation::kCapability64) {
+    return node;
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     return TypeError(node, output_rep, output_type,
                      MachineRepresentation::kWord64);
