@@ -2214,6 +2214,9 @@ class RepresentationSelector {
       case IrOpcode::kInt64Constant:
         return VisitLeaf<T>(node, MachineRepresentation::kWord64);
       case IrOpcode::kExternalConstant:
+#ifdef __CHERI_PURE_CAPABILITY__
+      case IrOpcode::kCapability64Constant:
+#endif  // __CHERI_PURE_CAPABILITY__
         return VisitLeaf<T>(node, MachineType::PointerRepresentation());
       case IrOpcode::kNumberConstant: {
         double const value = OpParameter<double>(node->op());
