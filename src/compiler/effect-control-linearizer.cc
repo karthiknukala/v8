@@ -6890,10 +6890,17 @@ Node* EffectControlLinearizer::AdaptFastCallArgument(
 
             Node* length_in_bytes =
                 __ LoadField(AccessBuilder::ForStringLength(), node);
+#ifdef __CHERI_PURE_CAPABILITY__
+            Node* data_ptr =
+                __ CapAdd(__ BitcastTaggedToWord(node),
+                          __ IntPtrConstant(SeqOneByteString::kHeaderSize -
+                                            kHeapObjectTag));
+#else   // !__CHERI_PURE_CAPABILITY__
             Node* data_ptr =
                 __ IntPtrAdd(__ BitcastTaggedToWord(node),
                              __ IntPtrConstant(SeqOneByteString::kHeaderSize -
                                                kHeapObjectTag));
+#endif  // __CHERI_PURE_CAPABILITY__
 
             constexpr int kAlign = alignof(FastOneByteString);
             constexpr int kSize = sizeof(FastOneByteString);
