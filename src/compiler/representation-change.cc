@@ -1294,23 +1294,27 @@ Node* RepresentationChanger::GetCapability64RepresentationFor(
                        MachineRepresentation::kCapability64);
     }
   } else if (output_rep == MachineRepresentation::kWord64) {
-    DCHECK(TypeCheckIsBigInt(use_info.type_check()));
-    if (output_type.Is(Type::UnsignedBigInt64()) &&
-        use_info.type_check() == TypeCheckKind::kBigInt64) {
-      op = simplified()->CheckedUint64ToInt64(use_info.feedback());
-    } else if ((output_type.Is(Type::BigInt()) &&
-                use_info.type_check() == TypeCheckKind::kBigInt) ||
-               (output_type.Is(Type::SignedBigInt64()) &&
-                use_info.type_check() == TypeCheckKind::kBigInt64)) {
-      return node;
+    if (TypeCheckIsBigInt(use_info.type_check())) {
+      if (output_type.Is(Type::UnsignedBigInt64()) &&
+          use_info.type_check() == TypeCheckKind::kBigInt64) {
+        op = simplified()->CheckedUint64ToInt64(use_info.feedback());
+      } else if ((output_type.Is(Type::BigInt()) &&
+                  use_info.type_check() == TypeCheckKind::kBigInt) ||
+                 (output_type.Is(Type::SignedBigInt64()) &&
+                  use_info.type_check() == TypeCheckKind::kBigInt64)) {
+        return node;
+      } else {
+        DCHECK(output_type != Type::BigInt() ||
+               use_info.type_check() != TypeCheckKind::kBigInt64);
+        Node* unreachable = InsertUnconditionalDeopt(
+            use_node, DeoptimizeReason::kNotABigInt, use_info.feedback());
+        return jsgraph()->graph()->NewNode(
+            jsgraph()->common()->DeadValue(
+                MachineRepresentation::kCapability64),
+            unreachable);
+      }
     } else {
-      DCHECK(output_type != Type::BigInt() ||
-             use_info.type_check() != TypeCheckKind::kBigInt64);
-      Node* unreachable = InsertUnconditionalDeopt(
-          use_node, DeoptimizeReason::kNotABigInt, use_info.feedback());
-      return jsgraph()->graph()->NewNode(
-          jsgraph()->common()->DeadValue(MachineRepresentation::kCapability64),
-          unreachable);
+      return node;
     }
   } else if (output_rep == MachineRepresentation::kSandboxedPointer) {
     if (output_type.Is(Type::SandboxedPointer())) {
