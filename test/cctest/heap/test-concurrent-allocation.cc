@@ -527,9 +527,17 @@ UNINITIALIZED_TEST(ConcurrentRecordRelocSlot) {
 #if V8_TARGET_ARCH_ARM64
       // Arm64 requires stack alignment.
       UseScratchRegisterScope temps(&masm);
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register tmp = temps.AcquireC();
+#else   // !__CHERI_PURE_CAPABILITY__
       Register tmp = temps.AcquireX();
+#endif  // __CHERI_PURE_CAPABILITY__
       masm.Mov(tmp, Operand(ReadOnlyRoots(heap).undefined_value_handle()));
+#ifdef __CHERI_PURE_CAPABILITY__
+      masm.Push(tmp, padregc);
+#else   // !__CHERI_PURE_CAPABILITY__
       masm.Push(tmp, padreg);
+#endif  // __CHERI_PURE_CAPABILITY__
 #else
       masm.Push(ReadOnlyRoots(heap).undefined_value_handle());
 #endif
