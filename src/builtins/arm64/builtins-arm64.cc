@@ -3169,6 +3169,9 @@ void Builtins::Generate_CallOrConstructVarargs(MacroAssembler* masm,
     __ Csel(scratch, scratch, undefined_value, ne);
     __ Str(scratch, MemOperand(dst, kSystemPointerSize, PostIndex));
     __ Cbnz(len, &loop);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Mov(c9, dst);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
   __ Bind(&done);
   // Tail-call to the actual Call or Construct builtin.
