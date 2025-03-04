@@ -2631,7 +2631,11 @@ void MacroAssembler::CallRuntime(const Runtime::Function* f,
 void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
                                              bool builtin_exit_frame) {
   ASM_CODE_COMMENT(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Mov(c1, builtin);
+#else   // !__CHERI_PURE_CAPABILITY__
   Mov(x1, builtin);
+#endif  // __CHERI_PURE_CAPABILITY__
   Handle<Code> code =
       CodeFactory::CEntry(isolate(), 1, ArgvMode::kStack, builtin_exit_frame);
   Jump(code, RelocInfo::CODE_TARGET);
