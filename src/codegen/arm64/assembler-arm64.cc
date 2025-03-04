@@ -1610,6 +1610,7 @@ void Assembler::ldr_pcrel(const CPURegister& rt, int imm19) {
   // constant pool. It should not be emitted.
   DCHECK(!rt.IsZero());
 #ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(!rt.IsX());
   // On CHERI systems, when we load a pcrel literal into a capability register,
   // we are actually dealing with an imm17 rather than an imm19.
   if (rt.IsC())
