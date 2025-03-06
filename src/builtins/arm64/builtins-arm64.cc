@@ -3125,8 +3125,8 @@ void Builtins::Generate_CallOrConstructVarargs(MacroAssembler* masm,
   __ StackOverflowCheck(len, &stack_overflow);
 
   // Skip argument setup if we don't need to push any varargs.
-  Label done;
-  __ Cbz(len, &done);
+  Label done, set_zero;
+  __ Cbz(len, &set_zero);
 
   Generate_PrepareForCopyingVarargs(masm, argc, len);
 
@@ -3172,7 +3172,11 @@ void Builtins::Generate_CallOrConstructVarargs(MacroAssembler* masm,
 #ifdef __CHERI_PURE_CAPABILITY__
     __ Mov(c9, dst);
 #endif  // __CHERI_PURE_CAPABILITY__
+    __ B(&done);
   }
+  __ Bind(&set_zero);
+  __ Mov(x9, 0);
+
   __ Bind(&done);
   // Tail-call to the actual Call or Construct builtin.
   __ Jump(code, RelocInfo::CODE_TARGET);
