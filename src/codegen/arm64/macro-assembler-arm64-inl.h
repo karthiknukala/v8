@@ -1699,11 +1699,11 @@ void MacroAssembler::Drop(const Register& count, uint64_t unit_size) {
   }
 
   AssertPositiveOrZero(count);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   Add(csp, csp, size);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
   Add(sp, sp, size);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void MacroAssembler::DropArguments(const Register& count,
@@ -1717,11 +1717,11 @@ void MacroAssembler::DropArguments(const Register& count,
   Register tmp = temps.AcquireX();
   Add(tmp, count, extra_slots);
   Bic(tmp, tmp, 1);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   Drop(tmp, kCRegSize);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
   Drop(tmp, kXRegSize);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void MacroAssembler::DropArguments(int64_t count, ArgumentsCountMode mode) {
