@@ -56,7 +56,8 @@ Address CodeRangeAddressHint::GetAddressHint(size_t code_range_size,
       return RoundUp(preferred_region.begin(), alignment);
     }
 #if defined(__CHERI_PURE_CAPABILITY__)
-    return static_cast<ptraddr_t>(RoundUp(FUNCTION_ADDR(&FunctionInStaticBinaryForAddressHint),
+    return static_cast<ptraddr_t>(RoundUp(FUNCTION_ADDR(
+				  &FunctionInStaticBinaryForAddressHint),
                                   alignment));
 #else
     return RoundUp(FUNCTION_ADDR(&FunctionInStaticBinaryForAddressHint),
@@ -73,7 +74,11 @@ Address CodeRangeAddressHint::GetAddressHint(size_t code_range_size,
       if (preferred_region.contains(code_range_start, code_range_size)) {
         CHECK(IsAligned(code_range_start, alignment));
         freed_regions_for_size.erase((it_freed + 1).base());
+#if defined(__CHERI_PURE_CAPABILITY__)
+        return static_cast<ptraddr_t>(code_range_start);
+#else
         return code_range_start;
+#endif
       }
     }
   }
@@ -81,7 +86,11 @@ Address CodeRangeAddressHint::GetAddressHint(size_t code_range_size,
   result = it->second.back();
   CHECK(IsAligned(result, alignment));
   it->second.pop_back();
+#if defined(__CHERI_PURE_CAPABILITY__)
+  return static_cast<ptraddr_t>(result);
+#else
   return result;
+#endif
 }
 
 void CodeRangeAddressHint::NotifyFreedCodeRange(Address code_range_start,
