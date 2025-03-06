@@ -56,9 +56,8 @@ Address CodeRangeAddressHint::GetAddressHint(size_t code_range_size,
       return RoundUp(preferred_region.begin(), alignment);
     }
 #if defined(__CHERI_PURE_CAPABILITY__)
-    return static_cast<ptraddr_t>(RoundUp(FUNCTION_ADDR(
-				  &FunctionInStaticBinaryForAddressHint),
-                                  alignment));
+    return static_cast<ptraddr_t>(RoundUp(
+        FUNCTION_ADDR(&FunctionInStaticBinaryForAddressHint), alignment));
 #else
     return RoundUp(FUNCTION_ADDR(&FunctionInStaticBinaryForAddressHint),
                    alignment);
