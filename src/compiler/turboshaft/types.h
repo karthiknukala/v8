@@ -283,14 +283,24 @@ class V8_EXPORT_PRIVATE Type {
 
  private:
   // Access through get_payload<>().
-  uint64_t payload_[2];  // Type specific data
+  // Type specific data
+#ifdef __CHERI_PURE_CAPABILITY__
+  // XXX(ds815): Verify that this is fine in every case.
+  alignas(uintptr_t) uint64_t payload_[2];
+#else   // !__CHERI_PURE_CAPABILITY__
+  uint64_t payload_[2];
+#endif  // __CHERI_PURE_CAPABILITY__
 
   friend struct fast_hash<Type>;
   explicit Type(Kind kind) : Type(kind, 0, 0, 0, 0, detail::Payload_Empty{}) {
     DCHECK(kind == Kind::kInvalid || kind == Kind::kNone || kind == Kind::kAny);
   }
 };
+#ifdef __CHERI_PURE_CAPABILITY__
+static_assert(sizeof(Type) == 32);
+#else   // !__CHERI_PURE_CAPABILITY__
 static_assert(sizeof(Type) == 24);
+#endif  // __CHERI_PURE_CAPABILITY__
 
 template <size_t Bits>
 class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) WordType : public Type {
