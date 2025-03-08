@@ -478,13 +478,17 @@ INTERNAL_DECLARE_SET_TRACE_VALUE(const TraceStringWithCopy&,
 #undef INTERNAL_DECLARE_SET_TRACE_VALUE
 
 static V8_INLINE void SetTraceValue(ConvertableToTraceFormat* convertable_value,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
                                     unsigned char* type, uintptr_t* value) {
 #else   // !__CHERI_PURE_CAPABILITY__
                                     unsigned char* type, uint64_t* value) {
 #endif  // !__CHERI_PURE_CAPABILITY__
   *type = TRACE_VALUE_TYPE_CONVERTABLE;
+#ifdef __CHERI_PURE_CAPABILITY__
+  *value = reinterpret_cast<uintptr_t>(convertable_value);
+#else   // !__CHERI_PURE_CAPABILITY__
   *value = static_cast<uint64_t>(reinterpret_cast<intptr_t>(convertable_value));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 template <typename T>
