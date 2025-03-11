@@ -1103,6 +1103,9 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void Movi(const VRegister& vd, uint64_t hi, uint64_t lo);
 
   void LoadFromConstantsTable(Register destination, int constant_index) final;
+#ifdef __CHERI_PURE_CAPABILITY__
+  void PrepareMemoryArguments() final;
+#endif  // __CHERI_PURE_CAPABILITY__
   void LoadRootRegisterOffset(Register destination, ScaledInt offset) final;
   void LoadRootRelative(Register destination, int32_t offset) final;
 

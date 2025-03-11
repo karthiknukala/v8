@@ -28,6 +28,7 @@ namespace internal {
 void Builtins::Generate_RegExpInterpreterTrampoline(MacroAssembler* masm) {
   ExternalReference interpreter_code_entry =
       ExternalReference::re_match_for_call_from_js();
+  masm->PrepareMemoryArguments();
   masm->Jump(interpreter_code_entry);
 }
 
@@ -36,6 +37,7 @@ void Builtins::Generate_RegExpInterpreterTrampoline(MacroAssembler* masm) {
 void Builtins::Generate_RegExpExperimentalTrampoline(MacroAssembler* masm) {
   ExternalReference interpreter_code_entry =
       ExternalReference::re_experimental_match_for_call_from_js();
+  masm->PrepareMemoryArguments();
   masm->Jump(interpreter_code_entry);
 }
 

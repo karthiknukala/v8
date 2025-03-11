@@ -2799,6 +2799,10 @@ void MacroAssembler::LoadRootRelative(Register destination, int32_t offset) {
   Ldr(destination, MemOperand(kRootRegister, offset));
 }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+void MacroAssembler::PrepareMemoryArguments() { Mov(c9, csp); }
+#endif  // __CHERI_PURE_CAPABILITY__
+
 void MacroAssembler::LoadRootRegisterOffset(Register destination,
                                             ScaledInt offset) {
 #ifdef __CHERI_PURE_CAPABILITY__
