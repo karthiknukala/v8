@@ -32,6 +32,13 @@ void EvacuationVerifier::VerifyPointersImpl(TSlot start, TSlot end) {
   for (TSlot current = start; current < end; ++current) {
     typename TSlot::TObject object = current.load(cage_base());
     HeapObject heap_object;
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (!V8_CHERI_TAG_GET(object.ptr()) &&
+        (object.ptr() & kZapValue) == object.ptr()) {
+      continue;
+    }
+    DCHECK_IMPLIES(!object.IsSmi(), V8_CHERI_TAG_GET(object.ptr()));
+#endif  // __CHERI_PURE_CAPABILITY__
     if (object.GetHeapObjectIfStrong(&heap_object)) {
       VerifyHeapObjectImpl(heap_object);
     }

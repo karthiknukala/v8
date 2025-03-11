@@ -90,6 +90,13 @@ MarkingVisitorBase<ConcreteVisitor, MarkingState>::VisitPointersImpl(
     typename TSlot::TObject object =
         slot.Relaxed_Load(ObjectVisitorWithCageBases::cage_base());
     HeapObject heap_object;
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (!V8_CHERI_TAG_GET(object.ptr()) &&
+        (object.ptr() & kZapValue) == object.ptr()) {
+      continue;
+    }
+    DCHECK_IMPLIES(!object.IsSmi(), V8_CHERI_TAG_GET(object.ptr()));
+#endif  // __CHERI_PURE_CAPABILITY__
     if (object.GetHeapObjectIfStrong(&heap_object)) {
       // If the reference changes concurrently from strong to weak, the write
       // barrier will treat the weak reference as strong, so we won't miss the

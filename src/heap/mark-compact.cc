@@ -304,6 +304,13 @@ class FullMarkingVerifier : public MarkingVerifier {
     for (TSlot slot = start; slot < end; ++slot) {
       typename TSlot::TObject object = slot.load(cage_base());
       HeapObject heap_object;
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (!V8_CHERI_TAG_GET(object.ptr()) &&
+          (object.ptr() & kZapValue) == object.ptr()) {
+        continue;
+      }
+      DCHECK_IMPLIES(!object.IsSmi(), V8_CHERI_TAG_GET(object.ptr()));
+#endif  // __CHERI_PURE_CAPABILITY__
       if (object.GetHeapObjectIfStrong(&heap_object)) {
         VerifyHeapObjectImpl(heap_object);
       }
@@ -1368,9 +1375,16 @@ class RecordMigratedSlotVisitor : public ObjectVisitorWithCageBases {
         ephemeron_remembered_set_(ephemeron_remembered_set) {}
 
   inline void VisitPointer(HeapObject host, ObjectSlot p) final {
-    DCHECK(!HasWeakHeapObjectTag(p.load(cage_base())));
-    RecordMigratedSlot(host, MaybeObject::FromObject(p.load(cage_base())),
-                       p.address());
+    Object object = p.load(cage_base());
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (!V8_CHERI_TAG_GET(object.ptr()) &&
+        (object.ptr() & kZapValue) == object.ptr()) {
+      return;
+    }
+    DCHECK_IMPLIES(!object.IsSmi(), V8_CHERI_TAG_GET(object.ptr()));
+#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK(!HasWeakHeapObjectTag(object));
+    RecordMigratedSlot(host, MaybeObject::FromObject(object), p.address());
   }
 
   inline void VisitMapPointer(HeapObject host) final {
