@@ -2801,6 +2801,9 @@ void MacroAssembler::LoadRootRelative(Register destination, int32_t offset) {
 
 void MacroAssembler::LoadRootRegisterOffset(Register destination,
                                             ScaledInt offset) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(destination.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   if (offset == 0) {
     Mov(destination, kRootRegister);
   } else {
