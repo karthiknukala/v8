@@ -2993,18 +2993,16 @@ void MacroAssembler::LoadEntryFromBuiltinIndex(Register builtin_index,
   ASM_CODE_COMMENT(this);
   // The builtin_index register contains the builtin index as a Smi.
   if (SmiValuesAre32Bits()) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(target.IsC());
     Asr(target.X(), builtin_index.X(), kSmiShift - kSystemPointerSizeLog2);
-#else
+    Add(target.X(), target.X(), IsolateData::builtin_entry_table_offset());
+    Ldr(target, MemOperand(kRootRegister, target.X()));
+#else   // !__CHERI_PURE_CAPABILITY__
     Asr(target, builtin_index, kSmiShift - kSystemPointerSizeLog2);
-#endif
     Add(target, target, IsolateData::builtin_entry_table_offset());
-#if defined(__CHERI_PURE_CAPABILITY__)
-    // Ensure Capability load of the builtin into the target register.
-    Ldr(target.C(), MemOperand(kRootRegister, builtin_index));
-#else // defined(__CHERI_PURE_CAPABILITY__)
-    Ldr(target, MemOperand(kRootRegister, builtin_index));
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+    Ldr(target, MemOperand(kRootRegister, target));
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     DCHECK(SmiValuesAre31Bits());
     if (COMPRESS_POINTERS_BOOL) {
