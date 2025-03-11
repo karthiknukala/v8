@@ -58,7 +58,11 @@ void TraceObject::Initialize(
   num_args_ = (num_args > kTraceMaxNumArgs) ? kTraceMaxNumArgs : num_args;
   for (int i = 0; i < num_args_; ++i) {
     arg_names_[i] = arg_names[i];
+#ifdef __CHERI_PURE_CAPABILITY__
+    arg_values_[i].as_pointer = reinterpret_cast<void*>(arg_values[i]);
+#else   // !__CHERI_PURE_CAPABILITY__
     arg_values_[i].as_uint = arg_values[i];
+#endif  // __CHERI_PURE_CAPABILITY__
     arg_types_[i] = arg_types[i];
     if (arg_types[i] == TRACE_VALUE_TYPE_CONVERTABLE)
       arg_convertables_[i] = std::move(arg_convertables[i]);
