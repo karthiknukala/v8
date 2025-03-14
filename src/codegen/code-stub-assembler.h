@@ -352,6 +352,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   using AllocationFlags = base::Flags<AllocationFlag>;
 
+  template <class T>
+  TNode<T>& MarkNodeAsCapability(TNode<T> node) {
+    return node.MarkAsCapability();
+  }
+
   TNode<IntPtrT> ParameterToIntPtr(TNode<Smi> value) { return SmiUntag(value); }
   TNode<IntPtrT> ParameterToIntPtr(TNode<IntPtrT> value) { return value; }
   TNode<IntPtrT> ParameterToIntPtr(TNode<UintPtrT> value) {
@@ -1343,11 +1348,33 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       return ReinterpretCast<T>(map);
     }
 
-    TNode<IntPtrT> offset =
-        IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
-    CSA_DCHECK(this, TaggedIsNotSmi(reference.object));
-    return CAST(
-        LoadFromObject(MachineTypeOf<T>::value, reference.object, offset));
+    Label offset_is_tagged(this), end(this);
+
+    TVARIABLE(T, result);
+    GotoIf(CapabilityIsTagged(reference.offset), &offset_is_tagged);
+    {
+      CSA_DCHECK(
+          this, CapabilityIsTagged(ReinterpretCast<RawPtrT>(reference.object)));
+      TNode<IntPtrT> offset =
+          IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
+      CSA_DCHECK(this, TaggedIsNotSmi(reference.object));
+      result = CAST(
+          LoadFromObject(MachineTypeOf<T>::value, reference.object, offset));
+      Goto(&end);
+    }
+
+    BIND(&offset_is_tagged);
+    {
+      TNode<IntPtrT> offset = IntPtrSub(reference.offset.MarkAsCapability(),
+                                        IntPtrConstant(kHeapObjectTag));
+      result = CAST(LoadFromObject(MachineTypeOf<T>::value,
+                                   ReinterpretCast<Object>(offset),
+                                   ReinterpretCast<IntPtrT>(reference.object)));
+      Goto(&end);
+    }
+
+    BIND(&end);
+    return result.value();
   }
   template <class T,
             typename std::enable_if<
@@ -1356,10 +1383,31 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                 int>::type = 0>
   TNode<T> LoadReference(Reference reference) {
     DCHECK(!IsMapOffsetConstant(reference.offset));
-    TNode<IntPtrT> offset =
-        IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
-    return UncheckedCast<T>(
-        LoadFromObject(MachineTypeOf<T>::value, reference.object, offset));
+    TVARIABLE(T, result);
+    Label offset_is_tagged(this), end(this);
+    GotoIf(CapabilityIsTagged(reference.offset), &offset_is_tagged);
+    {
+      CSA_DCHECK(
+          this, CapabilityIsTagged(ReinterpretCast<RawPtrT>(reference.object)));
+      TNode<IntPtrT> offset =
+          IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
+      result = UncheckedCast<T>(
+          LoadFromObject(MachineTypeOf<T>::value, reference.object, offset));
+      Goto(&end);
+    }
+
+    BIND(&offset_is_tagged);
+    {
+      TNode<IntPtrT> offset = IntPtrSub(reference.offset.MarkAsCapability(),
+                                        IntPtrConstant(kHeapObjectTag));
+      result = UncheckedCast<T>(LoadFromObject(
+          MachineTypeOf<T>::value, ReinterpretCast<Object>(offset),
+          ReinterpretCast<IntPtrT>(reference.object)));
+      Goto(&end);
+    }
+
+    BIND(&end);
+    return result.value();
   }
   template <class T, typename std::enable_if<
                          std::is_convertible<TNode<T>, TNode<Object>>::value ||
@@ -1380,10 +1428,30 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     } else if (std::is_same<T, Map>::value) {
       write_barrier = StoreToObjectWriteBarrier::kMap;
     }
-    TNode<IntPtrT> offset =
-        IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
-    CSA_DCHECK(this, TaggedIsNotSmi(reference.object));
-    StoreToObject(rep, reference.object, offset, value, write_barrier);
+
+    Label offset_is_tagged(this), end(this);
+    GotoIf(CapabilityIsTagged(reference.offset), &offset_is_tagged);
+    {
+      CSA_DCHECK(
+          this, CapabilityIsTagged(ReinterpretCast<RawPtrT>(reference.object)));
+      TNode<IntPtrT> offset =
+          IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
+      CSA_DCHECK(this, TaggedIsNotSmi(reference.object));
+      StoreToObject(rep, reference.object, offset, value, write_barrier);
+      Goto(&end);
+    }
+
+    BIND(&offset_is_tagged);
+    {
+      TNode<IntPtrT> offset = IntPtrSub(reference.offset.MarkAsCapability(),
+                                        IntPtrConstant(kHeapObjectTag));
+      StoreToObject(rep, ReinterpretCast<Object>(offset),
+                    ReinterpretCast<IntPtrT>(reference.object), value,
+                    write_barrier);
+      Goto(&end);
+    }
+
+    BIND(&end);
   }
   template <class T, typename std::enable_if<
                          std::is_convertible<TNode<T>, TNode<UntaggedT>>::value,
@@ -1393,10 +1461,30 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(reference.object.IsCapability());
 #endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
-    TNode<IntPtrT> offset =
-        IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
-    StoreToObject(MachineRepresentationOf<T>::value, reference.object, offset,
-                  value, StoreToObjectWriteBarrier::kNone);
+    Label offset_is_tagged(this), end(this);
+    GotoIf(CapabilityIsTagged(reference.offset), &offset_is_tagged);
+    {
+      CSA_DCHECK(
+          this, CapabilityIsTagged(ReinterpretCast<RawPtrT>(reference.object)));
+      TNode<IntPtrT> offset =
+          IntPtrSub(reference.offset, IntPtrConstant(kHeapObjectTag));
+      StoreToObject(MachineRepresentationOf<T>::value, reference.object, offset,
+                    value, StoreToObjectWriteBarrier::kNone);
+      Goto(&end);
+    }
+
+    BIND(&offset_is_tagged);
+    {
+      TNode<IntPtrT> offset = IntPtrSub(reference.offset.MarkAsCapability(),
+                                        IntPtrConstant(kHeapObjectTag));
+      StoreToObject(MachineRepresentationOf<T>::value,
+                    ReinterpretCast<Object>(offset),
+                    ReinterpretCast<IntPtrT>(reference.object), value,
+                    StoreToObjectWriteBarrier::kNone);
+      Goto(&end);
+    }
+
+    BIND(&end);
   }
 
   TNode<RawPtrT> GCUnsafeReferenceToRawPtr(TNode<Object> object,

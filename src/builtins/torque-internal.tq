@@ -11,7 +11,8 @@ macro Subslice<T: type>(slice: ConstSlice<T>, start: intptr, length: intptr):
     ConstSlice<T>labels OutOfBounds {
   if (Unsigned(length) > Unsigned(slice.length)) goto OutOfBounds;
   if (Unsigned(start) > Unsigned(slice.length - length)) goto OutOfBounds;
-  const offset = slice.offset + torque_internal::TimesSizeOf<T>(start);
+  const offset = MarkNodeAsCapability(slice.offset) + torque_internal::TimesSizeOf<T>(start);
+  dcheck(CapabilityIsTagged(offset) == CapabilityIsTagged(slice.offset));
   return torque_internal::unsafe::NewConstSlice<T>(
       slice.object, offset, length);
 }
@@ -125,10 +126,10 @@ struct Slice<T: type, Reference: type> {
   }
 
   macro Iterator(): SliceIterator<T, Reference> {
-    const end = this.offset + TimesSizeOf<T>(this.length);
+    const end = MarkNodeAsCapability(this.offset) + TimesSizeOf<T>(this.length);
     return SliceIterator<T, Reference>{
       object: this.object,
-      start: this.offset,
+      start: MarkNodeAsCapability(this.offset),
       end: end,
       unsafeMarker: Unsafe {}
     };
@@ -138,8 +139,8 @@ struct Slice<T: type, Reference: type> {
     check(
         Convert<uintptr>(endIndex) <= Convert<uintptr>(this.length) &&
         Convert<uintptr>(startIndex) <= Convert<uintptr>(endIndex));
-    const start = this.offset + TimesSizeOf<T>(startIndex);
-    const end = this.offset + TimesSizeOf<T>(endIndex);
+    const start = MarkNodeAsCapability(this.offset) + TimesSizeOf<T>(startIndex);
+    const end = MarkNodeAsCapability(this.offset) + TimesSizeOf<T>(endIndex);
     return SliceIterator<T, Reference>{
       object: this.object,
       start,
@@ -213,15 +214,19 @@ struct SliceIterator<T: type, Reference: type> {
     if (this.Empty()) {
       goto NoMore;
     } else {
+      const old = this.start;
+      this.start = MarkNodeAsCapability(this.start);
       const result = unsafe::NewReference<T>(this.object, this.start);
       this.start += %SizeOf<T>();
+      dcheck(CapabilityIsTagged(old) == CapabilityIsTagged(this.start));
+      dcheck(CapabilityIsTagged(old) == CapabilityIsTagged(result.offset));
       return result;
     }
   }
 
   macro NextReferenceNotEmpty(): Reference {
     dcheck(!this.Empty());
-    const result = unsafe::NewReference<T>(this.object, this.start);
+    const result = unsafe::NewReference<T>(this.object, MarkNodeAsCapability(this.start));
     this.start += %SizeOf<T>();
     return result;
   }

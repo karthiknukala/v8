@@ -637,6 +637,10 @@ extern macro CapabilityIsTagged(RawPtr): bool;
 extern macro CapabilityIsTagged(intptr): bool;
 extern macro CapabilityIsTagged(uintptr): bool;
 
+extern macro MarkNodeAsCapability(RawPtr): RawPtr;
+extern macro MarkNodeAsCapability(intptr): intptr;
+extern macro MarkNodeAsCapability(uintptr): uintptr;
+
 // ES6 7.1.4 ToInteger ( argument )
 transitioning macro ToIntegerImpl(implicit context: Context)(input: JSAny):
     Number {
