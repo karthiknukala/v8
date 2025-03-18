@@ -109,7 +109,7 @@ void MacroAssembler::Orr(const Register& rd, const Register& rn,
                          const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   if (rn.IsC()) {
     DCHECK(rd.IsC());
     if (AreAliased(rn, rd) || rd.IsSP()) {
