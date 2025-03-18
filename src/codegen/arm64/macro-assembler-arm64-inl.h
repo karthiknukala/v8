@@ -367,7 +367,14 @@ void MacroAssembler::Subs(const Register& rd, const Register& rn,
 
 void MacroAssembler::Cmn(const Register& rn, const Operand& operand) {
   DCHECK(allow_macro_instructions());
-  Adds(AppropriateZeroRegFor(rn), rn, operand);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  Adds(AppropriateZeroRegFor(rn), integer_rn, integer_operand);
 }
 
 void MacroAssembler::Cmp(const Register& rn, const Operand& operand) {
