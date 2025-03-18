@@ -3947,20 +3947,25 @@ void MacroAssembler::LoadGlobalProxy(Register dst) {
 void MacroAssembler::LoadWeakValue(Register out, Register in,
                                    Label* target_if_cleared) {
   ASM_CODE_COMMENT(this);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   if (out.IsC()) {
     DCHECK(in.IsC());
-    UseScratchRegisterScope temps(this);
 
     CompareAndBranch(in.W(), Operand(kClearedWeakHeapObjectLower32), eq,
                      target_if_cleared);
 
-    Register temp_out = temps.AcquireX();
-    and_(temp_out, in.X(), Operand(~kWeakHeapObjectMask));
-    Scvalue(out, out, temp_out);
+    if (AreAliased(out, in) || out.IsSP()) {
+      UseScratchRegisterScope temps(this);
+      Register temp_out = temps.AcquireX();
+      and_(temp_out, in.X(), Operand(~kWeakHeapObjectMask));
+      Scvalue(out, in, temp_out);
+    } else {
+      and_(out.X(), in.X(), Operand(~kWeakHeapObjectMask));
+      Scvalue(out, in, out.X());
+    }
     return;
   }
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 
   CompareAndBranch(in.W(), Operand(kClearedWeakHeapObjectLower32), eq,
                    target_if_cleared);
