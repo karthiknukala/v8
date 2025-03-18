@@ -4285,6 +4285,11 @@ void Assembler::AddSubWithCarry(const Register& rd, const Register& rn,
                                 AddSubWithCarryOp op) {
   DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
   DCHECK_EQ(rd.SizeInBits(), operand.reg().SizeInBits());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(!rd.IsC());
+  DCHECK(!rn.IsC());
+  DCHECK(!operand.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK(operand.IsShiftedRegister() && (operand.shift_amount() == 0));
   DCHECK(!operand.NeedsRelocation(this));
   Emit(SF(rd) | op | Flags(S) | Rm(operand.reg()) | Rn(rn) | Rd(rd));

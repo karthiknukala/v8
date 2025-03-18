@@ -417,28 +417,66 @@ void MacroAssembler::Adc(const Register& rd, const Register& rn,
                          const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
-  AddSubWithCarryMacro(rd, rn, operand, LeaveFlags, ADC);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd.IsC() ? rd.X() : rd;
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd;
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  AddSubWithCarryMacro(integer_rd, integer_rn, integer_operand, LeaveFlags,
+                       ADC);
 }
 
 void MacroAssembler::Adcs(const Register& rd, const Register& rn,
                           const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
-  AddSubWithCarryMacro(rd, rn, operand, SetFlags, ADC);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd.IsC() ? rd.X() : rd;
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd;
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  AddSubWithCarryMacro(integer_rd, integer_rn, integer_operand, SetFlags, ADC);
 }
 
 void MacroAssembler::Sbc(const Register& rd, const Register& rn,
                          const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
-  AddSubWithCarryMacro(rd, rn, operand, LeaveFlags, SBC);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd.IsC() ? rd.X() : rd;
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd;
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  AddSubWithCarryMacro(integer_rd, integer_rn, integer_operand, LeaveFlags,
+                       SBC);
 }
 
 void MacroAssembler::Sbcs(const Register& rd, const Register& rn,
                           const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
-  AddSubWithCarryMacro(rd, rn, operand, SetFlags, SBC);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd.IsC() ? rd.X() : rd;
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd;
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  AddSubWithCarryMacro(integer_rd, integer_rn, integer_operand, SetFlags, SBC);
 }
 
 void MacroAssembler::Ngc(const Register& rd, const Operand& operand) {
