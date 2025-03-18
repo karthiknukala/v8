@@ -163,10 +163,18 @@ void MacroAssembler::Eon(const Register& rd, const Register& rn,
 void MacroAssembler::Ccmp(const Register& rn, const Operand& operand,
                           StatusFlags nzcv, Condition cond) {
   DCHECK(allow_macro_instructions());
-  if (operand.IsImmediate() && (operand.ImmediateValue() < 0)) {
-    ConditionalCompareMacro(rn, -operand.ImmediateValue(), nzcv, cond, CCMN);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // __CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  if (integer_operand.IsImmediate() && (integer_operand.ImmediateValue() < 0)) {
+    ConditionalCompareMacro(integer_rn, -integer_operand.ImmediateValue(), nzcv,
+                            cond, CCMN);
   } else {
-    ConditionalCompareMacro(rn, operand, nzcv, cond, CCMP);
+    ConditionalCompareMacro(integer_rn, integer_operand, nzcv, cond, CCMP);
   }
 }
 
@@ -182,10 +190,18 @@ void MacroAssembler::CcmpTagged(const Register& rn, const Operand& operand,
 void MacroAssembler::Ccmn(const Register& rn, const Operand& operand,
                           StatusFlags nzcv, Condition cond) {
   DCHECK(allow_macro_instructions());
-  if (operand.IsImmediate() && (operand.ImmediateValue() < 0)) {
-    ConditionalCompareMacro(rn, -operand.ImmediateValue(), nzcv, cond, CCMP);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // __CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  if (integer_operand.IsImmediate() && (integer_operand.ImmediateValue() < 0)) {
+    ConditionalCompareMacro(integer_rn, -integer_operand.ImmediateValue(), nzcv,
+                            cond, CCMP);
   } else {
-    ConditionalCompareMacro(rn, operand, nzcv, cond, CCMN);
+    ConditionalCompareMacro(integer_rn, integer_operand, nzcv, cond, CCMN);
   }
 }
 

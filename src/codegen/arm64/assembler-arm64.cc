@@ -4396,6 +4396,10 @@ void Assembler::ConditionalCompare(const Register& rn, const Operand& operand,
                                    StatusFlags nzcv, Condition cond,
                                    ConditionalCompareOp op) {
   Instr ccmpop;
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(!rn.IsC());
+  DCHECK(!operand.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK(!operand.NeedsRelocation(this));
   if (operand.IsImmediate()) {
     int64_t immediate = operand.ImmediateValue();
