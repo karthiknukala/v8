@@ -349,11 +349,21 @@ void MacroAssembler::Sub(const Register& rd, const Register& rn,
 void MacroAssembler::Subs(const Register& rd, const Register& rn,
                           const Operand& operand) {
   DCHECK(allow_macro_instructions());
-  if (operand.IsImmediate() && (operand.ImmediateValue() < 0) &&
-      IsImmAddSub(-operand.ImmediateValue())) {
-    AddSubMacro(rd, rn, -operand.ImmediateValue(), SetFlags, ADD);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd.IsC() ? rd.X() : rd;
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd;
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  if (integer_operand.IsImmediate() && (integer_operand.ImmediateValue() < 0) &&
+      IsImmAddSub(-integer_operand.ImmediateValue())) {
+    AddSubMacro(integer_rd, integer_rn, -integer_operand.ImmediateValue(),
+                SetFlags, ADD);
   } else {
-    AddSubMacro(rd, rn, operand, SetFlags, SUB);
+    AddSubMacro(integer_rd, integer_rn, integer_operand, SetFlags, SUB);
   }
 }
 
@@ -364,19 +374,6 @@ void MacroAssembler::Cmn(const Register& rn, const Operand& operand) {
 
 void MacroAssembler::Cmp(const Register& rn, const Operand& operand) {
   DCHECK(allow_macro_instructions());
-#if defined(__CHERI_PURE_CAPABILITY__)
-  if (rn.IsC()) {
-    if (operand.IsImmediate() || !operand.reg().IsC() ||
-        operand.IsShiftedRegister()) {
-      Subs(xzr, rn.X(), operand.ToX());
-      return;
-    } else {
-      DCHECK(operand.IsExtendedRegister());
-      Subs(xzr, rn.X(), operand.ToX());
-    }
-    return;
-  }
-#endif // __CHERI_PURE_CAPABILITY__
   Subs(AppropriateZeroRegFor(rn), rn, operand);
 }
 
