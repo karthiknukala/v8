@@ -417,10 +417,17 @@ void MacroAssembler::CmpTagged(const Register& rn, const Operand& operand) {
 void MacroAssembler::Neg(const Register& rd, const Operand& operand) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
-  if (operand.IsImmediate()) {
-    Mov(rd, -operand.ImmediateValue());
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd.IsC() ? rd.X() : rd;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rd = rd;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  if (integer_operand.IsImmediate()) {
+    Mov(integer_rd, -integer_operand.ImmediateValue());
   } else {
-    Sub(rd, AppropriateZeroRegFor(rd), operand);
+    Sub(integer_rd, AppropriateZeroRegFor(integer_rd), integer_operand);
   }
 }
 
