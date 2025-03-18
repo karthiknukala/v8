@@ -1305,11 +1305,16 @@ void MacroAssembler::Tbnz(const Register& rt, unsigned bit_pos, Label* label) {
   bool need_extra_instructions =
       NeedExtraInstructionsOrRegisterBranch(label, TestBranchType);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt.IsC() ? rt.X() : rt;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt;
+#endif  // __CHERI_PURE_CAPABILITY__
   if (need_extra_instructions) {
-    tbz(rt, bit_pos, &done);
+    tbz(integer_rt, bit_pos, &done);
     B(label);
   } else {
-    tbnz(rt, bit_pos, label);
+    tbnz(integer_rt, bit_pos, label);
   }
   bind(&done);
 }
@@ -1321,28 +1326,16 @@ void MacroAssembler::Tbz(const Register& rt, unsigned bit_pos, Label* label) {
   bool need_extra_instructions =
       NeedExtraInstructionsOrRegisterBranch(label, TestBranchType);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt.IsC() ? rt.X() : rt;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt;
+#endif  // __CHERI_PURE_CAPABILITY__
   if (need_extra_instructions) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-    if (rt.IsC()) {
-      tbz(rt.X(), bit_pos, label);
-    } else {
-      tbnz(rt, bit_pos, &done);
-      B(label);
-    }
-#else   // !__CHERI_PURE_CAPABILITY__
-    tbnz(rt, bit_pos, &done);
+    tbnz(integer_rt, bit_pos, &done);
     B(label);
-#endif  // __CHERI_PURE_CAPABILITY__
   } else {
-#if defined(__CHERI_PURE_CAPABILITY__)
-    if (rt.IsC()) {
-      tbz(rt.X(), bit_pos, label);
-    } else {
-      tbz(rt, bit_pos, label);
-    }
-#else   // !__CHERI_PURE_CAPABILITY__
-    tbz(rt, bit_pos, label);
-#endif  // __CHERI_PURE_CAPABILITY__
+    tbz(integer_rt, bit_pos, label);
   }
   bind(&done);
 }
