@@ -1354,11 +1354,16 @@ void MacroAssembler::Cbnz(const Register& rt, Label* label) {
   bool need_extra_instructions =
       NeedExtraInstructionsOrRegisterBranch(label, CompareBranchType);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt.IsC() ? rt.X() : rt;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt;
+#endif  // __CHERI_PURE_CAPABILITY__
   if (need_extra_instructions) {
-    cbz(rt, &done);
+    cbz(integer_rt, &done);
     B(label);
   } else {
-    cbnz(rt, label);
+    cbnz(integer_rt, label);
   }
   bind(&done);
 }
@@ -1370,11 +1375,16 @@ void MacroAssembler::Cbz(const Register& rt, Label* label) {
   bool need_extra_instructions =
       NeedExtraInstructionsOrRegisterBranch(label, CompareBranchType);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt.IsC() ? rt.X() : rt;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rt = rt;
+#endif  // __CHERI_PURE_CAPABILITY__
   if (need_extra_instructions) {
-    cbnz(rt, &done);
+    cbnz(integer_rt, &done);
     B(label);
   } else {
-    cbz(rt, label);
+    cbz(integer_rt, label);
   }
   bind(&done);
 }
