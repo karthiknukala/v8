@@ -3331,7 +3331,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
       Label convert_to_object, convert_receiver;
 #if defined(__CHERI_PURE_CAPABILITY__)
       __ Peek(c3, __ ReceiverOperand(x0));
-      __ JumpIfSmi(c3, &convert_to_object);
+      __ JumpIfSmi(x3, &convert_to_object);
       __ JumpIfJSAnyIsNotPrimitive(c3, c4, &done_convert);
 #else // defined(__CHERI_PURE_CAPABILITY__)
       __ Peek(x3, __ ReceiverOperand(x0));
