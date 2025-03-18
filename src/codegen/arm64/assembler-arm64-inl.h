@@ -418,6 +418,14 @@ Operand Operand::ToC() const {
   DCHECK(IsImmediate());
   return *this;
 }
+
+bool Operand::IsC() const {
+  if (IsShiftedRegister() || IsExtendedRegister()) {
+    return reg_.IsC();
+  }
+  DCHECK(IsImmediate());
+  return false;
+}
 #endif  // __CHERI_PURE_CAPABILITY__
 
 Immediate Operand::immediate_for_heap_number_request() const {

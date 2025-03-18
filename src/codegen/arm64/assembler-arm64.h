@@ -117,6 +117,7 @@ class Operand {
   inline Operand ToX() const;
 #ifdef __CHERI_PURE_CAPABILITY__
   inline Operand ToC() const;
+  inline bool IsC() const;
 #endif  // __CHERI_PURE_CAPABILITY__
 
   inline Immediate immediate() const;
