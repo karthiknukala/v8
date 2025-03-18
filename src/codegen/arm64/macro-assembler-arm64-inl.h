@@ -70,17 +70,15 @@ void MacroAssembler::Ands(const Register& rd, const Register& rn,
 
 void MacroAssembler::Tst(const Register& rn, const Operand& operand) {
   DCHECK(allow_macro_instructions());
-#if defined(__CHERI_PURE_CAPABILITY__)
-  if (rn.IsC() && !operand.IsImmediate() && operand.reg().IsC()) {
-    LogicalMacro(AppropriateZeroRegFor(rn.X()), rn.X(),
-                 Operand(operand.reg().X()), ANDS);
-    return;
-  } else if (rn.IsC()) {
-    LogicalMacro(AppropriateZeroRegFor(rn.X()), rn.X(), operand, ANDS);
-    return;
-  }
-#endif // __CHERI_PURE_CAPABILITY__
-  LogicalMacro(AppropriateZeroRegFor(rn), rn, operand, ANDS);
+#ifdef __CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn.IsC() ? rn.X() : rn;
+  const Operand& integer_operand = operand.IsC() ? operand.ToX() : operand;
+#else   // !__CHERI_PURE_CAPABILITY__
+  const Register& integer_rn = rn;
+  const Operand& integer_operand = operand;
+#endif  // __CHERI_PURE_CAPABILITY__
+  LogicalMacro(AppropriateZeroRegFor(integer_rn), integer_rn, integer_operand,
+               ANDS);
 }
 
 void MacroAssembler::Bic(const Register& rd, const Register& rn,
