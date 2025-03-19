@@ -520,6 +520,9 @@ void TypedArrayBuiltinsAssembler::StoreJSTypedArrayElementFromPreparedValue(
           std::is_same<TValue, Float64T>::value ||
           std::is_same<TValue, BigInt>::value,
       "Only Word32T, Float32T, Float64T or BigInt values are allowed");
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(!prepared_value.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
   // ToNumber/ToBigInt (or other functions called by the upper level) may
   // execute JavaScript code, which could detach the TypedArray's buffer or make
   // the TypedArray out of bounds.

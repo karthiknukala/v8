@@ -11611,7 +11611,12 @@ void CodeStubAssembler::StoreElementTypedArrayBigInt(TNode<RawPtrT> elements,
   TVARIABLE(UintPtrT, var_high);
   BigIntToRawBytes(value, &var_low, &var_high);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  MachineRepresentation rep =
+      Is64() ? MachineRepresentation::kWord64 : MachineRepresentation::kWord32;
+#else   // !__CHERI_PURE_CAPABILITY__
   MachineRepresentation rep = WordT::kMachineRepresentation;
+#endif  // __CHERI_PURE_CAPABILITY__
 #if defined(V8_TARGET_BIG_ENDIAN)
     if (!Is64()) {
       StoreNoWriteBarrier(rep, elements, offset, var_high.value());

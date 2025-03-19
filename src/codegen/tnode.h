@@ -267,7 +267,8 @@ struct is_integer {
       std::is_same<Int16T, T>::value || std::is_same<Int8T, T>::value ||
       std::is_same<Uint64T, T>::value || std::is_same<Uint32T, T>::value ||
       std::is_same<Uint16T, T>::value || std::is_same<Uint8T, T>::value ||
-      std::is_same<BoolT, T>::value || std::is_same<Smi, T>::value;
+      std::is_same<BoolT, T>::value || std::is_same<Smi, T>::value ||
+      std::is_same<BigInt, T>::value;
 };
 
 template <class T>

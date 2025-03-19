@@ -522,6 +522,7 @@ static_assert(is_capability<ExternalReference>::value);
 static_assert(is_capability<RawPtrT>::value);
 static_assert(!is_capability<BInt>::value);
 static_assert(!is_capability<HeapObjectReference>::value);
+static_assert(!is_capability<BigInt>::value);
 #else   // !V8_COMPRESS_POINTERS
 static_assert(!is_capability<Smi>::value);
 static_assert(is_capability<Object>::value);
@@ -537,6 +538,7 @@ static_assert(is_capability<ExternalReference>::value);
 static_assert(is_capability<RawPtrT>::value);
 static_assert(!is_capability<BInt>::value);
 static_assert(is_capability<HeapObjectReference>::value);
+static_assert(!is_capability<BigInt>::value);
 #endif  // V8_COMPRESS_POINTERS
 #endif  // __CHERI_PURE_CAPABILITY__
 
