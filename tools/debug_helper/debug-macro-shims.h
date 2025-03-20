@@ -118,6 +118,10 @@ inline intptr_t ConstexprIntegerLiteralToIntptr(d::MemoryAccessor accessor,
                                                 const IntegerLiteral& i) {
   return i.To<intptr_t>();
 }
+inline Value<intptr_t> MarkNodeAsCapability(d::MemoryAccessor accessor,
+                                            intptr_t x) {
+  return {d::MemoryAccessResult::kOk, x};
+}
 
 }  // namespace CodeStubAssembler
 }  // namespace TorqueDebugMacroShims

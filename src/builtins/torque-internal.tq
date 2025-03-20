@@ -65,7 +65,8 @@ namespace unsafe {
 macro NewReference<T: type>(
     object: HeapObject|TaggedZeroPattern, offset: intptr):&T {
   return %RawDownCast<&T>(
-      Reference<T>{object: object, offset: offset, unsafeMarker: Unsafe {}});
+      Reference<T>{object: object, offset: MarkNodeAsCapability(offset),
+                   unsafeMarker: Unsafe {}});
 }
 macro NewOffHeapReference<T: type>(ptr: RawPtr<T>):&T {
   return %RawDownCast<&T>(Reference<T>{
@@ -95,7 +96,7 @@ struct Slice<T: type, Reference: type> {
   }
   macro UncheckedAtIndex(index: intptr): Reference {
     return unsafe::NewReference<T>(
-        this.object, this.offset + TimesSizeOf<T>(index));
+        this.object, MarkNodeAsCapability(this.offset) + TimesSizeOf<T>(index));
   }
 
   macro AtIndex(index: intptr): Reference {

@@ -50,6 +50,7 @@ inline int31_t ConstexprIntegerLiteralToInt31(const IntegerLiteral& i) {
 inline intptr_t ConstexprIntegerLiteralToIntptr(const IntegerLiteral& i) {
   return i.To<intptr_t>();
 }
+inline intptr_t MarkNodeAsCapability(intptr_t x) { return x; }
 
 }  // namespace CodeStubAssembler
 }  // namespace TorqueRuntimeMacroShims
