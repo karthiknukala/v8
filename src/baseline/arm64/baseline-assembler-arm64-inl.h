@@ -430,12 +430,12 @@ void BaselineAssembler::LoadTaggedSignedFieldAndUntag(Register output,
 
 void BaselineAssembler::LoadWord16FieldZeroExtend(Register output,
                                                   Register source, int offset) {
-  __ Ldrh(output, FieldMemOperand(source, offset));
+  __ Ldrh(output.W(), FieldMemOperand(source, offset));
 }
 
 void BaselineAssembler::LoadWord8Field(Register output, Register source,
                                        int offset) {
-  __ Ldrb(output, FieldMemOperand(source, offset));
+  __ Ldrb(output.W(), FieldMemOperand(source, offset));
 }
 
 void BaselineAssembler::StoreTaggedSignedField(Register target, int offset,
