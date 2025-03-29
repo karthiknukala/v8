@@ -604,6 +604,152 @@ void EmitFpOrNeonUnop(MacroAssembler* masm, Fn fn, Instruction* instr,
     }                                                                       \
   } while (0)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ASSEMBLE_ATOMIC_LOAD_INTEGER(asm_instr, reg)                  \
+  do {                                                                \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0), \
+           i.InputRegister(1));                                       \
+    EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset()); \
+    __ asm_instr(i.Output##reg(), i.TempCapabilityRegister(0));       \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_STORE_INTEGER(asm_instr, reg)                 \
+  do {                                                                \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0), \
+           i.InputRegister(1));                                       \
+    EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset()); \
+    __ asm_instr(i.Input##reg(2), i.TempCapabilityRegister(0));       \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(suffix, reg)                   \
+  do {                                                                  \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),   \
+           i.InputRegister(1));                                         \
+    if (CpuFeatures::IsSupported(LSE)) {                                \
+      CpuFeatureScope scope(masm(), LSE);                               \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset()); \
+      __ Swpal##suffix(i.Input##reg(2), i.Output##reg(),                \
+                       MemOperand(i.TempCapabilityRegister(0)));        \
+    } else {                                                            \
+      Label exchange;                                                   \
+      __ Bind(&exchange);                                               \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset()); \
+      __ ldaxr##suffix(i.Output##reg(), i.TempCapabilityRegister(0));   \
+      __ stlxr##suffix(i.TempRegister32(1), i.Input##reg(2),            \
+                       i.TempCapabilityRegister(0));                    \
+      __ Cbnz(i.TempRegister32(1), &exchange);                          \
+    }                                                                   \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(suffix, ext, reg)      \
+  do {                                                                  \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),   \
+           i.InputRegister(1));                                         \
+    if (CpuFeatures::IsSupported(LSE)) {                                \
+      DCHECK_EQ(i.OutputRegister(), i.InputRegister(2));                \
+      CpuFeatureScope scope(masm(), LSE);                               \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset()); \
+      __ Casal##suffix(i.Output##reg(), i.Input##reg(3),                \
+                       MemOperand(i.TempCapabilityRegister(0)));        \
+    } else {                                                            \
+      Label compareExchange;                                            \
+      Label exit;                                                       \
+      __ Bind(&compareExchange);                                        \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset()); \
+      __ ldaxr##suffix(i.Output##reg(), i.TempCapabilityRegister(0));   \
+      __ Cmp(i.Output##reg(), Operand(i.Input##reg(2), ext));           \
+      __ B(ne, &exit);                                                  \
+      __ stlxr##suffix(i.TempRegister32(1), i.Input##reg(3),            \
+                       i.TempCapabilityRegister(0));                    \
+      __ Cbnz(i.TempRegister32(1), &compareExchange);                   \
+      __ Bind(&exit);                                                   \
+    }                                                                   \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_SUB(suffix, reg)                                 \
+  do {                                                                   \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),    \
+           i.InputRegister(1));                                          \
+    if (CpuFeatures::IsSupported(LSE)) {                                 \
+      CpuFeatureScope scope(masm(), LSE);                                \
+      UseScratchRegisterScope temps(masm());                             \
+      Register scratch = temps.AcquireSameSizeAs(i.Input##reg(2));       \
+      __ Neg(scratch, i.Input##reg(2));                                  \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());  \
+      __ Ldaddal##suffix(scratch, i.Output##reg(),                       \
+                         MemOperand(i.TempCapabilityRegister(0)));       \
+    } else {                                                             \
+      Label binop;                                                       \
+      __ Bind(&binop);                                                   \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());  \
+      __ ldaxr##suffix(i.Output##reg(), i.TempCapabilityRegister(0));    \
+      __ Sub(i.Temp##reg(1), i.Output##reg(), Operand(i.Input##reg(2))); \
+      __ stlxr##suffix(i.TempRegister32(2), i.Temp##reg(1),              \
+                       i.TempCapabilityRegister(0));                     \
+      __ Cbnz(i.TempRegister32(2), &binop);                              \
+    }                                                                    \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_AND(suffix, reg)                                 \
+  do {                                                                   \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),    \
+           i.InputRegister(1));                                          \
+    if (CpuFeatures::IsSupported(LSE)) {                                 \
+      CpuFeatureScope scope(masm(), LSE);                                \
+      UseScratchRegisterScope temps(masm());                             \
+      Register scratch = temps.AcquireSameSizeAs(i.Input##reg(2));       \
+      __ Mvn(scratch, i.Input##reg(2));                                  \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());  \
+      __ Ldclral##suffix(scratch, i.Output##reg(),                       \
+                         MemOperand(i.TempCapabilityRegister(0)));       \
+    } else {                                                             \
+      Label binop;                                                       \
+      __ Bind(&binop);                                                   \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());  \
+      __ ldaxr##suffix(i.Output##reg(), i.TempCapabilityRegister(0));    \
+      __ And(i.Temp##reg(1), i.Output##reg(), Operand(i.Input##reg(2))); \
+      __ stlxr##suffix(i.TempRegister32(2), i.Temp##reg(1),              \
+                       i.TempCapabilityRegister(0));                     \
+      __ Cbnz(i.TempRegister32(2), &binop);                              \
+    }                                                                    \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_BINOP(suffix, bin_instr, lse_instr, reg)               \
+  do {                                                                         \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),          \
+           i.InputRegister(1));                                                \
+    if (CpuFeatures::IsSupported(LSE)) {                                       \
+      CpuFeatureScope scope(masm(), LSE);                                      \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());        \
+      __ lse_instr##suffix(i.Input##reg(2), i.Output##reg(),                   \
+                           MemOperand(i.TempCapabilityRegister(0)));           \
+    } else {                                                                   \
+      Label binop;                                                             \
+      __ Bind(&binop);                                                         \
+      EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());        \
+      __ ldaxr##suffix(i.Output##reg(), i.TempCapabilityRegister(0));          \
+      __ bin_instr(i.Temp##reg(1), i.Output##reg(), Operand(i.Input##reg(2))); \
+      __ stlxr##suffix(i.TempRegister32(2), i.Temp##reg(1),                    \
+                       i.TempCapabilityRegister(0));                           \
+      __ Cbnz(i.TempRegister32(2), &binop);                                    \
+    }                                                                          \
+  } while (0)
+
+#define ASSEMBLE_CAPABILITY_ATOMIC_BINOP(bin_instr)                         \
+  do {                                                                      \
+    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),       \
+           i.InputRegister(1));                                             \
+    Label binop;                                                            \
+    __ Bind(&binop);                                                        \
+    EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());       \
+    __ ldaxr(i.OutputCapabilityRegister(), i.TempCapabilityRegister(0));    \
+    __ bin_instr(i.TempCapabilityRegister(1), i.OutputCapabilityRegister(), \
+                 Operand(i.InputCapabilityRegister(2)));                    \
+    __ stlxr(i.TempRegister32(2), i.TempCapabilityRegister(1),              \
+             i.TempCapabilityRegister(0));                                  \
+    __ Cbnz(i.TempRegister32(2), &binop);                                   \
+  } while (0)
+#else  // !__CHERI_PURE_CAPABILITY__
 #define ASSEMBLE_ATOMIC_LOAD_INTEGER(asm_instr, reg)                   \
   do {                                                                 \
     __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
@@ -725,22 +871,6 @@ void EmitFpOrNeonUnop(MacroAssembler* masm, Fn fn, Instruction* instr,
                        i.TempRegister(0));                                     \
       __ Cbnz(i.TempRegister32(2), &binop);                                    \
     }                                                                          \
-  } while (0)
-
-#ifdef __CHERI_PURE_CAPABILITY__
-#define ASSEMBLE_CAPABILITY_ATOMIC_BINOP(bin_instr)                         \
-  do {                                                                      \
-    __ Add(i.TempCapabilityRegister(0), i.InputCapabilityRegister(0),       \
-           i.InputCapabilityRegister(1));                                   \
-    Label binop;                                                            \
-    __ Bind(&binop);                                                        \
-    EmitOOLTrapIfNeeded(zone(), this, opcode, instr, __ pc_offset());       \
-    __ ldaxr(i.OutputCapabilityRegister(), i.TempCapabilityRegister(0));    \
-    __ bin_instr(i.TempCapabilityRegister(1), i.OutputCapabilityRegister(), \
-                 Operand(i.InputCapabilityRegister(2)));                    \
-    __ stlxr(i.TempRegister32(2), i.TempCapabilityRegister(1),              \
-             i.TempCapabilityRegister(0));                                  \
-    __ Cbnz(i.TempRegister32(2), &binop);                                   \
   } while (0)
 #endif  // __CHERI_PURE_CAPABILITY__
 
