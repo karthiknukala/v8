@@ -718,6 +718,7 @@ void ConstructorBuiltinsAssembler::CopyMutableHeapNumbersInObject(
   // Iterate over all object properties of a freshly copied object and
   // duplicate mutable heap numbers.
   Comment("Copy mutable HeapNumber values");
+  CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(copy)));
   BuildFastLoop<IntPtrT>(
       start_offset, end_offset,
       [=](TNode<IntPtrT> offset) {
@@ -727,6 +728,7 @@ void ConstructorBuiltinsAssembler::CopyMutableHeapNumbersInObject(
         GotoIf(TaggedIsSmi(field), &continue_loop);
         // TODO(leszeks): Read the field descriptor to decide if this heap
         // number is mutable or not.
+        CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(field)));
         Branch(IsHeapNumber(CAST(field)), &copy_heap_number, &continue_loop);
         BIND(&copy_heap_number);
         {

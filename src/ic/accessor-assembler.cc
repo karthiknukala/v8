@@ -5124,8 +5124,15 @@ void AccessorAssembler::GenerateCloneObjectIC() {
         source_start, source_size,
         [=](TNode<IntPtrT> field_index) {
           TNode<IntPtrT> field_offset = TimesTaggedSize(field_index);
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+          CSA_DCHECK(this, WordIsAligned(field_offset, kTaggedSize));
+          TNode<RawPtrT> field =
+              LoadObjectField<RawPtrT>(CAST(source), field_offset);
+          DCHECK(field.IsCapability());
+#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
           TNode<TaggedT> field =
               LoadObjectField<TaggedT>(CAST(source), field_offset);
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
           TNode<IntPtrT> result_offset =
               IntPtrAdd(field_offset, field_offset_difference);
           StoreObjectFieldNoWriteBarrier(object, result_offset, field);
@@ -5139,6 +5146,7 @@ void AccessorAssembler::GenerateCloneObjectIC() {
     TNode<IntPtrT> start_offset = TimesTaggedSize(result_start);
     TNode<IntPtrT> end_offset =
         IntPtrAdd(TimesTaggedSize(source_size), field_offset_difference);
+    CSA_DCHECK(this, CapabilityIsTagged(ReinterpretCast<UintPtrT>(object)));
     ConstructorBuiltinsAssembler(state()).CopyMutableHeapNumbersInObject(
         object, start_offset, end_offset);
 
