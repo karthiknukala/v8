@@ -715,6 +715,25 @@ void SemiSpaceNewSpace::VerifyObjects(Isolate* isolate,
 
       // The first word should be a map, and we expect all map pointers to
       // be in map space or read-only space.
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+      {
+        if (!V8_CHERI_TAG_GET(object.ptr()) &&
+            (object.ptr() & kZapValue) == object.ptr()) {
+          current_address += kTaggedSize;
+          continue;
+        }
+        uintptr_t* object_ptr =
+            reinterpret_cast<uintptr_t*>(object.ptr() - kHeapObjectTag);
+        DCHECK(V8_CHERI_TAG_GET(object_ptr));
+        DCHECK(IsAligned(reinterpret_cast<uintptr_t>(object_ptr),
+                         kSystemPointerSize));
+        if (!V8_CHERI_TAG_GET(*object_ptr) &&
+            (*object_ptr & kZapValue) == *object_ptr) {
+          current_address += kTaggedSize;
+          continue;
+        }
+      }
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       int size = object.Size(cage_base);
 
       visitor->VerifyObject(object);

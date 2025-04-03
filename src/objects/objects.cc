@@ -2206,7 +2206,7 @@ bool HeapObject::IsValidSlot(Map map, int offset) {
 
 int HeapObject::SizeFromMap(Map map) const {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK_IMPLIES(!map.IsSmi(), V8_CHERI_TAG_GET(map.ptr()));
+  DCHECK_IMPLIES(!map.IsSmi() && !map.IsBigInt(), V8_CHERI_TAG_GET(map.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   int instance_size = map.instance_size();
   if (instance_size != kVariableSizeSentinel) return instance_size;
