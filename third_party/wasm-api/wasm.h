@@ -22,9 +22,11 @@ extern "C" {
 inline void assertions() {
   static_assert(sizeof(float) == sizeof(uint32_t), "incompatible float type");
   static_assert(sizeof(double) == sizeof(uint64_t), "incompatible double type");
+#ifndef __CHERI_PURE_CAPABILITY__
   static_assert(sizeof(intptr_t) == sizeof(uint32_t) ||
                 sizeof(intptr_t) == sizeof(uint64_t),
                 "incompatible pointer type");
+#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 typedef char byte_t;

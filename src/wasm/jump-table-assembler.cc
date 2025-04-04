@@ -75,7 +75,7 @@ void JumpTableAssembler::EmitFarJumpSlot(Address target) {
   DCHECK_EQ(start_offset + kSystemPointerSize, pc_offset());
   USE(start_offset);
   bind(&data);
-  dq(target);  // 8 bytes
+  dp(target);  // 8 bytes
 }
 
 // static
@@ -83,6 +83,10 @@ void JumpTableAssembler::PatchFarJumpSlot(Address slot, Address target) {
   // The slot needs to be pointer-size aligned so we can atomically update it.
   DCHECK(IsAligned(slot, kSystemPointerSize));
   // Offset of the target is at 8 bytes, see {EmitFarJumpSlot}.
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(target));
+  DCHECK(IsAligned(target, kInstrSize));
+#endif  // __CHERI_PURE_CAPABILITY__
   reinterpret_cast<std::atomic<Address>*>(slot + kSystemPointerSize)
       ->store(target, std::memory_order_relaxed);
   // The update is atomic because the address is properly aligned.
@@ -224,18 +228,30 @@ void JumpTableAssembler::EmitFarJumpSlot(Address target) {
   // to have maximum control over the generated code.
   // Do not reuse this code without validating that the same assumptions hold.
   CodeEntry();  // 0-1 instructions
+#ifdef __CHERI_PURE_CAPABILITY__
+  constexpr Register kTmpReg = c16;
+  int kOffset = 1;
+#else  // !__CHERI_PURE_CAPABILITY__
   constexpr Register kTmpReg = x16;
-  DCHECK(TmpList()->IncludesAliasOf(kTmpReg));
   int kOffset = ENABLE_CONTROL_FLOW_INTEGRITY_BOOL ? 3 : 2;
+#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK(TmpList()->IncludesAliasOf(kTmpReg));
   // Load from [pc + kOffset * kInstrSize] to {kTmpReg}, then branch there.
   ldr_pcrel(kTmpReg, kOffset);  // 1 instruction
   br(kTmpReg);                  // 1 instruction
 #ifdef V8_ENABLE_CONTROL_FLOW_INTEGRITY
   nop();       // To keep the target below aligned to kSystemPointerSize.
 #endif
-  dq(target);  // 8 bytes (== 2 instructions)
+  DCHECK(IsAligned(reinterpret_cast<Address>(pc_), kSystemPointerSize));
+  dp(target);  // 8 bytes (== 2 instructions)
+               // CHERI: 16 bytes (== 4 instructions)
+#ifdef __CHERI_PURE_CAPABILITY__
+  static_assert(4 * kInstrSize == kSystemPointerSize);
+  const int kSlotCount = 6;
+#else   // !__CHERI_PURE_CAPABILITY__
   static_assert(2 * kInstrSize == kSystemPointerSize);
   const int kSlotCount = ENABLE_CONTROL_FLOW_INTEGRITY_BOOL ? 6 : 4;
+#endif  // __CHERI_PURE_CAPABILITY__
   static_assert(kFarJumpTableSlotSize == kSlotCount * kInstrSize);
 }
 
@@ -393,7 +409,7 @@ void JumpTableAssembler::EmitFarJumpSlot(Address target) {
   jirl(zero_reg, t7, 0);
   nop();  // pc_ should be align.
   DCHECK_EQ(reinterpret_cast<uint64_t>(pc_) % 8, 0);
-  dq(target);
+  dp(target);
 }
 void JumpTableAssembler::PatchFarJumpSlot(Address slot, Address target) {
   Address target_addr = slot + kFarJumpTableSlotSize - 8;
@@ -501,7 +517,7 @@ void JumpTableAssembler::EmitFarJumpSlot(Address target) {
   ld(rd, rd, 4 * kInstrSize);
   Jump(rd);
   nop();
-  dq(target);
+  dp(target);
 }
 
 // static
@@ -547,7 +563,7 @@ void JumpTableAssembler::EmitFarJumpSlot(Address target) {
   lw(rd, rd, 4 * kInstrSize);
   Jump(rd);
   nop();
-  dq(target);
+  dp(target);
 }
 
 // static

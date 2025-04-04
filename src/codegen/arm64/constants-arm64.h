@@ -603,7 +603,7 @@ constexpr AddSubOp SUBS = SUB | AddSubSetFlagsBit;
 using AddSubImmediateOp = uint32_t;
 #if defined(__CHERI_PURE_CAPABILITY__)
 constexpr AddSubImmediateOp AddSubCapImmediateFixed = 0x02000000;
-constexpr AddSubImmediateOp AddSubCapImmediateFMask = 0xFF000000;
+constexpr AddSubImmediateOp AddSubCapImmediateFMask = 0x0F000000;
 constexpr AddSubImmediateOp AddSubCapImmediateMask = 0xFFC00000;
 // 4.4.2 ADD (Immediate)
 // Add (immediate_ copies a capability from the source Capability register
@@ -790,7 +790,7 @@ using UnconditionalBranchToRegisterOp = uint32_t;
 #if defined(__CHERI_PURE_CAPABILITY__)
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFixed =
     0xC2C21000;
-constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFMask = 
+constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFMask =
     0xFFFF9C1F;
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterMask =
     0xFFFFFC1F;

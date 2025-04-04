@@ -1108,9 +1108,15 @@ void LiftoffAssembler::PrepareCall(const ValueKindSig* sig,
   Register instance_reg = wasm::kGpParamRegisters[0];
   // Check that the call descriptor agrees. Input 0 is the call target, 1 is the
   // instance.
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK_EQ(instance_reg,
+            Register::cap_from_code(
+                call_descriptor->GetInputLocation(1).AsRegister()));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK_EQ(
       instance_reg,
       Register::from_code(call_descriptor->GetInputLocation(1).AsRegister()));
+#endif  // __CHERI_PURE_CAPABILITY__
   param_regs.set(instance_reg);
   if (target_instance == no_reg) target_instance = cache_state_.cached_instance;
   if (target_instance != no_reg && target_instance != instance_reg) {
@@ -1135,7 +1141,11 @@ void LiftoffAssembler::PrepareCall(const ValueKindSig* sig,
       LiftoffRegister new_target = free_regs.GetFirstRegSet();
       stack_transfers.MoveRegister(new_target, LiftoffRegister(*target),
                                    kIntPtrKind);
+#ifdef __CHERI_PURE_CAPABILITY__
+      *target = new_target.gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       *target = new_target.gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       stack_slots.Add(VarState(kIntPtrKind, LiftoffRegister(*target), 0),
                       param_slots);

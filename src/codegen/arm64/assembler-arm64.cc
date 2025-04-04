@@ -930,7 +930,19 @@ void Assembler::cmn(const Register& rn, const Operand& operand) {
 
 void Assembler::sub(const Register& rd, const Register& rn,
                     const Operand& operand) {
-  AddSub(rd, rn, operand, LeaveFlags, SUB);
+#ifdef __CHERI_PURE_CAPABILITY__
+  AddSubOp op;
+  if (rd.IsC()) {
+    DCHECK(rn.IsC());
+    op = SUB_c;
+  } else {
+    DCHECK(!rn.IsC());
+    op = SUB;
+  }
+#else   // !__CHERI_PURE_CAPABILITY__
+  AddSubOp op = SUB;
+#endif  // __CHERI_PURE_CAPABILITY__
+  AddSub(rd, rn, operand, LeaveFlags, op);
 }
 
 void Assembler::subs(const Register& rd, const Register& rn,
@@ -5399,12 +5411,13 @@ void PatchingAssembler::PatchSubSp(uint32_t immediate) {
 
   // Verify the expected code.
   Instruction* expected_adr = InstructionAt(0);
-  CHECK(expected_adr->IsAddSubImmediate());
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
+  CHECK(expected_adr->IsAddSubCapImmediate());
   sub(csp, csp, immediate);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
+  CHECK(expected_adr->IsAddSubImmediate());
   sub(sp, sp, immediate);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 #undef NEON_3DIFF_LONG_LIST

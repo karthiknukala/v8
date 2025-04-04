@@ -268,7 +268,7 @@ int64_t Instruction::ImmPCOffset(Address pc) {
     if (IsCapLdrLiteral()) {
       DCHECK_NE(pc, 0);
       const size_t pc_remainder =
-          __builtin_cheri_address_get(pc) & (kSystemPointerSize - 1);
+          V8_CHERI_ADDR_GET(pc) & (kSystemPointerSize - 1);
       offset = CImmLLiteral() * kLoadCapLiteralScale - pc_remainder;
     } else
 #endif  // __CHERI_PURE_CAPABILITY__

@@ -297,6 +297,10 @@ class WordRepresentation : public RegisterRepresentation {
         return std::numeric_limits<uint32_t>::max();
       case Word64():
         return std::numeric_limits<uint64_t>::max();
+#ifdef __CHERI_PURE_CAPABILITY__
+      case Capability64():
+        return std::numeric_limits<uintptr_t>::max();
+#endif  // __CHERI_PURE_CAPABILITY__
     }
   }
   constexpr int64_t MinSignedValue() const {
@@ -305,6 +309,10 @@ class WordRepresentation : public RegisterRepresentation {
         return std::numeric_limits<int32_t>::min();
       case Word64():
         return std::numeric_limits<int64_t>::min();
+#ifdef __CHERI_PURE_CAPABILITY__
+      case Capability64():
+        return std::numeric_limits<intptr_t>::min();
+#endif  // __CHERI_PURE_CAPABILITY__
     }
   }
   constexpr int64_t MaxSignedValue() const {
@@ -313,6 +321,10 @@ class WordRepresentation : public RegisterRepresentation {
         return std::numeric_limits<int32_t>::max();
       case Word64():
         return std::numeric_limits<int64_t>::max();
+#ifdef __CHERI_PURE_CAPABILITY__
+      case Capability64():
+        return std::numeric_limits<intptr_t>::max();
+#endif  // __CHERI_PURE_CAPABILITY__
     }
   }
 };

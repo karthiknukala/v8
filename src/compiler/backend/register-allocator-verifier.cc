@@ -50,6 +50,10 @@ int GetValue(const ImmediateOperand* imm) {
       return imm->inline_int32_value();
     case ImmediateOperand::INLINE_INT64:
       return static_cast<int>(imm->inline_int64_value());
+#ifdef __CHERI_PURE_CAPABILITY__
+    case ImmediateOperand::INLINE_INTPTR:
+      return imm->inline_intptr_value();
+#endif  // __CHERI_PURE_CAPABILITY__
     case ImmediateOperand::INDEXED_RPO:
     case ImmediateOperand::INDEXED_IMM:
       return imm->indexed_value();

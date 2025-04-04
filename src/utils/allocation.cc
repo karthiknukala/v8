@@ -224,20 +224,22 @@ VirtualMemory::VirtualMemory(v8::PageAllocator* page_allocator, size_t size,
   DCHECK(IsAligned(size, page_allocator_->CommitPageSize()));
   size_t page_size = page_allocator_->AllocatePageSize();
   alignment = RoundUp(alignment, page_size);
-#if !defined(__CHERI_PURE_CAPABILITY__)
+#ifndef __CHERI_PURE_CAPABILITY__
   PageAllocator::Permission permissions =
       jit == JitPermission::kMapAsJittable
           ? PageAllocator::kNoAccessWillJitLater
           : PageAllocator::kNoAccess;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // !__CHERI_PURE_CAPABILITY__
   Address address = reinterpret_cast<Address>(AllocatePages(
-#if defined(__CHERI_PURE_CAPABILITY__)
-      page_allocator_, hint, RoundUp(size, page_size), alignment, PageAllocator::kReadWrite,
-      jit == JitPermission::kMapAsJittable ?
-      PageAllocator::kNoAccessWillJitLater : PageAllocator::kReadWrite));
-#else
+#ifdef __CHERI_PURE_CAPABILITY__
+      page_allocator_, hint, RoundUp(size, page_size), alignment,
+      PageAllocator::kReadWrite,
+      jit == JitPermission::kMapAsJittable
+          ? PageAllocator::kNoAccessWillJitLater
+          : PageAllocator::kReadWrite));
+#else   // !__CHERI_PURE_CAPABILITY__
       page_allocator_, hint, RoundUp(size, page_size), alignment, permissions));
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   if (address != kNullAddress) {
     DCHECK(IsAligned(address, alignment));
     region_ = base::AddressRegion(address, size);

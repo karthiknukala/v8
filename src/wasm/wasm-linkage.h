@@ -56,8 +56,16 @@ constexpr DoubleRegister kFpReturnRegisters[] = {d0, d1};
 // ===========================================================================
 // == arm64 ====================================================================
 // ===========================================================================
+#ifdef __CHERI_PURE_CAPABILITY__
+// ===========================================================================
+// == Morello ================================================================
+// ===========================================================================
+constexpr Register kGpParamRegisters[] = {c7, c0, c2, c3, c4, c5, c6};
+constexpr Register kGpReturnRegisters[] = {c0, c1};
+#else   // !__CHERI_PURE_CAPABILITY__
 constexpr Register kGpParamRegisters[] = {x7, x0, x2, x3, x4, x5, x6};
 constexpr Register kGpReturnRegisters[] = {x0, x1};
+#endif  // __CHERI_PURE_CAPABILITY__
 constexpr DoubleRegister kFpParamRegisters[] = {d0, d1, d2, d3, d4, d5, d6, d7};
 constexpr DoubleRegister kFpReturnRegisters[] = {d0, d1};
 

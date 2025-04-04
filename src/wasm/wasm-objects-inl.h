@@ -254,7 +254,11 @@ ACCESSORS(WasmInstanceObject, well_known_imports, FixedArray,
 
 void WasmInstanceObject::clear_padding() {
   if (FIELD_SIZE(kOptionalPaddingOffset) != 0) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_EQ(12, FIELD_SIZE(kOptionalPaddingOffset));
+#else   // !__CHERI_PURE_CAPABILITY__
     DCHECK_EQ(4, FIELD_SIZE(kOptionalPaddingOffset));
+#endif  // __CHERI_PURE_CAPABILITY__
     memset(reinterpret_cast<void*>(address() + kOptionalPaddingOffset), 0,
            FIELD_SIZE(kOptionalPaddingOffset));
   }

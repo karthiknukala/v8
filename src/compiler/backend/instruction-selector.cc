@@ -1041,10 +1041,20 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
     case CallDescriptor::kCallWasmCapiFunction:
     case CallDescriptor::kCallWasmFunction:
     case CallDescriptor::kCallWasmImportWrapper:
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK_IMPLIES(
+          call_address_immediate,
+          callee->opcode() != IrOpcode::kRelocatableInt64Constant &&
+              callee->opcode() != IrOpcode::kRelocatableInt32Constant);
+#endif  // __CHERI_PURE_CAPABILITY__
       buffer->instruction_args.push_back(
           (call_address_immediate &&
+#ifdef __CHERI_PURE_CAPABILITY__
+           callee->opcode() == IrOpcode::kRelocatableCapability64Constant)
+#else   // !__CHERI_PURE_CAPABILITY__
            (callee->opcode() == IrOpcode::kRelocatableInt64Constant ||
             callee->opcode() == IrOpcode::kRelocatableInt32Constant))
+#endif  // __CHERI_PURE_CAPABILITY__
               ? g.UseImmediate(callee)
               : call_use_fixed_target_reg
                     ? g.UseFixed(callee, kJavaScriptCallCodeStartRegister)

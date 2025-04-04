@@ -375,6 +375,58 @@ class V8_EXPORT_PRIVATE WasmInstanceObject : public JSObject {
   DECL_PRINTER(WasmInstanceObject)
   DECL_VERIFIER(WasmInstanceObject)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define WASM_INSTANCE_OBJECT_FIELDS(V)                                    \
+  /* Often-accessed fields go first to minimize generated code size. */   \
+  /* Less than system pointer sized fields come first. */                 \
+  V(kImportedFunctionRefsOffset, kTaggedSize)                             \
+  V(kIndirectFunctionTableRefsOffset, kTaggedSize)                        \
+  V(kIndirectFunctionTableSigIdsOffset, kTaggedSize)                      \
+  V(kIndirectFunctionTableTargetsOffset, kTaggedSize)                     \
+  V(kImportedMutableGlobalsOffset, kTaggedSize)                           \
+  V(kImportedFunctionTargetsOffset, kTaggedSize)                          \
+  V(kIndirectFunctionTableSizeOffset, kUInt32Size)                        \
+  /* Optional padding to align system pointer size fields */              \
+  V(kOptionalPaddingOffset, POINTER_SIZE_PADDING(kOptionalPaddingOffset)) \
+  V(kMemory0StartOffset, kSystemPointerSize)                              \
+  V(kMemory0SizeOffset, kSizetSize)                                       \
+  V(kMemory0Padding, POINTER_SIZE_PADDING(kMemory0Padding))               \
+  V(kStackLimitAddressOffset, kSystemPointerSize)                         \
+  V(kIsorecursiveCanonicalTypesOffset, kSystemPointerSize)                \
+  V(kGlobalsStartOffset, kSystemPointerSize)                              \
+  V(kJumpTableStartOffset, kSystemPointerSize)                            \
+  /* End of often-accessed fields. */                                     \
+  /* Continue with system pointer size fields to maintain alignment. */   \
+  V(kNewAllocationLimitAddressOffset, kSystemPointerSize)                 \
+  V(kNewAllocationTopAddressOffset, kSystemPointerSize)                   \
+  V(kOldAllocationLimitAddressOffset, kSystemPointerSize)                 \
+  V(kOldAllocationTopAddressOffset, kSystemPointerSize)                   \
+  V(kRealStackLimitAddressOffset, kSystemPointerSize)                     \
+  V(kHookOnFunctionCallAddressOffset, kSystemPointerSize)                 \
+  V(kTieringBudgetArrayOffset, kSystemPointerSize)                        \
+  /* Less than system pointer size aligned fields are below. */           \
+  V(kDataSegmentStartsOffset, kTaggedSize)                                \
+  V(kDataSegmentSizesOffset, kTaggedSize)                                 \
+  V(kElementSegmentsOffset, kTaggedSize)                                  \
+  V(kModuleObjectOffset, kTaggedSize)                                     \
+  V(kExportsObjectOffset, kTaggedSize)                                    \
+  V(kNativeContextOffset, kTaggedSize)                                    \
+  V(kMemoryObjectOffset, kTaggedSize)                                     \
+  V(kUntaggedGlobalsBufferOffset, kTaggedSize)                            \
+  V(kTaggedGlobalsBufferOffset, kTaggedSize)                              \
+  V(kImportedMutableGlobalsBuffersOffset, kTaggedSize)                    \
+  V(kTablesOffset, kTaggedSize)                                           \
+  V(kIndirectFunctionTablesOffset, kTaggedSize)                           \
+  V(kTagsTableOffset, kTaggedSize)                                        \
+  V(kWasmInternalFunctionsOffset, kTaggedSize)                            \
+  V(kManagedObjectMapsOffset, kTaggedSize)                                \
+  V(kFeedbackVectorsOffset, kTaggedSize)                                  \
+  V(kWellKnownImportsOffset, kTaggedSize)                                 \
+  V(kBreakOnEntryOffset, kUInt8Size)                                      \
+  /* More padding to make the header pointer-size aligned */              \
+  V(kHeaderPaddingOffset, POINTER_SIZE_PADDING(kHeaderPaddingOffset))     \
+  V(kHeaderSize, 0)
+#else  // !__CHERI_PURE_CAPABILITY__
 // Layout description.
 #define WASM_INSTANCE_OBJECT_FIELDS(V)                                    \
   /* Often-accessed fields go first to minimize generated code size. */   \
@@ -425,6 +477,7 @@ class V8_EXPORT_PRIVATE WasmInstanceObject : public JSObject {
   /* More padding to make the header pointer-size aligned */              \
   V(kHeaderPaddingOffset, POINTER_SIZE_PADDING(kHeaderPaddingOffset))     \
   V(kHeaderSize, 0)
+#endif  // __CHERI_PURE_CAPABILITY__
 
   DEFINE_FIELD_OFFSET_CONSTANTS(JSObject::kHeaderSize,
                                 WASM_INSTANCE_OBJECT_FIELDS)

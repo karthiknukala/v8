@@ -439,11 +439,33 @@ class ConstantOperand : public InstructionOperand {
 
 class ImmediateOperand : public InstructionOperand {
  public:
-  enum ImmediateType { INLINE_INT32, INLINE_INT64, INDEXED_RPO, INDEXED_IMM };
+  enum ImmediateType {
+    INLINE_INT32,
+    INLINE_INT64,
+#ifdef __CHERI_PURE_CAPABILITY__
+    INLINE_INTPTR,
+#endif  // __CHERI_PURE_CAPABILITY__
+    INDEXED_RPO,
+    INDEXED_IMM
+  };
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  explicit ImmediateOperand(ImmediateType type, intptr_t value)
+#else   // !__CHERI_PURE_CAPABILITY__
   explicit ImmediateOperand(ImmediateType type, int32_t value)
+#endif  // __CHERI_PURE_CAPABILITY__
       : InstructionOperand(IMMEDIATE) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (V8_CHERI_TAG_GET(value)) {
+      value_intptr_ = value;
+      value_ |= TypeField::encode(INLINE_INTPTR);
+    } else {
+      value_intptr_ = 0;
+      value_ |= TypeField::encode(type);
+    }
+#else   // !__CHERI_PURE_CAPABILITY__
     value_ |= TypeField::encode(type);
+#endif  // __CHERI_PURE_CAPABILITY__
     value_ |= static_cast<uint64_t>(static_cast<int64_t>(value))
               << ValueField::kShift;
   }
@@ -460,6 +482,13 @@ class ImmediateOperand : public InstructionOperand {
     return static_cast<int64_t>(value_) >> ValueField::kShift;
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  intptr_t inline_intptr_value() const {
+    DCHECK_EQ(INLINE_INTPTR, type());
+    return value_intptr_;
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
+
   int32_t indexed_value() const {
     DCHECK(type() == INDEXED_IMM || type() == INDEXED_RPO);
     return static_cast<int64_t>(value_) >> ValueField::kShift;
@@ -471,7 +500,7 @@ class ImmediateOperand : public InstructionOperand {
 
   INSTRUCTION_OPERAND_CASTS(ImmediateOperand, IMMEDIATE)
 
-  using TypeField = KindField::Next<ImmediateType, 2>;
+  using TypeField = KindField::Next<ImmediateType, 3>;
   static_assert(TypeField::kLastUsedBit < 32);
   using ValueField = base::BitField64<int32_t, 32, 32>;
 };
@@ -1933,6 +1962,11 @@ class V8_EXPORT_PRIVATE InstructionSequence final
                  constant.FitsInInt32()) {
         return ImmediateOperand(ImmediateOperand::INLINE_INT64,
                                 constant.ToInt32());
+#ifdef __CHERI_PURE_CAPABILITY__
+      } else if (constant.type() == Constant::kIntPtr) {
+        return ImmediateOperand(ImmediateOperand::INLINE_INTPTR,
+                                constant.ToIntPtr());
+#endif  // __CHERI_PURE_CAPABILITY__
       }
     }
     int index = static_cast<int>(immediates_.size());
@@ -1946,6 +1980,10 @@ class V8_EXPORT_PRIVATE InstructionSequence final
         return Constant(op->inline_int32_value());
       case ImmediateOperand::INLINE_INT64:
         return Constant(op->inline_int64_value());
+#ifdef __CHERI_PURE_CAPABILITY__
+      case ImmediateOperand::INLINE_INTPTR:
+        return Constant(op->inline_intptr_value());
+#endif  // __CHERI_PURE_CAPABILITY__
       case ImmediateOperand::INDEXED_RPO: {
         int index = op->indexed_value();
         DCHECK_LE(0, index);

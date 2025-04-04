@@ -2946,6 +2946,17 @@ void MacroAssembler::Jump(const ExternalReference& reference) {
 void MacroAssembler::Call(Register target) {
   BlockPoolsScope scope(this);
 #ifdef __CHERI_PURE_CAPABILITY__
+  if (v8_flags.debug_code) {
+    Label ok;
+    HardAbortScope hard_aborts(this);
+    Register temp = target == c0 ? c1 : c0;
+    Push(temp, padregc);
+    Gctag(temp.X(), target);
+    Tbnz(temp.X(), 0, &ok);
+    brk(0);
+    Bind(&ok);
+    Pop(padregc, temp);
+  }
   PrepareC64Jump(target);
 #endif  // __CHERI_PURE_CAPABILITY__
   Blr(target);
@@ -4521,6 +4532,11 @@ void MacroAssembler::MoveObjectAndSlot(Register dst_object, Register dst_slot,
   // If `offset` is a register, it cannot overlap with `object`.
   DCHECK_IMPLIES(!offset.IsImmediate(), offset.reg() != object);
 
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  DCHECK(dst_object.IsC());
+  DCHECK(dst_slot.IsC());
+  DCHECK(object.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
   // If the slot register does not overlap with the object register, we can
   // overwrite it.
   if (dst_slot != object) {
@@ -5086,6 +5102,11 @@ void MacroAssembler::RestoreFPAndLR() {
 #if V8_ENABLE_WEBASSEMBLY
 void MacroAssembler::StoreReturnAddressInWasmExitFrame(Label* return_location) {
   UseScratchRegisterScope temps(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  temps.Exclude(c16, c17);
+  Adr(c17, return_location);
+  Str(c17, MemOperand(fp, WasmExitFrameConstants::kCallingPCOffset));
+#else  // !__CHERI_PURE_CAPABILITY__
   temps.Exclude(x16, x17);
   Adr(x17, return_location);
 #ifdef V8_ENABLE_CONTROL_FLOW_INTEGRITY
@@ -5093,6 +5114,7 @@ void MacroAssembler::StoreReturnAddressInWasmExitFrame(Label* return_location) {
   Pacib1716();
 #endif
   Str(x17, MemOperand(fp, WasmExitFrameConstants::kCallingPCOffset));
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 #endif  // V8_ENABLE_WEBASSEMBLY
 

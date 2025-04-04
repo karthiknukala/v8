@@ -1451,6 +1451,7 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
     Storage(uint64_t integral = 0) : integral(integral) {}
 #ifdef __CHERI_PURE_CAPABILITY__
     Storage(uintptr_t intptr = 0) : intptr(intptr) {}
+    Storage(intptr_t intptr = 0) : intptr(static_cast<uintptr_t>(intptr)) {}
 #endif  // __CHERI_PURE_CAPABILITY__
     Storage(double constant) : float64(constant) {}
     Storage(float constant) : float32(constant) {}

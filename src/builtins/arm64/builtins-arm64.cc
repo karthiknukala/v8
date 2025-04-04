@@ -3926,7 +3926,11 @@ constexpr DoubleRegList kSavedFpRegs = ([]() constexpr {
 // [     saved fp      ]  <-- fp
 void Builtins::Generate_WasmLiftoffFrameSetup(MacroAssembler* masm) {
   Register func_index = wasm::kLiftoffFrameSetupFunctionReg;
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register vector = c9;
+#else   // !__CHERI_PURE_CAPABILITY__
   Register vector = x9;
+#endif  // __CHERI_PURE_CAPABILITY__
   Register scratch = x10;
   Label allocate_vector, done;
 
@@ -3937,7 +3941,11 @@ void Builtins::Generate_WasmLiftoffFrameSetup(MacroAssembler* masm) {
   __ LoadTaggedField(vector, FieldMemOperand(vector, FixedArray::kHeaderSize));
   __ JumpIfSmi(vector, &allocate_vector);
   __ bind(&done);
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Push(vector, czr);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Push(vector, xzr);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ Ret();
 
   __ bind(&allocate_vector);
@@ -3947,23 +3955,44 @@ void Builtins::Generate_WasmLiftoffFrameSetup(MacroAssembler* masm) {
   __ Mov(scratch, StackFrame::TypeToMarker(StackFrame::WASM_LIFTOFF_SETUP));
   __ Str(scratch, MemOperand(fp, TypedFrameConstants::kFrameTypeOffset));
   // Save registers.
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ PushCRegList(kSavedGpRegs);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ PushXRegList(kSavedGpRegs);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ PushQRegList(kSavedFpRegs);
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Push<MacroAssembler::kSignLR>(lr, czr);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Push<MacroAssembler::kSignLR>(lr, xzr);  // xzr is for alignment.
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Arguments to the runtime function: instance, func_index, and an
   // additional stack slot for the NativeModule. The first pushed register
   // is for alignment. {x0} and {x1} are picked arbitrarily.
   __ SmiTag(func_index);
+#ifdef __CHERI_PURE_CAPABILITY__
+  // Need to push func_index as a capability for consistency.
+  __ Push(c0, kWasmInstanceRegister, func_index.C(), c1);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Push(x0, kWasmInstanceRegister, func_index, x1);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ Mov(cp, Smi::zero());
   __ CallRuntime(Runtime::kWasmAllocateFeedbackVector, 3);
   __ Mov(vector, kReturnRegister0);
 
   // Restore registers and frame type.
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Pop<MacroAssembler::kAuthLR>(czr, lr);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Pop<MacroAssembler::kAuthLR>(xzr, lr);
+#endif  // __CHERI_PURE_CAPABILITY__
   __ PopQRegList(kSavedFpRegs);
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ PopCRegList(kSavedGpRegs);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ PopXRegList(kSavedGpRegs);
+#endif  // __CHERI_PURE_CAPABILITY__
   // Restore the instance from the frame.
   __ Ldr(kWasmInstanceRegister,
          MemOperand(fp, WasmFrameConstants::kWasmInstanceOffset));
@@ -3977,7 +4006,7 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
   // Sign extend and convert to Smi for the runtime call.
   __ sxtw(kWasmCompileLazyFuncIndexRegister,
           kWasmCompileLazyFuncIndexRegister.W());
-  __ SmiTag(kWasmCompileLazyFuncIndexRegister);
+  __ SmiTag(kWasmCompileLazyFuncIndexRegister.X());
 
   UseScratchRegisterScope temps(masm);
   temps.Exclude(x17);
@@ -3993,11 +4022,11 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
            MemOperand(fp, WasmFrameConstants::kWasmInstanceOffset));
 
     // Save registers that we need to keep alive across the runtime call.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     __ PushCRegList(kSavedGpRegs);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
     __ PushXRegList(kSavedGpRegs);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
     __ PushQRegList(kSavedFpRegs);
 
     __ Push(kWasmInstanceRegister, kWasmCompileLazyFuncIndexRegister);
@@ -4012,30 +4041,39 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
 
     // Restore registers.
     __ PopQRegList(kSavedFpRegs);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     __ PopCRegList(kSavedGpRegs);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+    // Restore the instance from the frame.
+    __ Ldr(kWasmInstanceRegister,
+           MemOperand(fp, WasmFrameConstants::kWasmInstanceOffset));
+#else   // !__CHERI_PURE_CAPABILITY__
     __ PopXRegList(kSavedGpRegs);
     // Restore the instance from the frame.
     __ Ldr(kWasmInstanceRegister,
            MemOperand(fp, WasmFrameConstants::kWasmInstanceOffset));
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   // The runtime function returned the jump table slot offset as a Smi (now in
   // x17). Use that to compute the jump target. Use x17 (ip1) for the branch
   // target, to be compliant with CFI.
+#ifdef __CHERI_PURE_CAPABILITY__
+  constexpr Register temp = c8;
+#else   // !__CHERI_PURE_CAPABILITY__
   constexpr Register temp = x8;
+#endif  // __CHERI_PURE_CAPABILITY__
   static_assert(!kSavedGpRegs.has(temp));
   __ ldr(temp, FieldMemOperand(kWasmInstanceRegister,
                                WasmInstanceObject::kJumpTableStartOffset));
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Add(c17, temp, Operand(x17));
+  // Finally, jump to the jump table slot for the function.
+  __ Jump(c17);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ add(x17, temp, Operand(x17));
   // Finally, jump to the jump table slot for the function.
-#if defined(__CHERI_PURE_CAPABILITY__)
-  __ Jump(c17);
-#else // defined(__CHERI_PURE_CAPABILITY__)
   __ Jump(x17);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void Builtins::Generate_WasmDebugBreak(MacroAssembler* masm) {
@@ -4201,7 +4239,11 @@ void SaveState(MacroAssembler* masm, Register active_continuation,
                       WasmContinuationObject::kJmpbufOffset),
       kWasmContinuationJmpbufTag);
   UseScratchRegisterScope temps(masm);
+#ifdef __CHERI_PURE_CAPABILITY__
+  Register scratch = temps.AcquireC();
+#else   // !__CHERI_PURE_CAPABILITY__
   Register scratch = temps.AcquireX();
+#endif  // __CHERI_PURE_CAPABILITY__
   FillJumpBuffer(masm, jmpbuf, suspend, scratch);
 }
 
@@ -4228,7 +4270,7 @@ void AllocateSuspender(MacroAssembler* masm, Register function_data,
 #else // defined(__CHERI_PURE_CAPABILITY__)
         MemOperand(sp, 2 * kSystemPointerSize, PostIndex));
 #endif // defined(__CHERI_PURE_CAPABILITY__)
-  static_assert(kReturnRegister0 == x0);
+  static_assert(kReturnRegister0 == c0);
 }
 
 void LoadTargetJumpBuffer(MacroAssembler* masm, Register target_continuation,
@@ -4321,8 +4363,8 @@ void RestoreParentSuspender(MacroAssembler* masm, Register tmp1,
     // Check that the parent suspender is active.
     Label parent_inactive;
     Register state = tmp2;
-    __ SmiUntag(state, state_loc);
-    __ cmp(state, WasmSuspenderObject::kActive);
+    __ SmiUntag(state.X(), state_loc);
+    __ cmp(state.X(), WasmSuspenderObject::kActive);
     __ B(&parent_inactive, eq);
     __ Trap();
     __ bind(&parent_inactive);
@@ -4481,12 +4523,28 @@ class RegisterAllocator {
   DEFINE_REG(Name); \
   Name = Name.W();
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DEFINE_REG_C(Name) \
+  DEFINE_REG(Name);        \
+  Name = Name.C();
+#else  // !__CHERI_PURE_CAPABILITY__
+#define DEFINE_REG_C(Name) DEFINE_REG(Name)
+#endif  // __CHERI_PURE_CAPABILITY__
+
 #define ASSIGN_REG(Name) \
   regs.Ask(&Name);
 
 #define ASSIGN_REG_W(Name) \
   ASSIGN_REG(Name); \
   Name = Name.W();
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define ASSIGN_REG_C(Name) \
+  ASSIGN_REG(Name);        \
+  Name = Name.C();
+#else  // !__CHERI_PURE_CAPABILITY__
+#define ASSIGN_REG_C(Name) ASSIGN_REG(Name)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define DEFINE_PINNED(Name, Reg) \
   Register Name = no_reg; \
@@ -4495,6 +4553,13 @@ class RegisterAllocator {
 #define DEFINE_SCOPED(Name) \
   DEFINE_REG(Name) \
   RegisterAllocator::Scoped scope_##Name(&regs, &Name);
+
+#ifdef __CHERI_PURE_CAPABILITY__
+#define DEFINE_SCOPED_C(Name) \
+  DEFINE_REG(Name);           \
+  Name = Name.C();            \
+  RegisterAllocator::Scoped scope_##Name(&regs, &Name);
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #define FREE_REG(Name) \
   regs.Free(&Name);
@@ -4583,17 +4648,17 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
     DEFINE_PINNED(suspender, kReturnRegister0);
     // Set the suspender spill slot to a sentinel value, in case a GC happens
     // before we set the actual value.
-    ASSIGN_REG(scratch);
+    ASSIGN_REG_C(scratch);
     __ LoadRoot(scratch, RootIndex::kUndefinedValue);
     __ Str(scratch, MemOperand(fp, kSuspenderOffset));
-    DEFINE_REG(active_continuation);
+    DEFINE_REG_C(active_continuation);
     __ LoadRoot(active_continuation, RootIndex::kActiveContinuation);
     SaveState(masm, active_continuation, scratch, &suspend);
     FREE_REG(active_continuation);
     AllocateSuspender(masm, function_data, wasm_instance, scratch);
     // A result of AllocateSuspender is in the return register.
     __ Str(suspender, MemOperand(fp, kSuspenderOffset));
-    DEFINE_SCOPED(target_continuation);
+    DEFINE_SCOPED_C(target_continuation);
     __ LoadTaggedField(
         target_continuation,
         FieldMemOperand(suspender, WasmSuspenderObject::kContinuationOffset));
@@ -4646,7 +4711,11 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
     // value accordingly.
     // original_fp stays alive until we load params to param registers.
     // To prevent aliasing assign higher register here.
+#ifdef __CHERI_PURE_CAPABILITY__
+    regs.Pinned(c9, &original_fp);
+#else   // !__CHERI_PURE_CAPABILITY__
     regs.Pinned(x9, &original_fp);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ Mov(original_fp, fp);
     LoadTargetJumpBuffer(masm, target_continuation, scratch);
     // Push the loaded rbp. We know it is null, because there is no frame yet,
@@ -4673,8 +4742,12 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   Label prepare_for_wasm_call;
   // Load a signature and store on stack.
   // Param should be x0 for calling Runtime in the conversion loop.
+#ifdef __CHERI_PURE_CAPABILITY__
+  DEFINE_PINNED(param, c0);
+#else   // !__CHERI_PURE_CAPABILITY__
   DEFINE_PINNED(param, x0);
-  DEFINE_REG(valuetypes_array_ptr);
+#endif  // __CHERI_PURE_CAPABILITY__
+  DEFINE_REG_C(valuetypes_array_ptr);
   DEFINE_REG(return_count);
   // param_count stays alive until we load params to param registers.
   // To prevent aliasing assign higher register here.
@@ -4748,18 +4821,22 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   //   |      . . .      |
 
   // For Integer section.
-  DEFINE_REG(current_int_param_slot);
+  DEFINE_REG_C(current_int_param_slot);
   // Set the current_int_param_slot to point to the start of the section.
+#ifdef __CHERI_PURE_CAPABILITY__
+  __ Sub(current_int_param_slot, csp, kSystemPointerSize);
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Sub(current_int_param_slot, sp, kSystemPointerSize);
+#endif  // __CHERI_PURE_CAPABILITY__
 
-  DEFINE_REG(current_float_param_slot);
+  DEFINE_REG_C(current_float_param_slot);
   // Set the current_float_param_slot to point to the start of the section.
   __ Sub(current_float_param_slot, current_int_param_slot,
           Operand(param_count, LSL, kSystemPointerSizeLog2));
   // Claim space for int and float params at once,
   // to be sure sp is aligned by kSystemPointerSize << 1 = 16.
 #if defined(__CHERI_PURE_CAPABILITY__)
-  __ Sub(csp, csp, Operand(param_count, LSL, kSystemPointerSizeLog2 + 1));
+  __ Sub(csp, csp, Operand(param_count, LSL, kSystemPointerSizeLog2));
 #else // defined(__CHERI_PURE_CAPABILITY__)
   __ Sub(sp, sp, Operand(param_count, LSL, kSystemPointerSizeLog2 + 1));
 #endif // defined(__CHERI_PURE_CAPABILITY__)
@@ -4787,10 +4864,10 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   // [current_param] gives us the parameter we are processing.
   // We iterate through half-open interval <1st param, [fp + param_limit]).
 
-  DEFINE_REG(param_ptr);
+  DEFINE_REG_C(param_ptr);
   __ Add(param_ptr, original_fp,
           kFPOnStackSize + kPCOnStackSize + kReceiverOnStackSize);
-  DEFINE_REG(param_limit);
+  DEFINE_REG_C(param_limit);
   __ Add(param_limit, param_ptr,
           Operand(param_count, LSL, kSystemPointerSizeLog2));
   // We have to check the types of the params. The ValueType array contains
@@ -5051,10 +5128,10 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   constexpr int kGapSlotSize = kSystemPointerSize;
   constexpr int kIntegerSectionStartOffset =
     kLastSpillOffset - kGapSlotSize - kSystemPointerSize;
-  DEFINE_REG(start_int_section);
+  DEFINE_REG_C(start_int_section);
   __ Add(start_int_section, fp, kIntegerSectionStartOffset);
 
-  DEFINE_REG(start_float_section);
+  DEFINE_REG_C(start_float_section);
   __ Sub(start_float_section, start_int_section,
           Operand(param_count, LSL, kSystemPointerSizeLog2));
 
@@ -5072,25 +5149,25 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   __ Add(current_float_param_slot, current_float_param_slot,
           Immediate(kSystemPointerSize));
 
-  DEFINE_REG(args_pointer);
+  DEFINE_REG_C(args_pointer);
   Label has_ints, has_floats;
   // How much space int params require on stack(in bytes)?
-  __ Subs(args_pointer, start_int_section, current_int_param_slot);
+  __ Subs(args_pointer.X(), start_int_section.X(), current_int_param_slot.X());
   __ B(&has_ints, gt);
   // Clamp negative value to 0.
-  __ Mov(args_pointer, 0);
+  __ Mov(args_pointer.X(), 0);
   __ bind(&has_ints);
   ASSIGN_REG(scratch);
   // How much space float params require on stack(in bytes)?
-  __ Subs(scratch, start_float_section, current_float_param_slot);
+  __ Subs(scratch, start_float_section.X(), current_float_param_slot.X());
   __ B(&has_floats, gt);
   // Clamp negative value to 0.
   __ Mov(scratch, 0);
   __ bind(&has_floats);
   // Sum int and float stack space requirements.
-  __ Add(args_pointer, args_pointer, scratch);
+  __ Add(args_pointer.X(), args_pointer.X(), scratch.X());
   // Round up stack space to 16 divisor.
-  __ Add(scratch, args_pointer, 0xF);
+  __ Add(scratch, args_pointer.X(), 0xF);
   __ Bic(scratch, scratch, 0xF);
   // Reserve space for params on stack.
 #if defined(__CHERI_PURE_CAPABILITY__)
@@ -5135,7 +5212,7 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   // if no int or ref param remains, directly iterate valuetypes
   __ B(&loop_through_valuetypes, le);
 
-  ASSIGN_REG(param);
+  ASSIGN_REG_C(param);
   __ Ldr(param,
           MemOperand(current_int_param_slot, kSystemPointerSize, PostIndex));
   __ Str(param, MemOperand(args_pointer, -kSystemPointerSize, PostIndex));
@@ -5216,11 +5293,16 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   // Move the parameters into the proper param registers.
   // -------------------------------------------
   // Exclude param registers from the register registry.
+#ifdef __CHERI_PURE_CAPABILITY__
+  regs.Reserve(c0, c2, c3, c4, c5, c6);
+  DEFINE_PINNED(function_entry, c1);
+#else   // !__CHERI_PURE_CAPABILITY__
   regs.Reserve(x0, x2, x3, x4, x5, x6);
   DEFINE_PINNED(function_entry, x1);
-  ASSIGN_REG(start_int_section);
+#endif  // __CHERI_PURE_CAPABILITY__
+  ASSIGN_REG_C(start_int_section);
   __ Add(start_int_section, fp, kIntegerSectionStartOffset);
-  ASSIGN_REG(start_float_section);
+  ASSIGN_REG_C(start_float_section);
   __ Sub(start_float_section, start_int_section,
           Operand(param_count, LSL, kSystemPointerSizeLog2));
   // Arm64 simulator checks access below SP, so allocate some
@@ -5276,14 +5358,15 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   // Prepare for the Wasm call.
   // -------------------------------------------
   // Set thread_in_wasm_flag.
-  DEFINE_REG(thread_in_wasm_flag_addr);
+  DEFINE_REG_C(thread_in_wasm_flag_addr);
   __ Ldr(
       thread_in_wasm_flag_addr,
       MemOperand(kRootRegister,
                   Isolate::thread_in_wasm_flag_address_offset()));
   ASSIGN_REG(scratch);
   __ Mov(scratch, 1);
-  __ Str(scratch, MemOperand(thread_in_wasm_flag_addr, 0));
+  // XXX(cheri): Bounds fault without changing scratch to a W register.
+  __ Str(scratch.W(), MemOperand(thread_in_wasm_flag_addr, 0));
 
   __ LoadTaggedField(
       function_entry,
@@ -5322,7 +5405,8 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
       thread_in_wasm_flag_addr,
       MemOperand(kRootRegister,
                   Isolate::thread_in_wasm_flag_address_offset()));
-  __ Str(xzr, MemOperand(thread_in_wasm_flag_addr, 0));
+  // XXX(cheri): This was a bounds fault with xzr.
+  __ Str(wzr, MemOperand(thread_in_wasm_flag_addr, 0));
 
   regs.ResetExcept(original_fp, wasm_instance);
 
@@ -5345,8 +5429,8 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   __ bind(&return_done);
 
   if (stack_switch) {
-    DEFINE_SCOPED(tmp);
-    DEFINE_SCOPED(tmp2);
+    DEFINE_SCOPED_C(tmp);
+    DEFINE_SCOPED_C(tmp2);
     ReloadParentContinuation(masm, wasm_instance, return_reg, tmp, tmp2);
     RestoreParentSuspender(masm, tmp, tmp2);
   }
@@ -5389,7 +5473,7 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   // for the Wasm call, that is, kGCScanSlotCount = 0, so we don't have to
   // reset it. We don't need the JS context for these builtin calls.
 
-  ASSIGN_REG(valuetypes_array_ptr);
+  ASSIGN_REG_C(valuetypes_array_ptr);
   __ Ldr(valuetypes_array_ptr, MemOperand(fp, kValueTypesArrayStartOffset));
   // The first valuetype of the array is the return's valuetype.
   ASSIGN_REG_W(valuetype);
@@ -5430,7 +5514,7 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   Label to_heapnumber;
   // If pointer compression is disabled, we can convert the return to a smi.
   if (SmiValuesAre32Bits()) {
-    __ SmiTag(return_reg);
+    __ SmiTag(return_reg.X());
   } else {
     __ Mov(scratch, return_reg.W());
     // Double the return value to test if it can be a Smi.
@@ -5536,8 +5620,13 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
   // Set up the stackframe.
   __ EnterFrame(StackFrame::STACK_SWITCH);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  DEFINE_PINNED(promise, c0);
+  DEFINE_PINNED(suspender, x1);
+#else   // !__CHERI_PURE_CAPABILITY__
   DEFINE_PINNED(promise, x0);
   DEFINE_PINNED(suspender, x1);
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #if defined(__CHERI_PURE_CAPABILITY__)
   __ Sub(csp, csp, RoundUp(-(BuiltinWasmWrapperConstants::kGCScanSlotCountOffset
@@ -5562,10 +5651,10 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
   // Save current state in active jump buffer.
   // -------------------------------------------
   Label resume;
-  DEFINE_REG(continuation);
+  DEFINE_REG_C(continuation);
   __ LoadRoot(continuation, RootIndex::kActiveContinuation);
-  DEFINE_REG(jmpbuf);
-  DEFINE_REG(scratch);
+  DEFINE_REG_C(jmpbuf);
+  DEFINE_REG_C(scratch);
   __ LoadExternalPointerField(
       jmpbuf,
       FieldMemOperand(continuation, WasmContinuationObject::kJmpbufOffset),
@@ -5579,7 +5668,7 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
       FieldMemOperand(suspender, WasmSuspenderObject::kStateOffset));
   regs.ResetExcept(promise, suspender, continuation);
 
-  DEFINE_REG(suspender_continuation);
+  DEFINE_REG_C(suspender_continuation);
   __ LoadTaggedField(
       suspender_continuation,
       FieldMemOperand(suspender, WasmSuspenderObject::kContinuationOffset));
@@ -5600,7 +5689,7 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
   // -------------------------------------------
   // Update roots.
   // -------------------------------------------
-  DEFINE_REG(caller);
+  DEFINE_REG_C(caller);
   __ LoadTaggedField(caller,
                      FieldMemOperand(suspender_continuation,
                                      WasmContinuationObject::kParentOffset));
@@ -5608,7 +5697,7 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
       MacroAssembler::RootRegisterOffsetForRootIndex(
           RootIndex::kActiveContinuation);
   __ Str(caller, MemOperand(kRootRegister, active_continuation_offset));
-  DEFINE_REG(parent);
+  DEFINE_REG_C(parent);
   __ LoadTaggedField(
       parent, FieldMemOperand(suspender, WasmSuspenderObject::kParentOffset));
   int32_t active_suspender_offset =
@@ -5622,9 +5711,9 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
   // -------------------------------------------
   MemOperand GCScanSlotPlace =
       MemOperand(fp, BuiltinWasmWrapperConstants::kGCScanSlotCountOffset);
-  ASSIGN_REG(scratch);
-  __ Mov(scratch, 2);
-  __ Str(scratch, GCScanSlotPlace);
+  ASSIGN_REG_C(scratch);
+  __ Mov(scratch.X(), 2);
+  __ Str(scratch.X(), GCScanSlotPlace);
   __ Stp(caller, promise,
 #if defined(__CHERI_PURE_CAPABILITY__)
       MemOperand(csp, -2 * kSystemPointerSize, PreIndex));
@@ -5639,7 +5728,7 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
 #else // defined(__CHERI_PURE_CAPABILITY__)
       MemOperand(sp, 2 * kSystemPointerSize, PostIndex));
 #endif // defined(__CHERI_PURE_CAPABILITY__)
-  ASSIGN_REG(jmpbuf);
+  ASSIGN_REG_C(jmpbuf);
   __ LoadExternalPointerField(
       jmpbuf, FieldMemOperand(caller, WasmContinuationObject::kJmpbufOffset),
       kWasmContinuationJmpbufTag);
@@ -5692,7 +5781,7 @@ void Generate_WasmResumeHelper(MacroAssembler* masm, wasm::OnResume on_resume) {
   // -------------------------------------------
   // Load suspender from closure.
   // -------------------------------------------
-  DEFINE_REG(sfi);
+  DEFINE_REG_C(sfi);
   __ LoadTaggedField(
       sfi,
       MemOperand(
@@ -5702,7 +5791,7 @@ void Generate_WasmResumeHelper(MacroAssembler* masm, wasm::OnResume on_resume) {
   // Suspender should be ObjectRegister register to be used in
   // RecordWriteField calls later.
   DEFINE_PINNED(suspender, WriteBarrierDescriptor::ObjectRegister());
-  DEFINE_REG(function_data);
+  DEFINE_REG_C(function_data);
   __ LoadTaggedField(
       function_data,
       FieldMemOperand(sfi, SharedFunctionInfo::kFunctionDataOffset));
@@ -5727,10 +5816,10 @@ void Generate_WasmResumeHelper(MacroAssembler* masm, wasm::OnResume on_resume) {
   // Save current state.
   // -------------------------------------------
   Label suspend;
-  DEFINE_REG(active_continuation);
+  DEFINE_REG_C(active_continuation);
   __ LoadRoot(active_continuation, RootIndex::kActiveContinuation);
-  DEFINE_REG(current_jmpbuf);
-  ASSIGN_REG(scratch);
+  DEFINE_REG_C(current_jmpbuf);
+  ASSIGN_REG_C(scratch);
   __ LoadExternalPointerField(
       current_jmpbuf,
       FieldMemOperand(active_continuation,
@@ -5744,7 +5833,7 @@ void Generate_WasmResumeHelper(MacroAssembler* masm, wasm::OnResume on_resume) {
   // -------------------------------------------
   // Set the suspender and continuation parents and update the roots
   // -------------------------------------------
-  DEFINE_REG(active_suspender);
+  DEFINE_REG_C(active_suspender);
   __ LoadRoot(active_suspender, RootIndex::kActiveSuspender);
   __ StoreTaggedField(
       active_suspender,
@@ -5811,8 +5900,8 @@ void Generate_WasmResumeHelper(MacroAssembler* masm, wasm::OnResume on_resume) {
   // Load state from target jmpbuf (longjmp).
   // -------------------------------------------
   regs.Reserve(kReturnRegister0);
-  DEFINE_REG(target_jmpbuf);
-  ASSIGN_REG(scratch);
+  DEFINE_REG_C(target_jmpbuf);
+  ASSIGN_REG_C(scratch);
   __ LoadExternalPointerField(
       target_jmpbuf,
       FieldMemOperand(target_continuation,

@@ -100,7 +100,11 @@ class FreezeCacheState {
 class LiftoffAssembler : public MacroAssembler {
  public:
   // Each slot in our stack frame currently has exactly 8 bytes.
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr int kStackSlotSize = 16;
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr int kStackSlotSize = 8;
+#endif  // __CHERI_PURE_CAPABILITY__
 
   static constexpr ValueKind kIntPtrKind =
       kSystemPointerSize == kInt32Size ? kI32 : kI64;
@@ -775,6 +779,9 @@ class LiftoffAssembler : public MacroAssembler {
   inline static int SlotSizeForType(ValueKind kind);
   inline static bool NeedsAlignment(ValueKind kind);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  inline void LoadCapabilityConstant(LiftoffRegister, uintptr_t);
+#endif  // __CHERI_PURE_CAPABILITY__
   inline void LoadConstant(LiftoffRegister, WasmValue);
   inline void LoadInstanceFromFrame(Register dst);
   inline void LoadFromInstance(Register dst, Register instance, int offset,
@@ -804,6 +811,9 @@ class LiftoffAssembler : public MacroAssembler {
     LoadSmiAsInt32(dst, array, offset);
   }
   void LoadSmiAsInt32(LiftoffRegister dst, Register src_addr, int32_t offset) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(src_addr.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     if (SmiValuesAre32Bits()) {
 #if V8_TARGET_LITTLE_ENDIAN
       DCHECK_EQ(kSmiShiftSize + kSmiTagSize, 4 * kBitsPerByte);
@@ -818,6 +828,19 @@ class LiftoffAssembler : public MacroAssembler {
   }
   // Warning: may clobber {dst} on some architectures!
   inline void IncrementSmi(LiftoffRegister dst, int offset);
+#ifdef __CHERI_PURE_CAPABILITY__
+  inline void LoadCapability(LiftoffRegister dst, Register src_addr,
+                             Register offset_reg, uintptr_t offset_imm,
+                             uint32_t* protected_load_pc = nullptr,
+                             bool is_load_mem = false, bool i64_offset = false,
+                             bool needs_shift = false);
+  inline void StoreCapability(Register dst_addr, Register offset_reg,
+                              uintptr_t offset_imm, LiftoffRegister src,
+                              LiftoffRegList pinned,
+                              uint32_t* protected_store_pc = nullptr,
+                              bool is_store_mem = false,
+                              bool i64_offset = false);
+#endif  // __CHERI_PURE_CAPABILITY__
   inline void Load(LiftoffRegister dst, Register src_addr, Register offset_reg,
                    uintptr_t offset_imm, LoadType type,
                    uint32_t* protected_load_pc = nullptr,

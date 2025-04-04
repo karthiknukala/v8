@@ -179,16 +179,16 @@ class CPURegister : public RegisterBase<CPURegister, kRegAfterLast> {
   bool IsZero() const;
   bool IsSP() const;
 
-  bool IsRegister() const { return reg_type_ == kRegister; }
-  bool IsVRegister() const { return reg_type_ == kVRegister; }
+  constexpr bool IsRegister() const { return reg_type_ == kRegister; }
+  constexpr bool IsVRegister() const { return reg_type_ == kVRegister; }
 
-  bool IsFPRegister() const { return IsS() || IsD(); }
+  constexpr bool IsFPRegister() const { return IsS() || IsD(); }
 
-  bool IsW() const { return IsRegister() && Is32Bits(); }
-  bool IsX() const { return IsRegister() && Is64Bits(); }
+  constexpr bool IsW() const { return IsRegister() && Is32Bits(); }
+  constexpr bool IsX() const { return IsRegister() && Is64Bits(); }
 
 #if defined(__CHERI_PURE_CAPABILITY__)
-  bool IsC() const { return IsRegister() && Is128Bits(); }
+  constexpr bool IsC() const { return IsRegister() && Is128Bits(); }
 #endif // __CHERI_PURE_CAPABILITY__
 
   // These assertions ensure that the size and type of the register are as
@@ -197,12 +197,12 @@ class CPURegister : public RegisterBase<CPURegister, kRegAfterLast> {
   // does not imply Is1D() or Is8B().
   // Check the number of lanes, ie. the format of the vector, using methods such
   // as Is8B(), Is1D(), etc. in the VRegister class.
-  bool IsV() const { return IsVRegister(); }
-  bool IsB() const { return IsV() && Is8Bits(); }
-  bool IsH() const { return IsV() && Is16Bits(); }
-  bool IsS() const { return IsV() && Is32Bits(); }
-  bool IsD() const { return IsV() && Is64Bits(); }
-  bool IsQ() const { return IsV() && Is128Bits(); }
+  constexpr bool IsV() const { return IsVRegister(); }
+  constexpr bool IsB() const { return IsV() && Is8Bits(); }
+  constexpr bool IsH() const { return IsV() && Is16Bits(); }
+  constexpr bool IsS() const { return IsV() && Is32Bits(); }
+  constexpr bool IsD() const { return IsV() && Is64Bits(); }
+  constexpr bool IsQ() const { return IsV() && Is128Bits(); }
 
   Register Reg() const;
   VRegister VReg() const;

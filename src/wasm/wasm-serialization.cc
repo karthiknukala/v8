@@ -146,7 +146,11 @@ void SetWasmCalleeTag(RelocInfo* rinfo, uint32_t tag) {
   WriteUnalignedValue(rinfo->target_address_address(), tag);
 #elif V8_TARGET_ARCH_ARM64
   Instruction* instr = reinterpret_cast<Instruction*>(rinfo->pc());
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (instr->IsLdrLiteralC()) {
+#else   // !__CHERI_PURE_CAPABILITY__
   if (instr->IsLdrLiteralX()) {
+#endif  // __CHERI_PURE_CAPABILITY__
     WriteUnalignedValue(rinfo->constant_pool_entry_address(),
                         static_cast<Address>(tag));
   } else {
@@ -419,7 +423,7 @@ void NativeModuleSerializer::WriteCode(const WasmCode* code, Writer* writer) {
   writer->WriteVector(code->protected_instructions_data());
 #if V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_PPC ||      \
     V8_TARGET_ARCH_PPC64 || V8_TARGET_ARCH_S390X || V8_TARGET_ARCH_RISCV32 || \
-    V8_TARGET_ARCH_RISCV64
+    V8_TARGET_ARCH_RISCV64 || defined(__CHERI_PURE_CAPABILITY__)
   // On platforms that don't support misaligned word stores, copy to an aligned
   // buffer if necessary so we can relocate the serialized code.
   std::unique_ptr<uint8_t[]> aligned_buffer;

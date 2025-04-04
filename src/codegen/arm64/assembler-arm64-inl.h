@@ -79,7 +79,13 @@ inline void CPURegList::Remove(const CPURegList& other) {
 
 inline void CPURegList::Combine(const CPURegister& other) {
   DCHECK(other.type() == type_);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(other.SizeInBits() == size_ ||
+         (other.SizeInBits() == kXRegSizeInBits && size_ == kCRegSizeInBits) ||
+         (other.SizeInBits() == kCRegSizeInBits && size_ == kXRegSizeInBits));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(other.SizeInBits() == size_);
+#endif  // __CHERI_PURE_CAPABILITY__
   Combine(other.code());
 }
 

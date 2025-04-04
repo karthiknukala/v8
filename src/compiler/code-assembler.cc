@@ -475,12 +475,25 @@ void CodeAssembler::Return(TNode<Float64T> value) {
 
 void CodeAssembler::Return(TNode<WordT> value1, TNode<WordT> value2) {
   DCHECK_EQ(2, raw_assembler()->call_descriptor()->ReturnCount());
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(
+      (MachineType::PointerRepresentation() ==
+       raw_assembler()->call_descriptor()->GetReturnType(0).representation()) ||
+      (MachineRepresentation::kWord64 ==
+       raw_assembler()->call_descriptor()->GetReturnType(0).representation()));
+  DCHECK(
+      (MachineType::PointerRepresentation() ==
+       raw_assembler()->call_descriptor()->GetReturnType(1).representation()) ||
+      (MachineRepresentation::kWord64 ==
+       raw_assembler()->call_descriptor()->GetReturnType(1).representation()));
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK_EQ(
       MachineType::PointerRepresentation(),
       raw_assembler()->call_descriptor()->GetReturnType(0).representation());
   DCHECK_EQ(
       MachineType::PointerRepresentation(),
       raw_assembler()->call_descriptor()->GetReturnType(1).representation());
+#endif  // __CHERI_PURE_CAPABILITY__
   return raw_assembler()->Return(value1, value2);
 }
 

@@ -16,6 +16,14 @@ namespace v8 {
 namespace internal {
 namespace wasm {
 
+enum class TableStartAlignment { kPointerAligned, k8ByteAligned };
+
+inline TableStartAlignment TableAlignmentFor(Address table) {
+  return IsAligned(table, kSystemPointerSize)
+             ? TableStartAlignment::kPointerAligned
+             : TableStartAlignment::k8ByteAligned;
+}
+
 // The jump table is the central dispatch point for all (direct and indirect)
 // invocations in WebAssembly. It holds one slot per function in a module, with
 // each slot containing a dispatch to the currently published {WasmCode} that
@@ -84,22 +92,45 @@ class V8_EXPORT_PRIVATE JumpTableAssembler : public MacroAssembler {
   }
 
   // Translate a far jump table index to an offset into the table.
-  static uint32_t FarJumpSlotIndexToOffset(uint32_t slot_index) {
-    return slot_index * kFarJumpTableSlotSize;
+  static uint32_t FarJumpSlotIndexToOffset(uint32_t slot_index,
+                                           TableStartAlignment alignment) {
+    // These expressions are intentionally written to be easy to create an
+    // inverse for. Any further changes should keep this in mind.
+    if (alignment == TableStartAlignment::k8ByteAligned) {
+      return kFarJumpTablePaddingSize +
+             slot_index * (kFarJumpTableSlotSize + kFarJumpTablePaddingSize);
+    }
+    DCHECK_EQ(alignment, TableStartAlignment::kPointerAligned);
+    return slot_index * (kFarJumpTableSlotSize + kFarJumpTablePaddingSize);
   }
 
   // Translate a far jump table offset to the index into the table.
-  static uint32_t FarJumpSlotOffsetToIndex(uint32_t offset) {
+  //
+  // This function is an inverse of FarJumpSlotIndexToOffset.
+  static uint32_t FarJumpSlotOffsetToIndex(uint32_t offset,
+                                           TableStartAlignment alignment) {
+    if (alignment == TableStartAlignment::k8ByteAligned) {
+      DCHECK_EQ(0, (offset - kFarJumpTablePaddingSize) % kFarJumpTableSlotSize);
+      return (offset - kFarJumpTablePaddingSize) /
+             (kFarJumpTableSlotSize + kFarJumpTablePaddingSize);
+    }
+    DCHECK_EQ(alignment, TableStartAlignment::kPointerAligned);
     DCHECK_EQ(0, offset % kFarJumpTableSlotSize);
-    return offset / kFarJumpTableSlotSize;
+    return offset / (kFarJumpTableSlotSize + kFarJumpTablePaddingSize);
   }
 
   // Determine the size of a far jump table containing the given number of
   // slots.
   static constexpr uint32_t SizeForNumberOfFarJumpSlots(
-      int num_runtime_slots, int num_function_slots) {
+      int num_runtime_slots, int num_function_slots,
+      TableStartAlignment alignment = TableStartAlignment::k8ByteAligned) {
     int num_entries = num_runtime_slots + num_function_slots;
-    return num_entries * kFarJumpTableSlotSize;
+    if (alignment == TableStartAlignment::k8ByteAligned) {
+      return kFarJumpTablePaddingSize +
+             num_entries * (kFarJumpTableSlotSize + kFarJumpTablePaddingSize);
+    }
+    DCHECK_EQ(alignment, TableStartAlignment::kPointerAligned);
+    return num_entries * (kFarJumpTableSlotSize + kFarJumpTableSlotSize);
   }
 
   // Translate a slot index to an offset into the lazy compile table.
@@ -139,14 +170,29 @@ class V8_EXPORT_PRIVATE JumpTableAssembler : public MacroAssembler {
         SizeForNumberOfFarJumpSlots(num_runtime_slots, num_function_slots);
     // Assume enough space, so the Assembler does not try to grow the buffer.
     JumpTableAssembler jtasm(base, table_size + 256);
-    int offset = 0;
+    int offset;
+    TableStartAlignment alignment;
+    {
+      ptraddr_t current_pc =
+          static_cast<ptraddr_t>(reinterpret_cast<Address>(jtasm.pc()));
+      if (!IsAligned(current_pc, kSystemPointerSize)) {
+        offset = kFarJumpTablePaddingSize;
+        jtasm.NopBytes(kFarJumpTablePaddingSize);
+        alignment = TableStartAlignment::k8ByteAligned;
+      } else {
+        offset = 0;
+        alignment = TableStartAlignment::kPointerAligned;
+      }
+    }
     for (int index = 0; index < num_runtime_slots + num_function_slots;
          ++index) {
-      DCHECK_EQ(offset, FarJumpSlotIndexToOffset(index));
+      DCHECK_EQ(offset, FarJumpSlotIndexToOffset(index, alignment));
       // Functions slots initially jump to themselves. They are patched before
       // being used.
       Address target =
           index < num_runtime_slots ? stub_targets[index] : base + offset;
+      jtasm.NopBytes(kFarJumpTablePaddingSize);
+      offset += kFarJumpTablePaddingSize;
       jtasm.EmitFarJumpSlot(target);
       offset += kFarJumpTableSlotSize;
       DCHECK_EQ(offset, jtasm.pc_offset());
@@ -199,6 +245,9 @@ class V8_EXPORT_PRIVATE JumpTableAssembler : public MacroAssembler {
   static constexpr int kFarJumpTableSlotSize = 2 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 5 * kInstrSize;
 #elif V8_TARGET_ARCH_ARM64 && V8_ENABLE_CONTROL_FLOW_INTEGRITY
+#ifdef __CHERI_PURE_CAPABILITY__
+#error "V8_ENABLE_CONTROL_FLOW_INTEGRITY is unsupported on CHERI currently.
+#endif  // __CHERI_PURE_CAPABILITY__
   static constexpr int kJumpTableLineSize = 2 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 2 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 6 * kInstrSize;
@@ -206,7 +255,13 @@ class V8_EXPORT_PRIVATE JumpTableAssembler : public MacroAssembler {
 #elif V8_TARGET_ARCH_ARM64 && !V8_ENABLE_CONTROL_FLOW_INTEGRITY
   static constexpr int kJumpTableLineSize = 1 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 1 * kInstrSize;
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr int kFarJumpTableSlotSize = 6 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 2 * kInstrSize;
+#else   // !__CHERI_PURE_CAPABILITY__
   static constexpr int kFarJumpTableSlotSize = 4 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
+#endif  // __CHERI_PURE_CAPABILITY__
   static constexpr int kLazyCompileTableSlotSize = 3 * kInstrSize;
 #elif V8_TARGET_ARCH_S390X
   static constexpr int kJumpTableLineSize = 128;

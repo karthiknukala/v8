@@ -94,7 +94,7 @@ struct assert_field_size {
 #endif
 
 constexpr LoadType::LoadTypeValue kPointerLoadType =
-    kSystemPointerSize == 8 ? LoadType::kI64Load : LoadType::kI32Load;
+    kSystemPointerAddrSize == 8 ? LoadType::kI64Load : LoadType::kI32Load;
 
 constexpr ValueKind kIntPtrKind = LiftoffAssembler::kIntPtrKind;
 constexpr ValueKind kSmiKind = LiftoffAssembler::kSmiKind;
@@ -733,7 +733,11 @@ class LiftoffCompiler {
 
     // Loading the limit address can change the stack state, hence do this
     // before storing information about registers.
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register limit_address = __ GetUnusedRegister(kGpReg, {}).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register limit_address = __ GetUnusedRegister(kGpReg, {}).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_INSTANCE_FIELD(limit_address, StackLimitAddress, kSystemPointerSize,
                         {});
 
@@ -804,7 +808,11 @@ class LiftoffCompiler {
     // Platforms where both this load and the later store would have to
     // explicitly add the offset can save code size by performing the addition
     // only once.
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Add(array_reg, array_reg, Operand(offset));
+#else   // !__CHERI_PURE_CAPABILITY__
     __ emit_ptrsize_addi(array_reg, array_reg, offset);
+#endif  // __CHERI_PURE_CAPABILITY__
     offset = 0;
 #endif
     __ Load(budget_reg, array_reg, no_reg, offset, LoadType::kI32Load, {});
@@ -898,10 +906,17 @@ class LiftoffCompiler {
     // Input 0 is the call target, the instance is at 1.
     constexpr int kInstanceParameterIndex = 1;
     // Check that {kWasmInstanceRegister} matches our call descriptor.
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK_EQ(kWasmInstanceRegister,
+              Register::cap_from_code(
+                  descriptor_->GetInputLocation(kInstanceParameterIndex)
+                      .AsRegister()));
+#else   // !__CHERI_PURE_CAPABILITY__
     DCHECK_EQ(kWasmInstanceRegister,
               Register::from_code(
                   descriptor_->GetInputLocation(kInstanceParameterIndex)
                       .AsRegister()));
+#endif  // __CHERI_PURE_CAPABILITY__
     USE(kInstanceParameterIndex);
     __ cache_state()->SetInstanceCacheRegister(kWasmInstanceRegister);
 
@@ -1131,17 +1146,29 @@ class LiftoffCompiler {
         pinned.set(__ GetUnusedRegister(kGpReg, pinned));
     {
       FREEZE_STATE(frozen);
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadCapabilityConstant(max_steps_addr,
+                                reinterpret_cast<uintptr_t>(max_steps_));
+      __ Load(max_steps, max_steps_addr.gp().C(), no_reg, 0,
+              LoadType::kI32Load);
+#else   // !__CHERI_PURE_CAPABILITY__
       __ LoadConstant(
           max_steps_addr,
           WasmValue::ForUintPtr(reinterpret_cast<uintptr_t>(max_steps_)));
       __ Load(max_steps, max_steps_addr.gp(), no_reg, 0, LoadType::kI32Load);
+#endif  // __CHERI_PURE_CAPABILITY__
       // Subtract first (and store the result), so the caller sees that
       // max_steps ran negative. Since we never subtract too much at once, we
       // cannot underflow.
       DCHECK_GE(kMaxInt / 16, steps_done);  // An arbitrary limit.
       __ emit_i32_subi(max_steps.gp(), max_steps.gp(), steps_done);
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ Store(max_steps_addr.gp().C(), no_reg, 0, max_steps,
+               StoreType::kI32Store, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
       __ Store(max_steps_addr.gp(), no_reg, 0, max_steps, StoreType::kI32Store,
                pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
       Label cont;
       __ emit_i32_cond_jumpi(kGreaterThanEqual, &cont, max_steps.gp(), 0,
                              frozen);
@@ -1308,7 +1335,11 @@ class LiftoffCompiler {
     LoadExceptionSymbol(tag_symbol_reg.gp(), pinned, root_index);
     LiftoffRegister context_reg =
         pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+    LOAD_TAGGED_PTR_INSTANCE_FIELD(context_reg.gp().C(), NativeContext, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(context_reg.gp(), NativeContext, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     LiftoffAssembler::VarState tag_symbol{kRef, tag_symbol_reg, 0};
     LiftoffAssembler::VarState context{kRef, context_reg, 0};
@@ -1367,10 +1398,25 @@ class LiftoffCompiler {
       // statically that it cannot be the JSTag.
       LiftoffRegister undefined =
           pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadFullPointer(
+          undefined.gp().C(), kRootRegister,
+          IsolateData::root_slot_offset(RootIndex::kUndefinedValue));
+#else   // !__CHERI_PURE_CAPABILITY__
       __ LoadFullPointer(
           undefined.gp(), kRootRegister,
           IsolateData::root_slot_offset(RootIndex::kUndefinedValue));
+#endif  // __CHERI_PURE_CAPABILITY__
       LiftoffRegister js_tag = pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+      LOAD_TAGGED_PTR_INSTANCE_FIELD(js_tag.gp().C(), NativeContext, pinned);
+      __ LoadTaggedPointer(
+          js_tag.gp().C(), js_tag.gp().C(), no_reg,
+          NativeContext::SlotOffset(Context::WASM_JS_TAG_INDEX));
+      __ LoadTaggedPointer(
+          js_tag.gp().C(), js_tag.gp().C(), no_reg,
+          wasm::ObjectAccess::ToTagged(WasmTagObject::kTagOffset));
+#else   // !__CHERI_PURE_CAPABILITY__
       LOAD_TAGGED_PTR_INSTANCE_FIELD(js_tag.gp(), NativeContext, pinned);
       __ LoadTaggedPointer(
           js_tag.gp(), js_tag.gp(), no_reg,
@@ -1378,6 +1424,7 @@ class LiftoffCompiler {
       __ LoadTaggedPointer(
           js_tag.gp(), js_tag.gp(), no_reg,
           wasm::ObjectAccess::ToTagged(WasmTagObject::kTagOffset));
+#endif  // __CHERI_PURE_CAPABILITY__
       {
         LiftoffAssembler::CacheState initial_state(zone_);
         LiftoffAssembler::CacheState end_state(zone_);
@@ -2475,8 +2522,13 @@ class LiftoffCompiler {
   void TierupCheckOnTailCall(FullDecoder* decoder) {
     if (!dynamic_tiering()) return;
     LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+    Register tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
     Register tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     TierupCheck(decoder, decoder->position(), __ pc_offset(), tmp1, tmp2);
   }
 
@@ -2485,8 +2537,13 @@ class LiftoffCompiler {
     Register tmp2 = no_reg;
     if (dynamic_tiering()) {
       LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+      tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+      tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
       tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     }
     ReturnImpl(decoder, tmp1, tmp2);
   }
@@ -2579,14 +2636,22 @@ class LiftoffCompiler {
 
   Register GetGlobalBaseAndOffset(const WasmGlobal* global,
                                   LiftoffRegList* pinned, uint32_t* offset) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register addr = pinned->set(__ GetUnusedRegister(kGpReg, {})).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register addr = pinned->set(__ GetUnusedRegister(kGpReg, {})).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     if (global->mutability && global->imported) {
       LOAD_TAGGED_PTR_INSTANCE_FIELD(addr, ImportedMutableGlobals, *pinned);
       int field_offset =
           wasm::ObjectAccess::ElementOffsetInTaggedFixedAddressArray(
               global->index);
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadCapability(LiftoffRegister(addr), addr, no_reg, field_offset);
+#else   // !__CHERI_PURE_CAPABILITY__
       __ Load(LiftoffRegister(addr), addr, no_reg, field_offset,
               kPointerLoadType);
+#endif  // __CHERI_PURE_CAPABILITY__
       *offset = 0;
     } else {
       LOAD_INSTANCE_FIELD(addr, GlobalsStart, kSystemPointerSize, *pinned);
@@ -2601,8 +2666,13 @@ class LiftoffCompiler {
   void GetBaseAndOffsetForImportedMutableExternRefGlobal(
       const WasmGlobal* global, LiftoffRegList* pinned, Register* base,
       Register* offset) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register globals_buffer =
+        pinned->set(__ GetUnusedRegister(kGpReg, *pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register globals_buffer =
         pinned->set(__ GetUnusedRegister(kGpReg, *pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(globals_buffer,
                                    ImportedMutableGlobalsBuffers, *pinned);
     *base = globals_buffer;
@@ -2613,8 +2683,13 @@ class LiftoffCompiler {
     // For the offset we need the index of the global in the buffer, and
     // then calculate the actual offset from the index. Load the index from
     // the ImportedMutableGlobals array of the instance.
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register imported_mutable_globals =
+        pinned->set(__ GetUnusedRegister(kGpReg, *pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register imported_mutable_globals =
         pinned->set(__ GetUnusedRegister(kGpReg, *pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
 
     LOAD_TAGGED_PTR_INSTANCE_FIELD(imported_mutable_globals,
                                    ImportedMutableGlobals, *pinned);
@@ -2650,11 +2725,21 @@ class LiftoffCompiler {
       }
 
       LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register globals_buffer =
+          pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       Register globals_buffer =
           pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       LOAD_TAGGED_PTR_INSTANCE_FIELD(globals_buffer, TaggedGlobalsBuffer,
                                      pinned);
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register value =
+          pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       Register value = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       __ LoadTaggedPointer(value, globals_buffer, no_reg,
                            wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(
                                imm.global->offset));
@@ -2692,8 +2777,13 @@ class LiftoffCompiler {
       }
 
       LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register globals_buffer =
+          pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       Register globals_buffer =
           pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       LOAD_TAGGED_PTR_INSTANCE_FIELD(globals_buffer, TaggedGlobalsBuffer,
                                      pinned);
       LiftoffRegister value = pinned.set(__ PopToRegister(pinned));
@@ -2887,8 +2977,13 @@ class LiftoffCompiler {
   };
   void AllocateTempRegisters(TierupTempRegisters& temps) {
     LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+    temps.tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+    temps.tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     temps.tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
     temps.tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   void BrOrRet(FullDecoder* decoder, uint32_t depth,
@@ -2995,8 +3090,13 @@ class LiftoffCompiler {
         }
       }
       if (need_temps) {
+#ifdef __CHERI_PURE_CAPABILITY__
+        tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+        tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
         tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
         tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       }
     }
 
@@ -3146,7 +3246,8 @@ class LiftoffCompiler {
         pinned.set(__ GetUnusedRegister(kGpReg, pinned));
     LiftoffRegister mem_size = __ GetUnusedRegister(kGpReg, pinned);
     // TODO(13957): Clamp the loaded memory size to a safe value.
-    LOAD_INSTANCE_FIELD(mem_size.gp(), Memory0Size, kSystemPointerSize, pinned);
+    LOAD_INSTANCE_FIELD(mem_size.gp(), Memory0Size, kSystemPointerAddrSize,
+                        pinned);
 
     __ LoadConstant(end_offset_reg, WasmValue::ForUintPtr(end_offset));
 
@@ -3230,7 +3331,11 @@ class LiftoffCompiler {
     // Get a register to hold the stack slot for MemoryTracingInfo.
     LiftoffRegister info = pinned.set(__ GetUnusedRegister(kGpReg, pinned));
     // Allocate stack slot for MemoryTracingInfo.
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ AllocateStackSlot(info.gp().C(), sizeof(MemoryTracingInfo));
+#else
     __ AllocateStackSlot(info.gp(), sizeof(MemoryTracingInfo));
+#endif  // __CHERI_PURE_CAPABILITY__
 
     // Reuse the {effective_offset} register for all information to be stored in
     // the MemoryTracingInfo struct.
@@ -3242,24 +3347,46 @@ class LiftoffCompiler {
       CHECK(__ emit_type_conversion(kExprI64UConvertI32, data, effective_offset,
                                     nullptr));
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ StoreCapability(info.gp().C(), no_reg,
+                       offsetof(MemoryTracingInfo, offset), data, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Store(
         info.gp(), no_reg, offsetof(MemoryTracingInfo, offset), data,
         kSystemPointerSize == 8 ? StoreType::kI64Store : StoreType::kI32Store,
         pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ LoadConstant(data, WasmValue(is_store ? 1 : 0));
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Store(info.gp().C(), no_reg, offsetof(MemoryTracingInfo, is_store), data,
+             StoreType::kI32Store8, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Store(info.gp(), no_reg, offsetof(MemoryTracingInfo, is_store), data,
              StoreType::kI32Store8, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ LoadConstant(data, WasmValue(static_cast<int>(rep)));
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Store(info.gp().C(), no_reg, offsetof(MemoryTracingInfo, mem_rep), data,
+             StoreType::kI32Store8, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Store(info.gp(), no_reg, offsetof(MemoryTracingInfo, mem_rep), data,
              StoreType::kI32Store8, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     WasmTraceMemoryDescriptor descriptor;
     DCHECK_EQ(0, descriptor.GetStackParameterCount());
     DCHECK_EQ(1, descriptor.GetRegisterParameterCount());
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register param_reg = descriptor.GetRegisterParameter(0).C();
+    if (info.gp().C() != param_reg) {
+      __ Move(param_reg, info.gp().C(), kIntPtrKind);
+    }
+#else   // !__CHERI_PURE_CAPABILITY__
     Register param_reg = descriptor.GetRegisterParameter(0);
     if (info.gp() != param_reg) {
       __ Move(param_reg, info.gp(), kIntPtrKind);
     }
+#endif  // __CHERI_PURE_CAPABILITY__
 
     source_position_table_builder_.AddPosition(__ pc_offset(),
                                                SourcePosition(position), false);
@@ -3293,14 +3420,22 @@ class LiftoffCompiler {
     if (V8_UNLIKELY(memory_start == no_reg)) {
       memory_start = GetMemoryStart_Slow(pinned);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    return memory_start.C();
+#else   // !__CHERI_PURE_CAPABILITY__
     return memory_start;
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   V8_NOINLINE V8_PRESERVE_MOST Register
   GetMemoryStart_Slow(LiftoffRegList pinned) {
     DCHECK_EQ(no_reg, __ cache_state()->cached_mem0_start);
     SCOPED_CODE_COMMENT("load memory start");
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register memory_start = __ GetUnusedRegister(kGpReg, pinned).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register memory_start = __ GetUnusedRegister(kGpReg, pinned).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_INSTANCE_FIELD(memory_start, Memory0Start, kSystemPointerSize, pinned);
 #ifdef V8_ENABLE_SANDBOX
     __ DecodeSandboxedPointer(memory_start);
@@ -3531,7 +3666,7 @@ class LiftoffCompiler {
 
   void CurrentMemoryPages(FullDecoder* /* decoder */, Value* /* result */) {
     Register mem_size = __ GetUnusedRegister(kGpReg, {}).gp();
-    LOAD_INSTANCE_FIELD(mem_size, Memory0Size, kSystemPointerSize, {});
+    LOAD_INSTANCE_FIELD(mem_size, Memory0Size, kSystemPointerAddrSize, {});
     __ emit_ptrsize_shri(mem_size, mem_size, kWasmPageSizeLog2);
     LiftoffRegister result{mem_size};
     if (env_->module->is_memory64 && kNeedI64RegPair) {
@@ -3775,9 +3910,14 @@ class LiftoffCompiler {
         pinned.set(pass_null_along_branch ? __ PeekToRegister(0, pinned)
                                           : __ PopToRegister(pinned));
     Register null = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
-    Register tmp = NeedsTierupCheck(decoder, depth)
-                       ? pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp()
-                       : no_reg;
+    Register tmp =
+        NeedsTierupCheck(decoder, depth)
+#ifdef __CHERI_PURE_CAPABILITY__
+            ? pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C()
+#else   // !__CHERI_PURE_CAPABILITY__
+            ? pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp()
+#endif  // __CHERI_PURE_CAPABILITY__
+            : no_reg;
     LoadNullValueForCompare(null, pinned, ref_object.type);
     {
       FREEZE_STATE(frozen);
@@ -3805,9 +3945,14 @@ class LiftoffCompiler {
     LiftoffRegister ref = pinned.set(__ PeekToRegister(0, pinned));
 
     Register null = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
-    Register tmp = NeedsTierupCheck(decoder, depth)
-                       ? pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp()
-                       : no_reg;
+    Register tmp =
+        NeedsTierupCheck(decoder, depth)
+#ifdef __CHERI_PURE_CAPABILITY__
+            ? pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C()
+#else   // !__CHERI_PURE_CAPABILITY__
+            ? pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp()
+#endif  // __CHERI_PURE_CAPABILITY__
+            : no_reg;
     LoadNullValueForCompare(null, pinned, ref_object.type);
     {
       FREEZE_STATE(frozen);
@@ -4686,9 +4831,15 @@ class LiftoffCompiler {
   void Load16BitExceptionValue(LiftoffRegister dst,
                                LiftoffRegister values_array, uint32_t* index,
                                LiftoffRegList pinned) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ LoadSmiAsInt32(
+        dst, values_array.gp().C(),
+        wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(*index));
+#else   // !__CHERI_PURE_CAPABILITY__
     __ LoadSmiAsInt32(
         dst, values_array.gp(),
         wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(*index));
+#endif  // __CHERI_PURE_CAPABILITY__
     (*index)++;
   }
 
@@ -4821,9 +4972,15 @@ class LiftoffCompiler {
       case wasm::kRef:
       case wasm::kRefNull:
       case wasm::kRtt: {
+#ifdef __CHERI_PURE_CAPABILITY__
+        __ LoadTaggedPointer(
+            value.gp().C(), values_array.gp().C(), no_reg,
+            wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(*index));
+#else   // !__CHERI_PURE_CAPABILITY__
         __ LoadTaggedPointer(
             value.gp(), values_array.gp(), no_reg,
             wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(*index));
+#endif  // __CHERI_PURE_CAPABILITY__
         (*index)++;
         break;
       }
@@ -4916,7 +5073,11 @@ class LiftoffCompiler {
     for (size_t param_idx = sig->parameter_count(); param_idx > 0;
          --param_idx) {
       ValueType type = sig->GetParam(param_idx - 1);
+#ifdef __CHERI_PURE_CAPABILITY__
+      StoreExceptionValue(type, values_array.gp().C(), &index, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
       StoreExceptionValue(type, values_array.gp(), &index, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     }
     DCHECK_EQ(0, index);
 
@@ -4924,10 +5085,17 @@ class LiftoffCompiler {
     CODE_COMMENT("load exception tag");
     LiftoffRegister exception_tag =
         pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+    LOAD_TAGGED_PTR_INSTANCE_FIELD(exception_tag.gp().C(), TagsTable, pinned);
+    __ LoadTaggedPointer(
+        exception_tag.gp().C(), exception_tag.gp().C(), no_reg,
+        wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(imm.index));
+#else   // !__CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(exception_tag.gp(), TagsTable, pinned);
     __ LoadTaggedPointer(
         exception_tag.gp(), exception_tag.gp(), no_reg,
         wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(imm.index));
+#endif  // __CHERI_PURE_CAPABILITY__
 
     // Finally, call WasmThrow.
     CallRuntimeStub(WasmCode::kWasmThrow,
@@ -5026,6 +5194,9 @@ class LiftoffCompiler {
     CODE_COMMENT("atomic binop");
     uintptr_t offset = imm.offset;
     Register addr = pinned.set(GetMemoryStart(pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(addr.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
 
     (asm_.*emit_fn)(addr, index, offset, value, result, type, i64_offset);
     __ PushRegister(result_kind, result);
@@ -5046,12 +5217,20 @@ class LiftoffCompiler {
     AlignmentCheckMem(decoder, type.size(), imm.offset, index, pinned);
 
     uintptr_t offset = imm.offset;
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register addr = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register addr = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_INSTANCE_FIELD(addr, Memory0Start, kSystemPointerSize, pinned);
 #ifdef V8_ENABLE_SANDBOX
     __ DecodeSandboxedPointer(addr);
 #endif
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Add(addr, addr, Operand(index));
+#else   // !__CHERI_PURE_CAPABILITY__
     __ emit_i32_add(addr, addr, index);
+#endif  // __CHERI_PURE_CAPABILITY__
     pinned.clear(LiftoffRegister(index));
     LiftoffRegister new_value = pinned.set(__ PopToRegister(pinned));
     LiftoffRegister expected = pinned.set(__ PopToRegister(pinned));
@@ -5382,7 +5561,7 @@ class LiftoffCompiler {
     LiftoffRegister reg = __ PopToRegister(*pinned);
     LiftoffRegister intptr_reg = reg;
     // For memory32 on 64-bit hosts, zero-extend.
-    if (kSystemPointerSize == kInt64Size && !env_->module->is_memory64) {
+    if (kSystemPointerAddrSize == kInt64Size && !env_->module->is_memory64) {
       // Only overwrite {reg} if it's not used otherwise.
       if (pinned->has(reg) || __ cache_state()->is_used(reg)) {
         intptr_reg = __ GetUnusedRegister(kGpReg, *pinned);
@@ -5390,7 +5569,7 @@ class LiftoffCompiler {
       __ emit_u32_to_uintptr(intptr_reg.gp(), reg.gp());
     }
     // For memory32 or memory64 on 64-bit, we are done here.
-    if (kSystemPointerSize == kInt64Size || !env_->module->is_memory64) {
+    if (kSystemPointerAddrSize == kInt64Size || !env_->module->is_memory64) {
       pinned->set(intptr_reg);
       return intptr_reg;
     }
@@ -5467,8 +5646,13 @@ class LiftoffCompiler {
   void DataDrop(FullDecoder* decoder, const IndexImmediate& imm) {
     LiftoffRegList pinned;
 
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register seg_size_array =
+        pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register seg_size_array =
         pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(seg_size_array, DataSegmentSizes, pinned);
 
     LiftoffRegister seg_index =
@@ -5684,7 +5868,11 @@ class LiftoffCompiler {
 
     LiftoffRegList pinned;
     // Get the number of calls array address.
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register tables = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register tables = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(tables, Tables, pinned);
 
     Register table = tables;
@@ -5765,8 +5953,13 @@ class LiftoffCompiler {
       // Skipping the write barrier is safe as long as:
       // (1) {obj} is freshly allocated, and
       // (2) {obj} is in new-space (not pretenured).
+#ifdef __CHERI_PURE_CAPABILITY__
+      StoreObjectField(obj.gp().C(), no_reg, offset, value, pinned,
+                       field_type.kind(), LiftoffAssembler::kSkipWriteBarrier);
+#else   // !__CHERI_PURE_CAPABILITY__
       StoreObjectField(obj.gp(), no_reg, offset, value, pinned,
                        field_type.kind(), LiftoffAssembler::kSkipWriteBarrier);
+#endif  // __CHERI_PURE_CAPABILITY__
       pinned.clear(value);
     }
     // If this assert fails then initialization of padding field might be
@@ -5798,8 +5991,13 @@ class LiftoffCompiler {
     MaybeEmitNullCheck(decoder, obj.gp(), pinned, struct_obj.type);
     LiftoffRegister value =
         __ GetUnusedRegister(reg_class_for(field_kind), pinned);
+#ifdef __CHERI_PURE_CAPABILITY__
+    LoadObjectField(value, obj.gp().C(), no_reg, offset, field_kind, is_signed,
+                    pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     LoadObjectField(value, obj.gp(), no_reg, offset, field_kind, is_signed,
                     pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ PushRegister(unpacked(field_kind), value);
   }
 
@@ -5812,7 +6010,11 @@ class LiftoffCompiler {
     LiftoffRegister value = pinned.set(__ PopToRegister(pinned));
     LiftoffRegister obj = pinned.set(__ PopToRegister(pinned));
     MaybeEmitNullCheck(decoder, obj.gp(), pinned, struct_obj.type);
+#ifdef __CHERI_PURE_CAPABILITY__
+    StoreObjectField(obj.gp().C(), no_reg, offset, value, pinned, field_kind);
+#else   // !__CHERI_PURE_CAPABILITY__
     StoreObjectField(obj.gp(), no_reg, offset, value, pinned, field_kind);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   void ArrayNew(FullDecoder* decoder, const ArrayIndexImmediate& imm,
@@ -5897,9 +6099,15 @@ class LiftoffCompiler {
           AddOutOfLineTrap(decoder, WasmCode::kThrowWasmTrapArrayOutOfBounds);
       LiftoffRegister array_length =
           pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+      LoadObjectField(array_length, array_reg.gp().C(), no_reg,
+                      ObjectAccess::ToTagged(WasmArray::kLengthOffset), kI32,
+                      false, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
       LoadObjectField(array_length, array_reg.gp(), no_reg,
                       ObjectAccess::ToTagged(WasmArray::kLengthOffset), kI32,
                       false, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
       LiftoffRegister index = pinned.set(__ PeekToRegister(2, pinned));
       LiftoffRegister length = pinned.set(__ PeekToRegister(0, pinned));
       LiftoffRegister index_plus_length =
@@ -5941,9 +6149,15 @@ class LiftoffCompiler {
     }
     LiftoffRegister value =
         __ GetUnusedRegister(reg_class_for(elem_kind), pinned);
+#ifdef __CHERI_PURE_CAPABILITY__
+    LoadObjectField(value, array.gp().C(), index.gp(),
+                    wasm::ObjectAccess::ToTagged(WasmArray::kHeaderSize),
+                    elem_kind, is_signed, pinned);
+#else
     LoadObjectField(value, array.gp(), index.gp(),
                     wasm::ObjectAccess::ToTagged(WasmArray::kHeaderSize),
                     elem_kind, is_signed, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ PushRegister(unpacked(elem_kind), value);
   }
 
@@ -5963,9 +6177,15 @@ class LiftoffCompiler {
     if (elem_size_shift != 0) {
       __ emit_i32_shli(index.gp(), index.gp(), elem_size_shift);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    StoreObjectField(array.gp().C(), index.gp(),
+                     wasm::ObjectAccess::ToTagged(WasmArray::kHeaderSize),
+                     value, pinned, elem_kind);
+#else   // !__CHERI_PURE_CAPABILITY__
     StoreObjectField(array.gp(), index.gp(),
                      wasm::ObjectAccess::ToTagged(WasmArray::kHeaderSize),
                      value, pinned, elem_kind);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   void ArrayLen(FullDecoder* decoder, const Value& array_obj, Value* result) {
@@ -5974,7 +6194,12 @@ class LiftoffCompiler {
     MaybeEmitNullCheck(decoder, obj.gp(), pinned, array_obj.type);
     LiftoffRegister len = __ GetUnusedRegister(kGpReg, pinned);
     int kLengthOffset = wasm::ObjectAccess::ToTagged(WasmArray::kLengthOffset);
+#ifdef __CHERI_PURE_CAPABILITY__
+    LoadObjectField(len, obj.gp().C(), no_reg, kLengthOffset, kI32, false,
+                    pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     LoadObjectField(len, obj.gp(), no_reg, kLengthOffset, kI32, false, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ PushRegister(kI32, len);
   }
 
@@ -6041,9 +6266,15 @@ class LiftoffCompiler {
       // Skipping the write barrier is safe as long as:
       // (1) {array} is freshly allocated, and
       // (2) {array} is in new-space (not pretenured).
+#ifdef __CHERI_PURE_CAPABILITY__
+      StoreObjectField(array.gp().C(), no_reg,
+                       wasm::ObjectAccess::ToTagged(offset), element, pinned,
+                       elem_kind, LiftoffAssembler::kSkipWriteBarrier);
+#else   // !__CHERI_PURE_CAPABILITY__
       StoreObjectField(array.gp(), no_reg, wasm::ObjectAccess::ToTagged(offset),
                        element, pinned, elem_kind,
                        LiftoffAssembler::kSkipWriteBarrier);
+#endif  // __CHERI_PURE_CAPABILITY__
     }
 
     // Push the array onto the stack.
@@ -6155,10 +6386,17 @@ class LiftoffCompiler {
   void RttCanon(FullDecoder* decoder, uint32_t type_index, Value* result) {
     LiftoffRegList pinned;
     LiftoffRegister rtt = pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+    LOAD_TAGGED_PTR_INSTANCE_FIELD(rtt.gp().C(), ManagedObjectMaps, pinned);
+    __ LoadTaggedPointer(
+        rtt.gp().C(), rtt.gp().C(), no_reg,
+        wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(type_index));
+#else   // !__CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(rtt.gp(), ManagedObjectMaps, pinned);
     __ LoadTaggedPointer(
         rtt.gp(), rtt.gp(), no_reg,
         wasm::ObjectAccess::ElementOffsetInTaggedFixedArray(type_index));
+#endif  // __CHERI_PURE_CAPABILITY__
     __ PushRegister(kRtt, rtt);
   }
 
@@ -6184,7 +6422,11 @@ class LiftoffCompiler {
       __ emit_cond_jump(kEqual, null_succeeds ? &match : no_match,
                         obj_type.kind(), obj_reg, scratch_null, frozen);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register tmp1 = scratch_null.C();  // Done with null checks.
+#else
     Register tmp1 = scratch_null;  // Done with null checks.
+#endif
 
     // Add Smi check if the source type may store a Smi (i31ref or JS Smi).
     ValueType i31ref = ValueType::Ref(HeapType::kI31);
@@ -6267,9 +6509,16 @@ class LiftoffCompiler {
 
     {
       FREEZE_STATE(frozen);
+#ifdef __CHERI_PURE_CAPABILITY__
+      SubtypeCheck(decoder->module_, obj_reg.gp().C(), obj.type,
+                   rtt_reg.gp().C(), rtt.type, scratch_null, result.gp(),
+                   &return_false, null_succeeds ? kNullSucceeds : kNullFails,
+                   frozen);
+#else   // !__CHERI_PURE_CAPABILITY__
       SubtypeCheck(decoder->module_, obj_reg.gp(), obj.type, rtt_reg.gp(),
                    rtt.type, scratch_null, result.gp(), &return_false,
                    null_succeeds ? kNullSucceeds : kNullFails, frozen);
+#endif  // __CHERI_PURE_CAPABILITY__
 
       __ LoadConstant(result, WasmValue(1));
       // TODO(jkummerow): Emit near jumps on platforms that have them.
@@ -6330,9 +6579,15 @@ class LiftoffCompiler {
     {
       FREEZE_STATE(frozen);
       NullSucceeds on_null = null_succeeds ? kNullSucceeds : kNullFails;
+#ifdef __CHERI_PURE_CAPABILITY__
+      SubtypeCheck(decoder->module_, obj_reg.gp().C(), obj.type,
+                   rtt_reg.gp().C(), rtt.type, scratch_null, scratch2,
+                   trap_label, on_null, frozen);
+#else
       SubtypeCheck(decoder->module_, obj_reg.gp(), obj.type, rtt_reg.gp(),
                    rtt.type, scratch_null, scratch2, trap_label, on_null,
                    frozen);
+#endif  // __CHERI_PURE_CAPABILITY__
     }
     __ PushRegister(obj.type.kind(), obj_reg);
   }
@@ -6384,11 +6639,17 @@ class LiftoffCompiler {
     FREEZE_STATE(frozen);
 
     NullSucceeds null_handling = null_succeeds ? kNullSucceeds : kNullFails;
+#ifdef __CHERI_PURE_CAPABILITY__
+    SubtypeCheck(decoder->module_, obj_reg.gp().C(), obj.type, rtt_reg.gp().C(),
+                 rtt.type, scratch_null, scratch2, &cont_false, null_handling,
+                 frozen);
+    BrOrRetImpl(decoder, depth, scratch_null.C(), scratch2.C());
+#else   // !__CHERI_PURE_CAPABILITY__
     SubtypeCheck(decoder->module_, obj_reg.gp(), obj.type, rtt_reg.gp(),
                  rtt.type, scratch_null, scratch2, &cont_false, null_handling,
                  frozen);
-
     BrOrRetImpl(decoder, depth, scratch_null, scratch2);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     __ bind(&cont_false);
   }
@@ -6414,13 +6675,23 @@ class LiftoffCompiler {
     FREEZE_STATE(frozen);
 
     NullSucceeds null_handling = null_succeeds ? kNullSucceeds : kNullFails;
+#ifdef __CHERI_PURE_CAPABILITY__
+    SubtypeCheck(decoder->module_, obj_reg.gp().C(), obj.type, rtt_reg.gp().C(),
+                 rtt.type, scratch_null, scratch2, &cont_branch, null_handling,
+                 frozen);
+#else   // !__CHERI_PURE_CAPABILITY__
     SubtypeCheck(decoder->module_, obj_reg.gp(), obj.type, rtt_reg.gp(),
                  rtt.type, scratch_null, scratch2, &cont_branch, null_handling,
                  frozen);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ emit_jump(&fallthrough);
 
     __ bind(&cont_branch);
+#ifdef __CHERI_PURE_CAPABILITY__
+    BrOrRetImpl(decoder, depth, scratch_null.C(), scratch2.C());
+#else   // !__CHERI_PURE_CAPABILITY__
     BrOrRetImpl(decoder, depth, scratch_null, scratch2);
+#endif  // __CHERI_PURE_CAPABILITY__
 
     __ bind(&fallthrough);
   }
@@ -6507,6 +6778,15 @@ class LiftoffCompiler {
 
   void Initialize(TypeCheck& check, PopOrPeek pop_or_peek, ValueType type) {
     LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (pop_or_peek == kPop) {
+      check.obj_reg = pinned.set(__ PopToRegister(pinned)).gp().C();
+    } else {
+      check.obj_reg = pinned.set(__ PeekToRegister(0, pinned)).gp().C();
+    }
+    check.tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+    check.tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     if (pop_or_peek == kPop) {
       check.obj_reg = pinned.set(__ PopToRegister(pinned)).gp();
     } else {
@@ -6514,6 +6794,7 @@ class LiftoffCompiler {
     }
     check.tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
     check.tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     if (check.obj_type.is_nullable()) {
       LoadNullValue(check.null_reg(), pinned, type);
     }
@@ -6693,7 +6974,7 @@ class LiftoffCompiler {
     FREEZE_STATE(frozen);
 
     if (null_succeeds && check.obj_type.is_nullable()) {
-      __ emit_cond_jump(kEqual, &match, kRefNull, check.obj_reg,
+      __ emit_cond_jump(kEqual, &match, kRefNull, check.obj_reg.X(),
                         check.null_reg(), frozen);
     }
 
@@ -6971,9 +7252,15 @@ class LiftoffCompiler {
     LiftoffRegister string_reg = pinned.set(__ PopToRegister(pinned));
     MaybeEmitNullCheck(decoder, string_reg.gp(), pinned, str.type);
     LiftoffRegister value = __ GetUnusedRegister(kGpReg, pinned);
+#ifdef __CHERI_PURE_CAPABILITY__
+    LoadObjectField(value, string_reg.gp().C(), no_reg,
+                    wasm::ObjectAccess::ToTagged(String::kLengthOffset),
+                    ValueKind::kI32, false /* is_signed */, pinned);
+#else   // !__CHERI_PURE_CAPABILITY__
     LoadObjectField(value, string_reg.gp(), no_reg,
                     wasm::ObjectAccess::ToTagged(String::kLengthOffset),
                     ValueKind::kI32, false /* is_signed */, pinned);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ PushRegister(kI32, value);
   }
 
@@ -7663,16 +7950,29 @@ class LiftoffCompiler {
     if (imm.index < env_->module->num_imported_functions) {
       // A direct call to an imported function.
       LiftoffRegList pinned;
+#ifdef __CHERI_PURE_CAPABILITY__
+      Register tmp = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+      Register target =
+          pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       Register tmp = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
       Register target = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
 
       Register imported_targets = tmp;
       LOAD_TAGGED_PTR_INSTANCE_FIELD(imported_targets, ImportedFunctionTargets,
                                      pinned);
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadCapability(
+          LiftoffRegister(target), imported_targets, no_reg,
+          wasm::ObjectAccess::ElementOffsetInTaggedFixedAddressArray(
+              imm.index));
+#else   // !__CHERI_PURE_CAPABILITY__
       __ Load(
           LiftoffRegister(target), imported_targets, no_reg,
           wasm::ObjectAccess::ElementOffsetInTaggedFixedAddressArray(imm.index),
           kPointerLoadType);
+#endif  // __CHERI_PURE_CAPABILITY__
 
       Register imported_function_refs = tmp;
       LOAD_TAGGED_PTR_INSTANCE_FIELD(imported_function_refs,
@@ -7740,13 +8040,24 @@ class LiftoffCompiler {
     // Get all temporary registers unconditionally up front.
     // We do not use temporary registers directly; instead we rename them as
     // appropriate in each scope they are used.
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+    Register tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+    Register tmp3 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register tmp1 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
     Register tmp2 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
     Register tmp3 = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     Register indirect_function_table = no_reg;
     if (imm.table_imm.index > 0) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      indirect_function_table =
+          pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       indirect_function_table =
           pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       LOAD_TAGGED_PTR_INSTANCE_FIELD(indirect_function_table,
                                      IndirectFunctionTables, pinned);
       __ LoadTaggedPointer(
@@ -7755,7 +8066,7 @@ class LiftoffCompiler {
     }
     {
       CODE_COMMENT("Check index is in-bounds");
-      Register table_size = tmp1;
+      Register table_size = tmp1.X();
       if (imm.table_imm.index == 0) {
         LOAD_INSTANCE_FIELD(table_size, IndirectFunctionTableSize, kUInt32Size,
                             pinned);
@@ -7935,8 +8246,13 @@ class LiftoffCompiler {
                                  WasmIndirectFunctionTable::kTargetsOffset));
       }
       int buffer_offset = wasm::ObjectAccess::ToTagged(ByteArray::kHeaderSize);
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadCapability(LiftoffRegister(function_target), function_target,
+                        index, buffer_offset, nullptr, false, false, true);
+#else   // !__CHERI_PURE_CAPABILITY__
       __ Load(LiftoffRegister(function_target), function_target, index,
               buffer_offset, kPointerLoadType, nullptr, false, false, true);
+#endif  // __CHERI_PURE_CAPABILITY__
 
       auto call_descriptor = compiler::GetWasmCallDescriptor(zone_, imm.sig);
       call_descriptor = GetLoweredCallDescriptor(zone_, call_descriptor);
@@ -7995,8 +8311,13 @@ class LiftoffCompiler {
                       {vector_var, index_var, func_ref_var},
                       decoder->position());
 
+#ifdef __CHERI_PURE_CAPABILITY__
+      target_reg = LiftoffRegister(kReturnRegister0).gp().C();
+      instance_reg = LiftoffRegister(kReturnRegister1).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       target_reg = LiftoffRegister(kReturnRegister0).gp();
       instance_reg = LiftoffRegister(kReturnRegister1).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
 
     } else {  // decoder->enabled_.has_inlining()
       // Non-feedback-collecting version.
@@ -8019,19 +8340,31 @@ class LiftoffCompiler {
       LiftoffRegister temp = pinned.set(__ GetUnusedRegister(kGpReg, pinned));
 
       // Load "ref" (instance or WasmApiFunctionRef) and target.
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadTaggedPointer(
+          instance.gp().C(), func_ref.gp().C(), no_reg,
+          wasm::ObjectAccess::ToTagged(WasmInternalFunction::kRefOffset));
+#else   // !__CHERI_PURE_CAPABILITY__
       __ LoadTaggedPointer(
           instance.gp(), func_ref.gp(), no_reg,
           wasm::ObjectAccess::ToTagged(WasmInternalFunction::kRefOffset));
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #ifdef V8_ENABLE_SANDBOX
       __ LoadExternalPointer(target.gp(), func_ref.gp(),
                              WasmInternalFunction::kCallTargetOffset,
                              kWasmInternalFunctionCallTargetTag, temp.gp());
 #else
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadCapability(target, func_ref.gp(), no_reg,
+                        wasm::ObjectAccess::ToTagged(
+                            WasmInternalFunction::kCallTargetOffset));
+#else   // !__CHERI_PURE_CAPABILITY__
       __ Load(
           target, func_ref.gp(), no_reg,
           wasm::ObjectAccess::ToTagged(WasmInternalFunction::kCallTargetOffset),
           kPointerLoadType);
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif
 
       FREEZE_STATE(frozen);
@@ -8042,17 +8375,29 @@ class LiftoffCompiler {
       __ emit_cond_jump(kNotEqual, &perform_call, kIntPtrKind, target.gp(),
                         null_address.gp(), frozen);
       // The cached target can only be null for WasmJSFunctions.
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadTaggedPointer(
+          target.gp().C(), func_ref.gp().C(), no_reg,
+          wasm::ObjectAccess::ToTagged(WasmInternalFunction::kCodeOffset));
+      __ LoadCodeInstructionStart(target.gp().C(), target.gp().C());
+#else   // !__CHERI_PURE_CAPABILITY__
       __ LoadTaggedPointer(
           target.gp(), func_ref.gp(), no_reg,
           wasm::ObjectAccess::ToTagged(WasmInternalFunction::kCodeOffset));
       __ LoadCodeInstructionStart(target.gp(), target.gp());
-      // Fall through to {perform_call}.
+#endif  // __CHERI_PURE_CAPABILITY__
 
+      // Fall through to {perform_call}.
       __ bind(&perform_call);
       // Now the call target is in {target}, and the right instance object
       // is in {instance}.
+#ifdef __CHERI_PURE_CAPABILITY__
+      target_reg = target.gp().C();
+      instance_reg = instance.gp().C();
+#else   // __CHERI_PURE_CAPABILITY__
       target_reg = target.gp();
       instance_reg = instance.gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     }  // decoder->enabled_.has_inlining()
 
     __ PrepareCall(&sig, call_descriptor, &target_reg, instance_reg);
@@ -8126,7 +8471,11 @@ class LiftoffCompiler {
     LiftoffRegister length = __ GetUnusedRegister(kGpReg, pinned);
     constexpr int kLengthOffset =
         wasm::ObjectAccess::ToTagged(WasmArray::kLengthOffset);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ Load(length, array.gp().C(), no_reg, kLengthOffset, LoadType::kI32Load);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ Load(length, array.gp(), no_reg, kLengthOffset, LoadType::kI32Load);
+#endif  // __CHERI_PURE_CAPABILITY__
     FREEZE_STATE(trapping);
     __ emit_cond_jump(kUnsignedGreaterThanEqual, trap_label, kI32, index.gp(),
                       length.gp(), trapping);
@@ -8140,8 +8489,15 @@ class LiftoffCompiler {
   void LoadObjectField(LiftoffRegister dst, Register src, Register offset_reg,
                        int offset, ValueKind kind, bool is_signed,
                        LiftoffRegList pinned) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(src.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     if (is_reference(kind)) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      __ LoadTaggedPointer(dst.gp().C(), src, offset_reg, offset);
+#else   // !__CHERI_PURE_CAPABILITY__
       __ LoadTaggedPointer(dst.gp(), src, offset_reg, offset);
+#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       // Primitive kind.
       LoadType load_type = LoadType::ForValueKind(kind, is_signed);
@@ -8154,6 +8510,9 @@ class LiftoffCompiler {
                         ValueKind kind,
                         LiftoffAssembler::SkipWriteBarrier skip_write_barrier =
                             LiftoffAssembler::kNoSkipWriteBarrier) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(obj.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     if (is_reference(kind)) {
       __ StoreTaggedPointer(obj, offset_reg, offset, value, pinned,
                             skip_write_barrier);
@@ -8210,10 +8569,16 @@ class LiftoffCompiler {
   void CheckNan(LiftoffRegister src, LiftoffRegList pinned, ValueKind kind) {
     DCHECK(kind == ValueKind::kF32 || kind == ValueKind::kF64);
     auto nondeterminism_addr = __ GetUnusedRegister(kGpReg, pinned);
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ LoadCapabilityConstant(nondeterminism_addr,
+                              reinterpret_cast<uintptr_t>(nondeterminism_));
+    __ emit_set_if_nan(nondeterminism_addr.gp().C(), src.fp(), kind);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ LoadConstant(
         nondeterminism_addr,
         WasmValue::ForUintPtr(reinterpret_cast<uintptr_t>(nondeterminism_)));
     __ emit_set_if_nan(nondeterminism_addr.gp(), src.fp(), kind);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   void CheckS128Nan(LiftoffRegister dst, LiftoffRegList pinned,
@@ -8223,11 +8588,18 @@ class LiftoffCompiler {
     LiftoffRegister tmp_s128 = pinned.set(__ GetUnusedRegister(rc, pinned));
     LiftoffRegister nondeterminism_addr =
         pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+#ifdef __CHERI_PURE_CAPABILITY__
+    __ LoadCapabilityConstant(nondeterminism_addr,
+                              reinterpret_cast<uintptr_t>(nondeterminism_));
+    __ emit_s128_set_if_nan(nondeterminism_addr.gp().C(), dst, tmp_gp.gp(),
+                            tmp_s128, lane_kind);
+#else   // !__CHERI_PURE_CAPABILITY__
     __ LoadConstant(
         nondeterminism_addr,
         WasmValue::ForUintPtr(reinterpret_cast<uintptr_t>(nondeterminism_)));
     __ emit_s128_set_if_nan(nondeterminism_addr.gp(), dst, tmp_gp.gp(),
                             tmp_s128, lane_kind);
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   void ArrayFillImpl(LiftoffRegList pinned, LiftoffRegister obj,
@@ -8268,8 +8640,13 @@ class LiftoffCompiler {
       __ emit_cond_jump(kUnsignedGreaterThanEqual, &done, kI32, offset.gp(),
                         end_offset.gp(), in_this_case_its_fine);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+    StoreObjectField(obj.gp().C(), offset.gp(), 0, value, pinned, elem_kind,
+                     skip_write_barrier);
+#else
     StoreObjectField(obj.gp(), offset.gp(), 0, value, pinned, elem_kind,
                      skip_write_barrier);
+#endif  // __CHERI_PURE_CAPABILITY__
     __ emit_i32_addi(offset.gp(), offset.gp(), value_kind_size(elem_kind));
     __ emit_jump(&loop);
 

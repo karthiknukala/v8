@@ -49,6 +49,9 @@ StackMemory::StackMemory(Isolate* isolate) : isolate_(isolate), owned_(true) {
   size_ = RoundUp(size_, allocator->AllocatePageSize());
   limit_ = static_cast<uint8_t*>(
       allocator->AllocatePages(nullptr, size_, allocator->AllocatePageSize(),
+#ifdef __CHERI_PURE_CAPABILITY__
+                               PageAllocator::kReadWrite,
+#endif  // __CHERI_PURE_CAPABILITY__
                                PageAllocator::kReadWrite));
   if (v8_flags.trace_wasm_stack_switching) {
     PrintF("Allocate stack #%d (limit: %p, base: %p)\n", id_, limit_,

@@ -157,16 +157,17 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access,
 }
 
 void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                OS::MemoryPermission max_access,
-#endif // __CHERI_PURE_CAPABILITY__
+#ifdef __CHERI_PURE_CAPABILITY__
+               OS::MemoryPermission max_access,
+#endif  // __CHERI_PURE_CAPABILITY__
                PageType page_type) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   int prot = GetProtectionFromMemoryPermission(access, max_access);
-  hint = reinterpret_cast<void *>(static_cast<uintptr_t>(reinterpret_cast<ptraddr_t>(hint)));
-#else
+  hint = reinterpret_cast<void*>(
+      static_cast<uintptr_t>(reinterpret_cast<ptraddr_t>(hint)));
+#else   // !__CHERI_PURE_CAPABILITY__
   int prot = GetProtectionFromMemoryPermission(access);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   int flags = GetFlagsForMemoryPermission(access, page_type);
 #ifdef __CHERI_PURE_CAPABILITY__
   // TODO(cheri): Remove this once core dumping is more optimised.
@@ -196,7 +197,7 @@ void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
 
 }  // namespace
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 int GetProtectionFromMemoryPermission(OS::MemoryPermission access,
 				      OS::MemoryPermission max_access) {
   int prot = GetProtectionFromMemoryPermission(access);
@@ -443,12 +444,11 @@ void* OS::GetRandomMmapAddr() {
 #if !V8_OS_CYGWIN && !V8_OS_FUCHSIA
 // static
 void* OS::Allocate(void* hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                   MemoryPermission access,
-                   MemoryPermission max_access) {
-#else
+#ifdef __CHERI_PURE_CAPABILITY__
+                   MemoryPermission access, MemoryPermission max_access) {
+#else   // !__CHERI_PURE_CAPABILITY__
                    MemoryPermission access) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   size_t page_size = AllocatePageSize();
   DCHECK_EQ(0, size % page_size);
   DCHECK_EQ(0, alignment % page_size);
@@ -456,11 +456,12 @@ void* OS::Allocate(void* hint, size_t size, size_t alignment,
   // Add the maximum misalignment so we are guaranteed an aligned base address.
   size_t request_size = size + (alignment - page_size);
   request_size = RoundUp(request_size, OS::AllocatePageSize());
-#if defined(__CHERI_PURE_CAPABILITY__)
-  void* result = base::Allocate(hint, request_size, access, max_access, PageType::kPrivate);
-#else
+#ifdef __CHERI_PURE_CAPABILITY__
+  void* result = base::Allocate(hint, request_size, access, max_access,
+                                PageType::kPrivate);
+#else   // !__CHERI_PURE_CAPABILITY__
   void* result = base::Allocate(hint, request_size, access, PageType::kPrivate);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   if (result == nullptr) return nullptr;
 
   // Unmap memory allocated before the aligned base address.
@@ -488,11 +489,11 @@ void* OS::Allocate(void* hint, size_t size, size_t alignment,
 // static
 void* OS::AllocateShared(size_t size, MemoryPermission access) {
   DCHECK_EQ(0, size % AllocatePageSize());
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   return base::Allocate(nullptr, size, access, access, PageType::kShared);
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
   return base::Allocate(nullptr, size, access, PageType::kShared);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 // static
@@ -674,31 +675,32 @@ bool OS::CanReserveAddressSpace() { return true; }
 Optional<AddressSpaceReservation> OS::CreateAddressSpaceReservation(
     void* hint, size_t size, size_t alignment,
     MemoryPermission max_permission) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   // VM_PROT_ADD_CAP is never called on prot and max_prot in mprotect itself.
   // https://github.com/CTSRD-CHERI/cheribsd/issues/1818
   MemoryPermission permission = MemoryPermission::kReadWrite;
 #else
   // On POSIX, address space reservations are backed by private memory mappings.
   MemoryPermission permission = MemoryPermission::kNoAccess;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   if (max_permission == MemoryPermission::kReadWriteExecute) {
     permission = MemoryPermission::kNoAccessWillJitLater;
   }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
-  void* reservation = Allocate(hint, size, alignment, permission, max_permission);
-#else
+#ifdef __CHERI_PURE_CAPABILITY__
+  void* reservation =
+      Allocate(hint, size, alignment, permission, max_permission);
+#else   // !__CHERI_PURE_CAPABILITY__
   void* reservation = Allocate(hint, size, alignment, permission);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   if (!reservation && permission == MemoryPermission::kNoAccessWillJitLater) {
     // Retry without MAP_JIT, for example in case we are running on an old OS X.
     permission = MemoryPermission::kNoAccess;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     reservation = Allocate(hint, size, alignment, permission, max_permission);
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
     reservation = Allocate(hint, size, alignment, permission);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
   if (!reservation) return {};
@@ -1092,12 +1094,12 @@ bool AddressSpaceReservation::FreeSubReservation(
 }
 
 bool AddressSpaceReservation::Allocate(void* address, size_t size,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
                                        OS::MemoryPermission access,
                                        OS::MemoryPermission max_access) {
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
                                        OS::MemoryPermission access) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   // The region is already mmap'ed, so it just has to be made accessible now.
   DCHECK(Contains(address, size));
   if (access == OS::MemoryPermission::kNoAccess) {

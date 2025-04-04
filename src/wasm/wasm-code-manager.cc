@@ -64,7 +64,11 @@ using trap_handler::ProtectedInstructionData;
 // Increase the limit if needed, but first check if the size increase is
 // justified.
 #ifndef V8_GC_MOLE
+#ifdef __CHERI_PURE_CAPABILITY__
+static_assert(sizeof(WasmCode) <= 2 * 88);
+#else   // !__CHERI_PURE_CAPABILITY__
 static_assert(sizeof(WasmCode) <= 88);
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif
 
 base::AddressRegion DisjointAllocationPool::Merge(
@@ -152,8 +156,11 @@ base::AddressRegion DisjointAllocationPool::AllocateInRegion(
     } else {
       // We return something in the middle --> split the remaining region
       // (insert the region with smaller address first).
-      regions_.insert(insert_pos, {old.begin(), ret.begin() - old.begin()});
-      regions_.insert(insert_pos, {ret.end(), old.end() - ret.end()});
+      regions_.insert(
+          insert_pos,
+          {old.begin(), static_cast<size_t>(ret.begin() - old.begin())});
+      regions_.insert(insert_pos,
+                      {ret.end(), static_cast<size_t>(old.end() - ret.end())});
     }
     return ret;
   }
@@ -574,8 +581,13 @@ base::SmallVector<base::AddressRegion, 1> SplitRangeByReservationsIfNeeded(
   if (!kNeedsToSplitRangeByReservations) return {range};
 
   base::SmallVector<base::AddressRegion, 1> split_ranges;
+#ifdef __CHERI_PURE_CAPABILITY__
+  Address missing_begin = range.begin();
+  Address missing_end = range.end();
+#else   // !__CHERI_PURE_CAPABILITY__
   size_t missing_begin = range.begin();
   size_t missing_end = range.end();
+#endif  // __CHERI_PURE_CAPABILITY__
   for (auto& vmem : base::Reversed(owned_code_space)) {
     Address overlap_begin = std::max(missing_begin, vmem.address());
     Address overlap_end = std::min(missing_end, vmem.end());
@@ -743,7 +755,8 @@ base::Vector<uint8_t> WasmCodeAllocator::AllocateForCodeInRegion(
   // The end needs to be committed all through the end of the page.
   if (commit_start < commit_end) {
     for (base::AddressRegion split_range : SplitRangeByReservationsIfNeeded(
-             {commit_start, commit_end - commit_start}, owned_code_space_)) {
+             {commit_start, static_cast<size_t>(commit_end - commit_start)},
+             owned_code_space_)) {
       code_manager->Commit(split_range);
     }
     committed_code_space_.fetch_add(commit_end - commit_start);
@@ -784,7 +797,8 @@ void WasmCodeAllocator::FreeCode(base::Vector<WasmCode* const> codes) {
         std::min(RoundDown(merged_region.end(), commit_page_size),
                  RoundUp(region.end(), commit_page_size));
     if (discard_start >= discard_end) continue;
-    regions_to_decommit.Merge({discard_start, discard_end - discard_start});
+    regions_to_decommit.Merge(
+        {discard_start, static_cast<size_t>(discard_end - discard_start)});
   }
 
   auto* code_manager = GetWasmCodeManager();
@@ -948,7 +962,10 @@ WasmCode* NativeModule::AddCodeForTesting(Handle<Code> code) {
     memcpy(dst_code_bytes.begin(), instructions.begin(), instructions.size());
 
     // Apply the relocation delta by iterating over the RelocInfo.
-    ScaledInt delta = dst_code_bytes.begin() - code->instruction_start();
+    ScaledInt delta = static_cast<ptraddr_t>(
+                          reinterpret_cast<uintptr_t>(dst_code_bytes.begin())) -
+                      static_cast<ptraddr_t>(reinterpret_cast<uintptr_t>(
+                          code->instruction_start()));
     int mode_mask =
         RelocInfo::kApplyMask | RelocInfo::ModeMask(RelocInfo::WASM_STUB_CALL);
     auto jump_tables_ref =
@@ -1016,7 +1033,10 @@ void NativeModule::InitializeJumpTableForLazyCompilation(
 
   Address compile_lazy_address =
       code_space_data.far_jump_table->instruction_start() +
-      JumpTableAssembler::FarJumpSlotIndexToOffset(WasmCode::kWasmCompileLazy);
+      JumpTableAssembler::FarJumpSlotIndexToOffset(
+          WasmCode::kWasmCompileLazy,
+          TableAlignmentFor(
+              code_space_data.far_jump_table->instruction_start()));
 
   CodeSpaceWriteScope write_scope;
   JumpTableAssembler::GenerateLazyCompileTable(
@@ -1044,6 +1064,10 @@ void NativeModule::UseLazyStubLocked(uint32_t func_index) {
   Address lazy_compile_target =
       lazy_compile_table_->instruction_start() +
       JumpTableAssembler::LazyCompileSlotIndexToOffset(slot_index);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(IsAligned(lazy_compile_target, kInstrSize));
+  DCHECK(V8_CHERI_TAG_GET(lazy_compile_target));
+#endif  // __CHERI_PURE_CAPABILITY__
   PatchJumpTablesLocked(slot_index, lazy_compile_target);
 }
 
@@ -1246,6 +1270,10 @@ WasmCode* NativeModule::PublishCodeLocked(
       prior_code->DecRefOnLiveCode();
     }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(IsAligned(code->instruction_start(), kInstrSize));
+    DCHECK(V8_CHERI_TAG_GET(code->instruction_start()));
+#endif  // __CHERI_PURE_CAPABILITY__
     PatchJumpTablesLocked(slot_idx, code->instruction_start());
   } else {
     // The code tables does not hold a reference to the code, hence decrement
@@ -1305,6 +1333,10 @@ void NativeModule::ReinstallDebugCode(WasmCode* code) {
   code_table_[slot_idx] = code;
   code->IncRef();
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(IsAligned(code->instruction_start(), kInstrSize));
+  DCHECK(V8_CHERI_TAG_GET(code->instruction_start()));
+#endif  // __CHERI_PURE_CAPABILITY__
   PatchJumpTablesLocked(slot_idx, code->instruction_start());
 }
 
@@ -1462,7 +1494,8 @@ void NativeModule::PatchJumpTableLocked(const CodeSpaceData& code_space_data,
       code_space_data.jump_table->instruction_start() +
       JumpTableAssembler::JumpSlotIndexToOffset(slot_index);
   uint32_t far_jump_table_offset = JumpTableAssembler::FarJumpSlotIndexToOffset(
-      WasmCode::kRuntimeStubCount + slot_index);
+      WasmCode::kRuntimeStubCount + slot_index,
+      TableAlignmentFor(code_space_data.far_jump_table->instruction_start()));
   // Only pass the far jump table start if the far jump table actually has a
   // slot for this function index (i.e. does not only contain runtime stubs).
   bool has_far_jump_slot =
@@ -1538,6 +1571,10 @@ void NativeModule::AddCodeSpaceLocked(base::AddressRegion region) {
     for (int i = 0; i < WasmCode::kRuntimeStubCount; ++i) {
       Builtin builtin = stub_names[i];
       builtin_addresses[i] = embedded_data.InstructionStartOf(builtin);
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(IsAligned(builtin_addresses[i] - 1, kInstrSize));
+      DCHECK(V8_CHERI_TAG_GET(builtin_addresses[i]));
+#endif  // __CHERI_PURE_CAPABILITY__
     }
     CodeSpaceWriteScope write_scope;
     JumpTableAssembler::GenerateFarJumpTable(
@@ -1567,12 +1604,21 @@ void NativeModule::AddCodeSpaceLocked(base::AddressRegion region) {
     for (uint32_t slot_index = 0; slot_index < num_wasm_functions;
          ++slot_index) {
       if (code_table_[slot_index]) {
+#ifdef __CHERI_PURE_CAPABILITY__
+        DCHECK(IsAligned(code_table_[slot_index]->instruction_start(),
+                         kInstrSize));
+        DCHECK(V8_CHERI_TAG_GET(code_table_[slot_index]->instruction_start()));
+#endif  // __CHERI_PURE_CAPABILITY__
         PatchJumpTableLocked(new_code_space_data, slot_index,
                              code_table_[slot_index]->instruction_start());
       } else if (lazy_compile_table_) {
         Address lazy_compile_target =
             lazy_compile_table_->instruction_start() +
             JumpTableAssembler::LazyCompileSlotIndexToOffset(slot_index);
+#ifdef __CHERI_PURE_CAPABILITY__
+        DCHECK(IsAligned(lazy_compile_target, kInstrSize));
+        DCHECK(V8_CHERI_TAG_GET(lazy_compile_target));
+#endif  // __CHERI_PURE_CAPABILITY__
         PatchJumpTableLocked(new_code_space_data, slot_index,
                              lazy_compile_target);
       }
@@ -1733,12 +1779,16 @@ Address NativeModule::GetNearCallTargetForFunction(
 Address NativeModule::GetNearRuntimeStubEntry(
     WasmCode::RuntimeStubId index, const JumpTablesRef& jump_tables) const {
   DCHECK(jump_tables.is_valid());
-  auto offset = JumpTableAssembler::FarJumpSlotIndexToOffset(index);
+  auto offset = JumpTableAssembler::FarJumpSlotIndexToOffset(
+      index, TableAlignmentFor(jump_tables.far_jump_table_start));
   return jump_tables.far_jump_table_start + offset;
 }
 
 uint32_t NativeModule::GetFunctionIndexFromJumpTableSlot(
     Address slot_address) const {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(slot_address));
+#endif  // __CHERI_PURE_CAPABILITY__
   WasmCodeRefScope code_refs;
   WasmCode* code = Lookup(slot_address);
   DCHECK_NOT_NULL(code);
@@ -1761,9 +1811,13 @@ WasmCode::RuntimeStubId NativeModule::GetRuntimeStubId(Address target) const {
         code_space_data.far_jump_table->contains(target)) {
       uint32_t offset = static_cast<uint32_t>(
           target - code_space_data.far_jump_table->instruction_start());
-      uint32_t index = JumpTableAssembler::FarJumpSlotOffsetToIndex(offset);
+      TableStartAlignment far_table_alignment = TableAlignmentFor(
+          code_space_data.far_jump_table->instruction_start());
+      uint32_t index = JumpTableAssembler::FarJumpSlotOffsetToIndex(
+          offset, far_table_alignment);
       if (index >= WasmCode::kRuntimeStubCount) continue;
-      if (JumpTableAssembler::FarJumpSlotIndexToOffset(index) != offset) {
+      if (JumpTableAssembler::FarJumpSlotIndexToOffset(
+              index, far_table_alignment) != offset) {
         continue;
       }
       return static_cast<WasmCode::RuntimeStubId>(index);
@@ -2132,6 +2186,10 @@ std::shared_ptr<NativeModule> WasmCodeManager::NewNativeModule(
   Address start = code_space.address();
   size_t size = code_space.size();
   Address end = code_space.end();
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(V8_CHERI_TAG_GET(start));
+  DCHECK(V8_CHERI_TAG_GET(end));
+#endif  // __CHERI_PURE_CAPABILITY__
   std::shared_ptr<NativeModule> ret;
   new NativeModule(enabled,
                    DynamicTiering{v8_flags.wasm_dynamic_tiering.value()},

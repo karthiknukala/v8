@@ -1307,7 +1307,11 @@ class AssemblerOpInterface {
     }
     return stack().ReduceConstant(ConstantOp::Kind::kExternal, value);
   }
+#ifdef __CHERI_PURE_CAPABILITY__
+  OpIndex RelocatableConstant(intptr_t value, RelocInfo::Mode mode) {
+#else   // !__CHERI_PURE_CAPABILITY__
   OpIndex RelocatableConstant(int64_t value, RelocInfo::Mode mode) {
+#endif  // __CHERI_PURE_CAPABILITY__
     DCHECK_EQ(mode, any_of(RelocInfo::WASM_CALL, RelocInfo::WASM_STUB_CALL));
     if (V8_UNLIKELY(stack().generating_unreachable_operations())) {
       return OpIndex::Invalid();
@@ -1316,7 +1320,11 @@ class AssemblerOpInterface {
         mode == RelocInfo::WASM_CALL
             ? ConstantOp::Kind::kRelocatableWasmCall
             : ConstantOp::Kind::kRelocatableWasmStubCall,
+#ifdef __CHERI_PURE_CAPABILITY__
+        value);
+#else   // !__CHERI_PURE_CAPABILITY__
         static_cast<uint64_t>(value));
+#endif  // __CHERI_PURE_CAPABILITY__
   }
   V<Context> NoContextConstant() {
     return V<Context>::Cast(SmiTag(Context::kNoContext));

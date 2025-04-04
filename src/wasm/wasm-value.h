@@ -170,9 +170,9 @@ class WasmValue {
   template <typename T>
   inline T to_unchecked() const;
 
-  static WasmValue ForUintPtr(uintptr_t value) {
+  static WasmValue ForUintPtr(ScaledUint value) {
     using type =
-        std::conditional<kSystemPointerSize == 8, uint64_t, uint32_t>::type;
+        std::conditional<kSystemPointerAddrSize == 8, uint64_t, uint32_t>::type;
     return WasmValue{type{value}};
   }
 
@@ -202,7 +202,8 @@ class WasmValue {
       case kRefNull:
       case kRef:
       case kRtt:
-        return "Handle [" + std::to_string(to_ref().address()) + "]";
+        return "Handle [" +
+               std::to_string(static_cast<ptraddr_t>(to_ref().address())) + "]";
       case kVoid:
       case kBottom:
         UNREACHABLE();

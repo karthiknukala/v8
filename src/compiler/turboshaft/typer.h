@@ -1137,6 +1137,10 @@ class Typer {
 
       case RegisterRepresentation::Tagged():
       case RegisterRepresentation::Compressed():
+#ifdef __CHERI_PURE_CAPABILITY__
+      case RegisterRepresentation::Capability32():
+      case RegisterRepresentation::Capability64():
+#endif  // __CHERI_PURE_CAPABILITY__
         // TODO(nicohartmann@): Support these representations.
         return Type::Any();
     }

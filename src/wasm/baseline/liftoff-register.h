@@ -160,7 +160,7 @@ class LiftoffRegister {
   constexpr explicit LiftoffRegister(Register reg)
       : LiftoffRegister(reg.code()) {
     DCHECK(kLiftoffAssemblerGpCacheRegs.has(reg));
-    DCHECK_EQ(reg, gp());
+    DCHECK_EQ(reg.code(), gp().code());
   }
   constexpr explicit LiftoffRegister(DoubleRegister reg)
       : LiftoffRegister(kAfterMaxLiftoffGpRegCode + reg.code()) {
@@ -371,7 +371,15 @@ class LiftoffRegList {
   }
 
   constexpr Register set(Register reg) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (reg.IsC()) {
+      return set(LiftoffRegister(reg)).gp().C();
+    } else {
+      return set(LiftoffRegister(reg)).gp();
+    }
+#else   // !__CHERI_PURE_CAPABILITY__
     return set(LiftoffRegister(reg)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
   }
   constexpr DoubleRegister set(DoubleRegister reg) {
     return set(LiftoffRegister(reg)).fp();

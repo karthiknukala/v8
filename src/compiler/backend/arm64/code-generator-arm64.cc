@@ -1057,10 +1057,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchCallWasmFunction: {
       if (instr->InputAt(0)->IsImmediate()) {
         Constant constant = i.ToConstant(instr->InputAt(0));
+#ifdef __CHERI_PURE_CAPABILITY__
+        Address wasm_code = constant.ToIntPtr();
+#else   // !__CHERI_PURE_CAPABILITY__
         Address wasm_code = static_cast<Address>(constant.ToInt64());
+#endif  // __CHERI_PURE_CAPABILITY__
         __ Call(wasm_code, constant.rmode());
       } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+        Register target = i.InputCapabilityRegister(0);
+#else   // !__CHERI_PURE_CAPABILITY__
         Register target = i.InputRegister(0);
+#endif  // __CHERI_PURE_CAPABILITY__
         __ Call(target);
       }
       RecordCallPosition(instr);
@@ -1070,14 +1078,26 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchTailCallWasm: {
       if (instr->InputAt(0)->IsImmediate()) {
         Constant constant = i.ToConstant(instr->InputAt(0));
+#ifdef __CHERI_PURE_CAPABILITY__
+        Address wasm_code = constant.ToIntPtr();
+#else   // !__CHERI_PURE_CAPABILITY__
         Address wasm_code = static_cast<Address>(constant.ToInt64());
+#endif  // __CHERI_PURE_CAPABILITY__
         __ Jump(wasm_code, constant.rmode());
       } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+        Register target = i.InputCapabilityRegister(0);
+        UseScratchRegisterScope temps(masm());
+        temps.Exclude(c17);
+        __ Mov(c17, target);
+        __ Jump(c17);
+#else   // !__CHERI_PURE_CAPABILITY__
         Register target = i.InputRegister(0);
         UseScratchRegisterScope temps(masm());
         temps.Exclude(x17);
         __ Mov(x17, target);
         __ Jump(x17);
+#endif  // __CHERI_PURE_CAPABILITY__
       }
       unwinding_info_writer_.MarkBlockWillExit();
       frame_access_state()->ClearSPDelta();
@@ -4001,8 +4021,12 @@ void CodeGenerator::AssembleConstructFrame() {
 #if V8_ENABLE_WEBASSEMBLY
       case CallDescriptor::kCallWasmFunction: {
         UseScratchRegisterScope temps(masm());
+#ifdef __CHERI_PURE_CAPABILITY__
+        Register scratch = temps.AcquireC();
+#else   // !__CHERI_PURE_CAPABILITY__
         Register scratch = temps.AcquireX();
-        __ Mov(scratch,
+#endif  // __CHERI_PURE_CAPABILITY__
+        __ Mov(scratch.X(),
                StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
         __ Push(scratch, kWasmInstanceRegister);
         __ Claim(required_slots);
@@ -4011,8 +4035,12 @@ void CodeGenerator::AssembleConstructFrame() {
       case CallDescriptor::kCallWasmImportWrapper:
       case CallDescriptor::kCallWasmCapiFunction: {
         UseScratchRegisterScope temps(masm());
+#ifdef __CHERI_PURE_CAPABILITY__
+        Register scratch = temps.AcquireC();
+#else   // !__CHERI_PURE_CAPABILITY__
         Register scratch = temps.AcquireX();
-        __ Mov(scratch,
+#endif  // __CHERI_PURE_CAPABILITY__
+        __ Mov(scratch.X(),
                StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
         // This stack slot is only used for printing stack traces in V8. Also,
         // it holds a WasmApiFunctionRef instead of the instance itself, which
@@ -4032,7 +4060,11 @@ void CodeGenerator::AssembleConstructFrame() {
           UseScratchRegisterScope temps(masm());
           Register scratch = temps.AcquireX();
           __ Mov(scratch, StackFrame::TypeToMarker(StackFrame::C_WASM_ENTRY));
+#ifdef __CHERI_PURE_CAPABILITY__
+          __ Push(scratch.C(), padregc);
+#else
           __ Push(scratch, padreg);
+#endif
           // The additional slot will be used for the saved c_entry_fp.
         }
 #endif  // V8_ENABLE_WEBASSEMBLY

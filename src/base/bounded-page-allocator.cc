@@ -28,14 +28,13 @@ BoundedPageAllocator::Address BoundedPageAllocator::begin() const {
 
 size_t BoundedPageAllocator::size() const { return region_allocator_.size(); }
 
-void* BoundedPageAllocator::AllocatePages(void* hint, size_t size,
-                                          size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                                          PageAllocator::Permission access,
-                                          PageAllocator::Permission max_access) {
-#else
-                                          PageAllocator::Permission access) {
-#endif // __CHERI_PURE_CAPABILITY__
+void* BoundedPageAllocator::AllocatePages(
+    void* hint, size_t size, size_t alignment,
+#ifdef __CHERI_PURE_CAPABILITY__
+    PageAllocator::Permission access, PageAllocator::Permission max_access) {
+#else   // !__CHERI_PURE_CAPABILITY__
+    PageAllocator::Permission access) {
+#endif  // __CHERI_PURE_CAPABILITY__
   MutexGuard guard(&mutex_);
   DCHECK(IsAligned(alignment, region_allocator_.page_size()));
   DCHECK(IsAligned(alignment, allocate_page_size_));

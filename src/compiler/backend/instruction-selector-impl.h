@@ -208,6 +208,12 @@ class OperandGenerator {
     return sequence()->AddImmediate(Constant(immediate));
   }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  InstructionOperand UseImmediateIntPtr(intptr_t immediate) {
+    return sequence()->AddImmediate(Constant(immediate));
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
+
   InstructionOperand UseImmediate(Node* node) {
     return sequence()->AddImmediate(ToConstant(node));
   }
