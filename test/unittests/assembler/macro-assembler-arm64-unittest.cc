@@ -179,14 +179,17 @@ TEST_P(MacroAssemblerTestMoveObjectAndSlot, MoveObjectAndSlot) {
       __ CodeEntry();
 #ifdef __CHERI_PURE_CAPABILITY__
       __ Push(c0, padregc);
+      __ Mov(test_case.object.C(), c1);
+      Register src_object = test_case.object.C();
+      Register dst_object = test_case.dst_object.C();
+      Register dst_slot = test_case.dst_slot.C();
 #else   // !__CHERI_PURE_CAPABILITY__
       __ Push(x0, padreg);
-#endif  // __CHERI_PURE_CAPABILITY__
       __ Mov(test_case.object, x1);
-
       Register src_object = test_case.object;
       Register dst_object = test_case.dst_object;
       Register dst_slot = test_case.dst_slot;
+#endif  // __CHERI_PURE_CAPABILITY__
 
       Operand offset_operand(0);
       if (test_case.offset_register == no_reg) {
