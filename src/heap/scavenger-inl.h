@@ -162,6 +162,9 @@ CopyAndForwardResult Scavenger::PromoteObject(Map map, THeapObjectSlot slot,
   static_assert(std::is_same<THeapObjectSlot, FullHeapObjectSlot>::value ||
                     std::is_same<THeapObjectSlot, HeapObjectSlot>::value,
                 "Only FullHeapObjectSlot and HeapObjectSlot are expected here");
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(IsAligned(object_size, kTaggedSize));
+#endif //__CHERI_PURE_CAPABILITY__
   DCHECK_GE(object_size, Heap::kMinObjectSizeInTaggedWords * kTaggedSize);
   AllocationAlignment alignment = HeapObject::RequiredAlignment(map);
   AllocationResult allocation;
