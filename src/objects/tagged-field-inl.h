@@ -111,7 +111,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 T TaggedField<T, kFieldOffset, CompressionScheme>::Relaxed_Load(HeapObject host,
                                                                 int offset) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   AtomicTagged_t value = AsAtomicTagged::Relaxed_Load(location(host, offset));
@@ -124,7 +124,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 T TaggedField<T, kFieldOffset, CompressionScheme>::Relaxed_Load(
     PtrComprCageBase cage_base, HeapObject host, int offset) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   AtomicTagged_t value = AsAtomicTagged::Relaxed_Load(location(host, offset));
@@ -173,7 +173,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 void TaggedField<T, kFieldOffset, CompressionScheme>::Relaxed_Store(
     HeapObject host, int offset, T value) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   Address ptr = value.ptr();
@@ -186,7 +186,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 T TaggedField<T, kFieldOffset, CompressionScheme>::Acquire_Load(HeapObject host,
                                                                 int offset) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   AtomicTagged_t value = AsAtomicTagged::Acquire_Load(location(host, offset));
@@ -199,7 +199,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 T TaggedField<T, kFieldOffset, CompressionScheme>::Acquire_Load_No_Unpack(
     PtrComprCageBase cage_base, HeapObject host, int offset) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   AtomicTagged_t value = AsAtomicTagged::Acquire_Load(location(host, offset));
@@ -210,7 +210,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 T TaggedField<T, kFieldOffset, CompressionScheme>::Acquire_Load(
     PtrComprCageBase cage_base, HeapObject host, int offset) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   AtomicTagged_t value = AsAtomicTagged::Acquire_Load(location(host, offset));
@@ -248,7 +248,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 void TaggedField<T, kFieldOffset, CompressionScheme>::Release_Store(
     HeapObject host, int offset, T value) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   Address ptr = value.ptr();
@@ -317,7 +317,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 void TaggedField<T, kFieldOffset, CompressionScheme>::SeqCst_Store(
     HeapObject host, int offset, T value) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   Address ptr = value.ptr();
@@ -331,7 +331,7 @@ T TaggedField<T, kFieldOffset, CompressionScheme>::SeqCst_Swap(HeapObject host,
                                                                int offset,
                                                                T value) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   Address ptr = value.ptr();
@@ -346,7 +346,7 @@ template <typename T, int kFieldOffset, typename CompressionScheme>
 T TaggedField<T, kFieldOffset, CompressionScheme>::SeqCst_Swap(
     PtrComprCageBase cage_base, HeapObject host, int offset, T value) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(IsAligned(host.ptr() - kHeapObjectTag, kTaggedSize));
+  DCHECK(IsAligned(host.ptr() - kHeapObjectTag + offset, kTaggedSize));
   DCHECK(V8_CHERI_TAG_GET(host.ptr()));
 #endif  // __CHERI_PURE_CAPABILITY__
   Address ptr = value.ptr();
