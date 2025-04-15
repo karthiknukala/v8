@@ -115,12 +115,41 @@ void CompileJumpTableThunk(Address thunk, Address jump_target) {
   __ Jump(jump_target, RelocInfo::NO_INFO);
 #elif V8_TARGET_ARCH_ARM64
   UseScratchRegisterScope temps(&masm);
+#ifdef __CHERI_PURE_CAPABILITY__
+  {
+    Label after;
+    temps.Exclude(c16);
+    scratch = c16;
+    int kOffset = 1;
+    __ ldr_pcrel(scratch, kOffset);
+    __ B(&after);
+    __ Nop();
+    __ Nop();
+    DCHECK(IsAligned(reinterpret_cast<Address>(__ pc()), kSystemPointerSize));
+    __ dp(stop_bit_address);
+    __ Bind(&after);
+  }
+#else   // !__CHERI_PURE_CAPABILITY__
   temps.Exclude(x16);
   scratch = x16;
   __ Mov(scratch, Operand(stop_bit_address, RelocInfo::NO_INFO));
-  __ Ldr(scratch, MemOperand(scratch, 0));
+#endif  // __CHERI_PURE_CAPABILITY__
+  __ Ldr(scratch.W(), MemOperand(scratch, 0));
   __ Tbnz(scratch, 0, &exit);
+#ifdef __CHERI_PURE_CAPABILITY__
+  {
+    Label after;
+    int kOffset = 1;
+    __ ldr_pcrel(scratch, kOffset);
+    __ B(&after);
+    DCHECK(IsAligned(reinterpret_cast<Address>(__ pc()), kSystemPointerSize));
+    __ dp(jump_target);
+    __ Bind(&after);
+  }
+  __ PrepareC64Jump(scratch);
+#else
   __ Mov(scratch, Immediate(jump_target, RelocInfo::NO_INFO));
+#endif  // __CHERI_PURE_CAPABILITY__
   __ Br(scratch);
 #elif V8_TARGET_ARCH_PPC64
   __ mov(scratch, Operand(stop_bit_address, RelocInfo::NO_INFO));
