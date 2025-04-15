@@ -3963,8 +3963,12 @@ void CodeGenerator::AssembleConstructFrame() {
       {
         // Finish the frame that hasn't been fully built yet.
         UseScratchRegisterScope temps(masm());
+#ifdef __CHERI_PURE_CAPABILITY__
+        Register scratch = temps.AcquireC();
+#else   // !__CHERI_PURE_CAPABILITY__
         Register scratch = temps.AcquireX();
-        __ Mov(scratch,
+#endif  // __CHERI_PURE_CAPABILITY__
+        __ Mov(scratch.X(),
                StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
         __ Push(scratch, kWasmInstanceRegister);
       }
