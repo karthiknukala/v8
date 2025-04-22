@@ -940,6 +940,13 @@ void MacroAssembler::CheriAddSub(const Register& rd, const Register& rn,
 void MacroAssembler::AddSubMacro(const Register& rd, const Register& rn,
                                  const Operand& operand, FlagsUpdate S,
                                  AddSubOp op) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (operand.IsZero() && rd == rn && rd.IsC() && rn.IsC() &&
+      !operand.NeedsRelocation(this) && (S == LeaveFlags)) {
+    // The instruction would be a nop. Avoid generating useless code.
+    return;
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   if (operand.IsZero() && rd == rn && rd.Is64Bits() && rn.Is64Bits() &&
       !operand.NeedsRelocation(this) && (S == LeaveFlags)) {
     // The instruction would be a nop. Avoid generating useless code.
