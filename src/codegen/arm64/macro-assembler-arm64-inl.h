@@ -1908,11 +1908,25 @@ void MacroAssembler::Claim(int64_t count, uint64_t unit_size) {
     size -= kStackPageSize;
   }
 #endif
-#if defined(__CHERI_PURE_CAPABILITY__)
-  Sub(csp, csp, size);
-#else
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (IsImmAddSub(size)) {
+    Sub(csp, csp, size);
+  } else {
+    UseScratchRegisterScope temps(this);
+    size_t popcount = __builtin_popcount(temps.Available()->bits());
+    if (popcount < 2) {
+      CHECK_EQ(popcount, 1);
+      Str(c0, MemOperand(csp, -kSystemPointerSize));
+      temps.Include(c0);
+      Sub(csp, csp, size);
+      Ldr(c0, MemOperand(csp, size - kSystemPointerSize));
+    } else {
+      Sub(csp, csp, size);
+    }
+  }
+#else   // !__CHERI_PURE_CAPABILITY__
   Sub(sp, sp, size);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void MacroAssembler::Claim(const Register& count, uint64_t unit_size,
@@ -1959,11 +1973,11 @@ void MacroAssembler::Claim(const Register& count, uint64_t unit_size,
 
   Sub(sp, sp, bytes_scratch);
 #else
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   Sub(csp, csp, size);
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
   Sub(sp, sp, size);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif
 }
 
