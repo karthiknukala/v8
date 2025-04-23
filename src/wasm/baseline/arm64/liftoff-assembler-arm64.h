@@ -526,7 +526,7 @@ void LiftoffAssembler::LoadFromInstance(Register dst, Register instance,
       break;
 #ifdef __CHERI_PURE_CAPABILITY__
     case 16:
-      Ldr(dst, src);
+      Ldr(dst.C(), src);
       break;
 #endif  // __CHERI_PURE_CAPABILITY__
     default:
