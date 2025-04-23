@@ -501,6 +501,9 @@ void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value) {
 }
 
 void LiftoffAssembler::LoadInstanceFromFrame(Register dst) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(dst.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   Ldr(dst, liftoff::GetInstanceOperand());
 }
 
