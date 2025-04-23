@@ -1332,7 +1332,13 @@ void LiftoffAssembler::Spill(int offset, WasmValue value) {
 void LiftoffAssembler::Fill(LiftoffRegister reg, int offset, ValueKind kind) {
   MemOperand src = liftoff::GetStackSlot(offset);
 #ifdef __CHERI_PURE_CAPABILITY__
-  Ldr(liftoff::GetRegFromType(reg, kind).C(), src);
+  CPURegister cpu_reg = liftoff::GetRegFromType(reg, kind);
+  if (cpu_reg.IsRegister()) {
+    Ldr(cpu_reg.C(), src);
+  } else {
+    // Not a general purpose register, don't cast it to a capability register.
+    Ldr(cpu_reg, src);
+  }
 #else   // !__CHERI_PURE_CAPABILITY__
   Ldr(liftoff::GetRegFromType(reg, kind), src);
 #endif  // __CHERI_PURE_CAPABILITY__
