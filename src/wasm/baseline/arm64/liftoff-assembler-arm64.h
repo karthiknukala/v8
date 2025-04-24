@@ -1251,7 +1251,12 @@ void LiftoffAssembler::StoreCallerFrameSlot(LiftoffRegister src,
                                             ValueKind kind) {
   int32_t offset = (caller_slot_idx + 1) * LiftoffAssembler::kStackSlotSize;
 #ifdef __CHERI_PURE_CAPABILITY__
-  Str(liftoff::GetRegFromType(src, kind).C(), MemOperand(fp, offset));
+  CPURegister cpu_reg = liftoff::GetRegFromType(src, kind);
+  if (cpu_reg.IsRegister()) {
+    Str(cpu_reg.C(), MemOperand(fp, offset));
+  } else {
+    Str(cpu_reg, MemOperand(fp, offset));
+  }
 #else   // !__CHERI_PURE_CAPABILITY__
   Str(liftoff::GetRegFromType(src, kind), MemOperand(fp, offset));
 #endif  // __CHERI_PURE_CAPABILITY__
@@ -1260,7 +1265,12 @@ void LiftoffAssembler::StoreCallerFrameSlot(LiftoffRegister src,
 void LiftoffAssembler::LoadReturnStackSlot(LiftoffRegister dst, int offset,
                                            ValueKind kind) {
 #ifdef __CHERI_PURE_CAPABILITY__
-  Ldr(liftoff::GetRegFromType(dst, kind), MemOperand(csp, offset));
+  CPURegister cpu_reg = liftoff::GetRegFromType(dst, kind);
+  if (cpu_reg.IsRegister()) {
+    Ldr(cpu_reg.C(), MemOperand(csp, offset));
+  } else {
+    Ldr(cpu_reg, MemOperand(csp, offset));
+  }
 #else   // !__CHERI_PURE_CAPABILITY__
   Ldr(liftoff::GetRegFromType(dst, kind), MemOperand(sp, offset));
 #endif  // __CHERI_PURE_CAPABILITY__
