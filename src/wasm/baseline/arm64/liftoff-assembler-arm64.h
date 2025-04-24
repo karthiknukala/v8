@@ -1235,7 +1235,12 @@ void LiftoffAssembler::LoadCallerFrameSlot(LiftoffRegister dst,
                                            ValueKind kind) {
   int32_t offset = (caller_slot_idx + 1) * LiftoffAssembler::kStackSlotSize;
 #ifdef __CHERI_PURE_CAPABILITY__
-  Ldr(liftoff::GetRegFromType(dst, kind).C(), MemOperand(fp, offset));
+  CPURegister cpu_reg = liftoff::GetRegFromType(dst, kind);
+  if (cpu_reg.IsRegister()) {
+    Ldr(cpu_reg.C(), MemOperand(fp, offset));
+  } else {
+    Ldr(cpu_reg, MemOperand(fp, offset));
+  }
 #else   // !__CHERI_PURE_CAPABILITY__
   Ldr(liftoff::GetRegFromType(dst, kind), MemOperand(fp, offset));
 #endif  // __CHERI_PURE_CAPABILITY__

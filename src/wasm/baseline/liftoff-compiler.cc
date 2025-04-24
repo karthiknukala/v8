@@ -72,6 +72,20 @@ struct assert_field_size {
 #define WASM_INSTANCE_OBJECT_FIELD_SIZE(name) \
   FIELD_SIZE(WasmInstanceObject::k##name##Offset)
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define LOAD_INSTANCE_FIELD(dst, name, load_size, pinned)                      \
+  __ LoadFromInstance(dst, LoadInstanceIntoRegister(pinned, dst.C()),          \
+                      WASM_INSTANCE_OBJECT_FIELD_OFFSET(name),                 \
+                      assert_field_size<WASM_INSTANCE_OBJECT_FIELD_SIZE(name), \
+                                        load_size>::size);
+
+#define LOAD_TAGGED_PTR_INSTANCE_FIELD(dst, name, pinned)                     \
+  static_assert(WASM_INSTANCE_OBJECT_FIELD_SIZE(name) == kTaggedSize,         \
+                "field in WasmInstance does not have the expected size");     \
+  __ LoadTaggedPointerFromInstance(dst,                                       \
+                                   LoadInstanceIntoRegister(pinned, dst.C()), \
+                                   WASM_INSTANCE_OBJECT_FIELD_OFFSET(name));
+#else  // !__CHERI_PURE_CAPABILITY__
 #define LOAD_INSTANCE_FIELD(dst, name, load_size, pinned)                      \
   __ LoadFromInstance(dst, LoadInstanceIntoRegister(pinned, dst),              \
                       WASM_INSTANCE_OBJECT_FIELD_OFFSET(name),                 \
@@ -83,6 +97,7 @@ struct assert_field_size {
                 "field in WasmInstance does not have the expected size");      \
   __ LoadTaggedPointerFromInstance(dst, LoadInstanceIntoRegister(pinned, dst), \
                                    WASM_INSTANCE_OBJECT_FIELD_OFFSET(name));
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #ifdef V8_CODE_COMMENTS
 #define CODE_COMMENT(str) __ RecordComment(str)
@@ -8696,6 +8711,11 @@ class LiftoffCompiler {
   V8_INLINE Register LoadInstanceIntoRegister(LiftoffRegList pinned,
                                               Register fallback) {
     Register instance = __ cache_state()->cached_instance;
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (instance.IsRegister()) {
+      instance = instance.C();
+    }
+#endif  // __CHERI_PURE_CAPABILITY__
     if (V8_UNLIKELY(instance == no_reg)) {
       instance = LoadInstanceIntoRegister_Slow(pinned, fallback);
     }
@@ -8704,11 +8724,17 @@ class LiftoffCompiler {
 
   V8_NOINLINE V8_PRESERVE_MOST Register
   LoadInstanceIntoRegister_Slow(LiftoffRegList pinned, Register fallback) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(fallback.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     DCHECK_EQ(no_reg, __ cache_state()->cached_instance);
     SCOPED_CODE_COMMENT("load instance");
     Register instance = __ cache_state()->TrySetCachedInstanceRegister(
         pinned | LiftoffRegList{fallback});
     if (instance == no_reg) instance = fallback;
+#ifdef __CHERI_PURE_CAPABILITY__
+    DCHECK(instance.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     __ LoadInstanceFromFrame(instance);
     return instance;
   }
