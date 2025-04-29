@@ -460,13 +460,9 @@ V8_EXPORT_PRIVATE inline constexpr int ElementSizeLog2Of(
     case MachineRepresentation::kCompressed:
       return kTaggedSizeLog2;
     case MachineRepresentation::kSandboxedPointer:
-#if defined(__CHERI_PURE_CAPABILITY__)
       // A 64-bit pointer encoded in a way (e.g. as offset) that guarantees it
       // will point into the sandbox.
       return kSystemPointerAddrSizeLog2;
-#else // defined(__CHERI_PURE_CAPABILITY__)
-      return kSystemPointerSizeLog2;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
 #if defined(__CHERI_PURE_CAPABILITY__)
     case MachineRepresentation::kCapability32:
       [[fallthrough]];
