@@ -1150,14 +1150,19 @@ void Serializer::ObjectSerializer::OutputRawData(Address up_to) {
   int to_skip = up_to_offset - bytes_processed_so_far_;
   int bytes_to_output = to_skip;
   bool needs_special_handling = false;
+  bool needs_cheri_padding = false;
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
   int tagged_to_output;
   if (bytes_to_output < kTaggedSize && bytes_to_output != 0) {
     needs_special_handling = true;
     tagged_to_output = 1;
   } else {
-    DCHECK(IsAligned(bytes_to_output, kTaggedSize));
-    tagged_to_output = bytes_to_output / kTaggedSize;
+    if (!IsAligned(bytes_to_output, kTaggedSize)) {
+      needs_cheri_padding = true;
+      tagged_to_output = bytes_to_output / kTaggedSize + 1;
+    } else {
+      tagged_to_output = bytes_to_output / kTaggedSize;
+    }
   }
 #else
   DCHECK(IsAligned(bytes_to_output, kTaggedSize));
@@ -1231,6 +1236,11 @@ void Serializer::ObjectSerializer::OutputRawData(Address up_to) {
         sink_->PutRaw(reinterpret_cast<uint8_t*>(object_start + base),
                       bytes_to_output, "Bytes");
       }
+    }
+    if (needs_cheri_padding) {
+      DCHECK_NE(needs_special_handling, true);
+      int padding = bytes_to_output - bytes_to_output % kTaggedSize;
+      sink_->PutN(padding, kNop, "CheriPadding");
     }
   }
 }
