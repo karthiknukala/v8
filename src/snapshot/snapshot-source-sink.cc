@@ -15,6 +15,9 @@ namespace internal {
 
 void SnapshotByteSink::PutN(int number_of_bytes, const uint8_t v,
                             const char* description) {
+  if (v8_flags.trace_serializer_bytes) {
+    PrintF("  %s: %d\n", description, number_of_bytes);
+  }
   data_.insert(data_.end(), number_of_bytes, v);
 }
 
@@ -31,14 +34,22 @@ void SnapshotByteSink::PutInt(uintptr_t integer, const char* description) {
   if (integer > 0xFFFF) bytes = 3;
   if (integer > 0xFFFFFF) bytes = 4;
   integer |= (bytes - 1);
-  Put(static_cast<uint8_t>(integer & 0xFF), "IntPart1");
-  if (bytes > 1) Put(static_cast<uint8_t>((integer >> 8) & 0xFF), "IntPart2");
-  if (bytes > 2) Put(static_cast<uint8_t>((integer >> 16) & 0xFF), "IntPart3");
-  if (bytes > 3) Put(static_cast<uint8_t>((integer >> 24) & 0xFF), "IntPart4");
+  if (v8_flags.trace_serializer_bytes) {
+    PrintF("  %s: %d\n", description, bytes);
+  }
+  Put(static_cast<uint8_t>(integer & 0xFF), "  IntPart1");
+  if (bytes > 1) Put(static_cast<uint8_t>((integer >> 8) & 0xFF), "  IntPart2");
+  if (bytes > 2)
+    Put(static_cast<uint8_t>((integer >> 16) & 0xFF), "  IntPart3");
+  if (bytes > 3)
+    Put(static_cast<uint8_t>((integer >> 24) & 0xFF), "  IntPart4");
 }
 
 void SnapshotByteSink::PutRaw(const uint8_t* data, int number_of_bytes,
                               const char* description) {
+  if (v8_flags.trace_serializer_bytes) {
+    PrintF("  %s: %d\n", description, number_of_bytes);
+  }
   data_.insert(data_.end(), data, data + number_of_bytes);
 }
 

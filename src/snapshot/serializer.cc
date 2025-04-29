@@ -444,6 +444,19 @@ InstructionStream Serializer::CopyCode(InstructionStream istream) {
 
 void Serializer::ObjectSerializer::SerializePrologue(SnapshotSpace space,
                                                      int size, Map map) {
+#define PRINT_INSTANCE_TYPE(Name)                                   \
+  if (map.instance_type() == Name) {                                \
+    PrintF("Serialize instance type: %s, size: %d\n", #Name, size); \
+    has_type_name = true;                                           \
+  }
+  if (v8_flags.trace_serializer_bytes) {
+    bool has_type_name = false;
+    INSTANCE_TYPE_LIST(PRINT_INSTANCE_TYPE)
+    if (!has_type_name) {
+      PrintF("Serialize instance size: %d\n", size);
+    }
+  }
+#undef PRINT_INSTANCE_TYPE
   if (serializer_->code_address_map_) {
     const char* code_name =
         serializer_->code_address_map_->Lookup(object_->address());

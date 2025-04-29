@@ -2140,6 +2140,7 @@ DEFINE_BOOL(freeze_flags_after_init, true,
 #endif  // defined(V8_OS_AIX) && defined(COMPONENT_BUILD)
 
 // mksnapshot.cc
+DEFINE_BOOL(trace_serializer_bytes, false, "Print raw serialization content.")
 DEFINE_STRING(embedded_src, nullptr,
               "Path for the generated embedded data file. (mksnapshot only)")
 DEFINE_STRING(

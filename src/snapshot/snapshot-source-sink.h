@@ -11,6 +11,7 @@
 #include "src/base/atomicops.h"
 #include "src/base/logging.h"
 #include "src/common/globals.h"
+#include "src/flags/flags.h"
 #include "src/utils/utils.h"
 
 namespace v8 {
@@ -120,7 +121,12 @@ class SnapshotByteSink {
 
   ~SnapshotByteSink() = default;
 
-  void Put(uint8_t b, const char* description) { data_.push_back(b); }
+  void Put(uint8_t b, const char* description) {
+    if (v8_flags.trace_serializer_bytes) {
+      PrintF("  %s: 1\n", description);
+    }
+    data_.push_back(b);
+  }
 
   void PutN(int number_of_bytes, const uint8_t v, const char* description);
   void PutInt(uintptr_t integer, const char* description);

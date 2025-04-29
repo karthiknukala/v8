@@ -2254,6 +2254,10 @@ template("run_mksnapshot") {
       rebase_path("$target_gen_dir/embedded${suffix}.S", root_build_dir),
     ]
 
+    if (v8_cheri_debug) {
+      args += [ "--trace-serializer-bytes" ]
+    }
+
     if (v8_log_builtins_block_count_input != "") {
       args += [
         "--trace-turbo",
