@@ -97,7 +97,6 @@ struct ScheduleBuilder {
                    {a, b});
   }
   Node* IntPtrShl(Node* a, Node* b) {
-    // FIXME(ds815): This probably needs to be fixed for capabilities.
     return AddNode(machine.Is64() ? machine.Word64Shl() : machine.Word32Shl(),
                    {a, b});
   }
@@ -589,7 +588,12 @@ Node* ScheduleBuilder::ProcessOperation(const FloatUnaryOp& op) {
 Node* ScheduleBuilder::ProcessOperation(const ShiftOp& op) {
   DCHECK(op.rep == WordRepresentation::Word32() ||
          op.rep == WordRepresentation::Word64());
+#ifdef __CHERI_PURE_CAPABILITY__
+  bool word64 = op.rep == WordRepresentation::Word64() ||
+                op.rep == WordRepresentation::Capability64();
+#else   // !__CHERI_PURE_CAPABILITY__
   bool word64 = op.rep == WordRepresentation::Word64();
+#endif  // __CHERI_PURE_CAPABILITY__
   const Operator* o;
   switch (op.kind) {
     case ShiftOp::Kind::kShiftRightArithmeticShiftOutZeros:

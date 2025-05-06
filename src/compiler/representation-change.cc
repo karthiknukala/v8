@@ -303,7 +303,12 @@ Node* RepresentationChanger::GetTaggedSignedRepresentationFor(
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kTaggedSigned);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+  } else if (output_rep == MachineRepresentation::kWord64 ||
+             output_rep == MachineRepresentation::kCapability64) {
+#else   // !__CHERI_PURE_CAPABILITY__
   } else if (output_rep == MachineRepresentation::kWord64) {
+#endif  // __CHERI_PURE_CAPABILITY__
     if (output_type.Is(Type::Signed31())) {
       // int64 -> int32 -> tagged signed
       node = InsertTruncateInt64ToInt32(node);
@@ -533,6 +538,9 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
   switch (node->opcode()) {
     case IrOpcode::kNumberConstant:
     case IrOpcode::kHeapConstant:
+#ifdef __CHERI_PURE_CAPABILITY__
+    case IrOpcode::kCapability64Constant:
+#endif
       return node;  // No change necessary.
     case IrOpcode::kInt32Constant:
     case IrOpcode::kFloat64Constant:
@@ -543,9 +551,6 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
   }
   if (output_rep == MachineRepresentation::kTaggedSigned ||
       output_rep == MachineRepresentation::kTaggedPointer ||
-#ifdef __CHERI_PURE_CAPABILITY__
-      output_rep == MachineRepresentation::kCapability64 ||
-#endif  // __CHERI_PURE_CAPABILITY__
       output_rep == MachineRepresentation::kMapWord) {
     // this is a no-op.
     return node;
@@ -581,7 +586,12 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kTagged);
     }
+#ifdef __CHERI_PURE_CAPABILITY__
+  } else if (output_rep == MachineRepresentation::kWord64 ||
+             output_rep == MachineRepresentation::kCapability64) {
+#else   // !__CHERI_PURE_CAPABILITY__
   } else if (output_rep == MachineRepresentation::kWord64) {
+#endif  // __CHERI_PURE_CAPABILITY__
     if (output_type.Is(Type::Signed31())) {
       // int64 -> int32 -> tagged signed
       node = InsertTruncateInt64ToInt32(node);
@@ -606,6 +616,13 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
     } else if (output_type.Is(Type::UnsignedBigInt64())) {
       // uint64 -> BigInt
       op = simplified()->ChangeUint64ToBigInt();
+#ifdef __CHERI_PURE_CAPABILITY__
+    } else if (output_rep == MachineRepresentation::kCapability64) {
+      // If we haven't performed a conversion by now, and the output
+      // representation is a Capability64, we just return the node as we would
+      // for any of the tagged representations at the start of this function.
+      return node;
+#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kTagged);
@@ -857,6 +874,9 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
     case IrOpcode::kInt64Constant:
     case IrOpcode::kFloat32Constant:
     case IrOpcode::kFloat64Constant:
+#ifdef __CHERI_PURE_CAPABILITY__
+    case IrOpcode::kCapability64Constant:
+#endif  // __CHERI_PURE_CAPABILITY__
       UNREACHABLE();
     case IrOpcode::kNumberConstant: {
       double const fv = OpParameter<double>(node->op());

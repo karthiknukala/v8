@@ -586,7 +586,12 @@ class MachineLoweringReducer : public Next {
             case ConvertPrimitiveToObjectOp::InputInterpretation::kCodePoint:
               UNREACHABLE();
           }
+#ifdef __CHERI_PURE_CAPABILITY__
+        } else if (input_rep == RegisterRepresentation::Word64() ||
+                   input_rep == RegisterRepresentation::Capability64()) {
+#else   // !__CHERI_PURE_CAPABILITY__
         } else if (input_rep == RegisterRepresentation::Word64()) {
+#endif  // __CHERI_PURE_CAPABILITY__
           switch (input_interpretation) {
             case ConvertPrimitiveToObjectOp::InputInterpretation::kSigned: {
               Label<Tagged> done(this);
@@ -824,7 +829,12 @@ class MachineLoweringReducer : public Next {
         return __ SmiTag(input);
       }
     } else {
+#ifdef __CHERI_PURE_CAPABILITY__
+      DCHECK(input_rep == RegisterRepresentation::Word64() ||
+             input_rep == RegisterRepresentation::Capability64());
+#else   // !__CHERI_PURE_CAPABILITY__
       DCHECK_EQ(input_rep, RegisterRepresentation::Word64());
+#endif  // __CHERI_PURE_CAPABILITY__
       if (input_interpretation ==
           ConvertPrimitiveToObjectOrDeoptOp::InputInterpretation::kSigned) {
         // Word32 truncation is implicit.
