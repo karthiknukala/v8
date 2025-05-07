@@ -957,9 +957,7 @@ void AdjustStackPointerForTailCall(MacroAssembler* masm,
   int current_sp_offset = state->GetSPToFPSlotCount() +
                           StandardFrameConstants::kFixedSlotCountAboveFp;
   int stack_slot_delta = new_slot_above_sp - current_sp_offset;
-#if !defined(__CHERI_PURE_CAPABILITY__)
   DCHECK_EQ(stack_slot_delta % 2, 0);
-#endif  // !__CHERI_PURE_CAPABILITY__
   if (stack_slot_delta > 0) {
     masm->Claim(stack_slot_delta);
     state->IncreaseSPDelta(stack_slot_delta);
@@ -3860,10 +3858,8 @@ void CodeGenerator::AssembleConstructFrame() {
   auto call_descriptor = linkage()->GetIncomingDescriptor();
   __ AssertSpAligned();
 
-#if !defined(__CHERI_PURE_CAPABILITY__)
   // The frame has been previously padded in CodeGenerator::FinishFrame().
   DCHECK_EQ(frame()->GetTotalFrameSlotCount() % 2, 0);
-#endif   // !__CHERI_PURE_CAPABILITY__
   int required_slots =
       frame()->GetTotalFrameSlotCount() - frame()->GetFixedSlotCount();
 
@@ -3884,14 +3880,12 @@ void CodeGenerator::AssembleConstructFrame() {
   if (frame_access_state()->has_frame()) {
     // Link the frame
     if (call_descriptor->IsJSFunctionCall()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-      // Capabilities are double the wisth of the pointer size of the
-      // native architecture.
+#ifdef __CHERI_PURE_CAPABILITY__
       static_assert(InterpreterFrameConstants::kFixedFrameSize % 16 == 0);
-#else // defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
       static_assert(InterpreterFrameConstants::kFixedFrameSize % 16 == 8);
+#endif  // __CHERI_PURE_CAPABILITY__
       DCHECK_EQ(required_slots % 2, 1);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
       __ Prologue();
       // Update required_slots count since we have just claimed one extra slot.
       static_assert(MacroAssembler::kExtraSlotClaimedByPrologue == 1);
@@ -3920,9 +3914,7 @@ void CodeGenerator::AssembleConstructFrame() {
       __ CodeEntry();
       size_t unoptimized_frame_slots = osr_helper()->UnoptimizedFrameSlots();
       DCHECK(call_descriptor->IsJSFunctionCall());
-#ifndef __CHERI_PURE_CAPABILITY__
       DCHECK_EQ(unoptimized_frame_slots % 2, 1);
-#endif  // !__CHERI_PURE_CAPABILITY__
       // One unoptimized frame slot has already been claimed when the actual
       // arguments count was pushed.
       required_slots -=
