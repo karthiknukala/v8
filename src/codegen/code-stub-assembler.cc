@@ -2660,8 +2660,10 @@ TNode<RawPtrT> CodeStubAssembler::LoadJSTypedArrayDataPtr(
                            typed_array, JSTypedArray::kBasePointerOffset))
                        .MarkAsCapability();
   }
-  DCHECK(base_pointer.IsCapability());
 #ifdef __CHERI_PURE_CAPABILITY__
+#ifndef V8_COMPRESS_POINTERS
+  DCHECK(base_pointer.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
   Label base_is_cap(this), done(this);
   TVARIABLE(RawPtrT, result);
   GotoIf(CapabilityIsTagged(UncheckedCast<UintPtrT>(base_pointer)),

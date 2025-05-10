@@ -507,23 +507,6 @@ TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
 #endif  // __CHERI_PURE_CAPABILITY__
 
 #ifdef __CHERI_PURE_CAPABILITY__
-#ifdef V8_COMPRESS_POINTERS
-static_assert(!is_capability<Smi>::value);
-static_assert(!is_capability<Object>::value);
-static_assert(!is_capability<MaybeObject>::value);
-static_assert(!is_capability<HeapObject>::value);
-static_assert(!is_capability<Map>::value);
-static_assert(!is_capability<FixedArray>::value);
-static_assert(!is_capability<IntPtrT>::value);
-static_assert(!is_capability<UintPtrT>::value);
-static_assert(!is_capability<WordT>::value);
-static_assert(!is_capability<String>::value);
-static_assert(is_capability<ExternalReference>::value);
-static_assert(is_capability<RawPtrT>::value);
-static_assert(!is_capability<BInt>::value);
-static_assert(!is_capability<HeapObjectReference>::value);
-static_assert(!is_capability<BigInt>::value);
-#else   // !V8_COMPRESS_POINTERS
 static_assert(!is_capability<Smi>::value);
 static_assert(is_capability<Object>::value);
 static_assert(is_capability<MaybeObject>::value);
@@ -539,7 +522,6 @@ static_assert(is_capability<RawPtrT>::value);
 static_assert(!is_capability<BInt>::value);
 static_assert(is_capability<HeapObjectReference>::value);
 static_assert(!is_capability<BigInt>::value);
-#endif  // V8_COMPRESS_POINTERS
 #endif  // __CHERI_PURE_CAPABILITY__
 
 // A "public" interface used by components outside of compiler directory to

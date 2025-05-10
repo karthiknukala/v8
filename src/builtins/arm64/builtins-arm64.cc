@@ -5522,7 +5522,7 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
     // If there was overflow, convert the return value to a HeapNumber.
     __ B(&to_heapnumber, vs);
     // If there was no overflow, we can convert to Smi.
-    __ SmiTag(return_reg);
+    __ SmiTag(return_reg.X());
   }
   __ jmp(&return_done);
 
