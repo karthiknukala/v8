@@ -182,8 +182,9 @@ void ReadOnlySerializer::SerializeReadOnlyRoots() {
       wasm_null_padding.address() + FreeSpace::kHeaderSize;
   std::vector<ReadOnlyHeapImageSerializer::MemoryRegion> unmapped;
   if (wasm_null.address() > wasm_null_padding_start) {
-    unmapped.push_back({wasm_null_padding_start,
-                        wasm_null.address() - wasm_null_padding_start});
+    unmapped.push_back(
+        {wasm_null_padding_start,
+         static_cast<size_t>(wasm_null.address() - wasm_null_padding_start)});
   }
   unmapped.push_back({wasm_null.payload(), WasmNull::kPayloadSize});
   ReadOnlyHeapImageSerializer::Serialize(
