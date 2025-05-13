@@ -2532,7 +2532,11 @@ void MacroAssembler::LoadRoot(Register destination, RootIndex index) {
   ASM_CODE_COMMENT(this);
   if (V8_STATIC_ROOTS_BOOL && RootsTable::IsReadOnly(index) &&
       IsImmAddSub(ReadOnlyRootPtr(index))) {
+#ifdef __CHERI_PURE_CAPABILITY__
+    DecompressTagged(destination.C(), ReadOnlyRootPtr(index));
+#else   // !__CHERI_PURE_CAPABILITY__
     DecompressTagged(destination, ReadOnlyRootPtr(index));
+#endif  // __CHERI_PURE_CAPABILITY__
     return;
   }
   // Many roots have addresses that are too large to fit into addition immediate
@@ -4025,11 +4029,12 @@ void MacroAssembler::JumpIfJSAnyIsNotPrimitive(Register heap_object,
 #ifdef DEBUG
     Label ok;
     LoadMap(scratch, heap_object);
-    CompareInstanceTypeRange(scratch, scratch, FIRST_JS_RECEIVER_TYPE,
+    CompareInstanceTypeRange(scratch, scratch.X(), FIRST_JS_RECEIVER_TYPE,
                              LAST_JS_RECEIVER_TYPE);
     B(Condition::kUnsignedLessThanEqual, &ok);
     LoadMap(scratch, heap_object);
-    CompareInstanceTypeRange(scratch, scratch, FIRST_PRIMITIVE_HEAP_OBJECT_TYPE,
+    CompareInstanceTypeRange(scratch, scratch.X(),
+                             FIRST_PRIMITIVE_HEAP_OBJECT_TYPE,
                              LAST_PRIMITIVE_HEAP_OBJECT_TYPE);
     B(Condition::kUnsignedLessThanEqual, &ok);
     Abort(AbortReason::kInvalidReceiver);
@@ -4112,7 +4117,7 @@ void MacroAssembler::CompareInstanceTypeRange(Register map, Register type_reg,
 #endif  // __CHERI_PURE_CAPABILITY__
   UseScratchRegisterScope temps(this);
   Register scratch = temps.AcquireX();
-  Ldrh(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  Ldrh(type_reg.W(), FieldMemOperand(map, Map::kInstanceTypeOffset));
   Sub(scratch, type_reg, Operand(lower_limit));
   Cmp(scratch, Operand(higher_limit - lower_limit));
 }
@@ -4246,6 +4251,9 @@ void MacroAssembler::DecompressTaggedSigned(const Register& destination,
 void MacroAssembler::DecompressTagged(const Register& destination,
                                       const MemOperand& field_operand) {
   ASM_CODE_COMMENT(this);
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(destination.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   Ldr(destination.W(), field_operand);
   Add(destination, kPtrComprCageBaseRegister, destination);
 }

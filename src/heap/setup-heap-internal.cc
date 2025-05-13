@@ -180,7 +180,11 @@ bool Heap::CreateReadOnlyHeapObjects() {
   // The read only heap is sorted such that often used objects are allocated
   // early for their compressed address to fit into 12bit arm immediates.
   ReadOnlySpace* ro_space = isolate()->heap()->read_only_space();
+#ifndef __CHERI_PURE_CAPABILITY__
+  // However, on CHERI they don't actually fit due to some values in the
+  // read-only space being larger due to pointer size increase.
   DCHECK_LT(V8HeapCompressionScheme::CompressAny(ro_space->top()), 0xfff);
+#endif  // !__CHERI_PURE_CAPABILITY__
   USE(ro_space);
 #endif
 
