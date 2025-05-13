@@ -12,17 +12,15 @@ v8_optimized_debug                    = true
 # We hit a lot of errors since we're compiling for ~unsupported platforms
 treat_warnings_as_errors              = false
 
-v8_use_snapshot                       = false
-v8_use_external_snapshot_data         = false
+#v8_use_snapshot                       = false
+#v8_use_external_snapshot_data         = false
 
-# Disable WASM for now.
-v8_enable_webassembly                 = false
+v8_enable_webassembly                 = true
 
 # Uncompressed build
 v8_enable_pointer_compression         = false
 v8_enable_external_code_space         = false
 v8_enable_sandbox                     = false
-v8_enable_sandboxed_external_pointers = false
 
 # Needed because we don't use the wrapper on FreeBSD Morello builds.
 clang_base_path                       = "/usr/local64"
@@ -45,7 +43,7 @@ v8_enable_verify_heap                 = true
 
 v8_enable_gdbjit                      = false # for now
 
-v8_cheri_debug                        = true
+#v8_cheri_debug                        = true
 
 # Jitless V8
 #v8_jitless                           = true
