@@ -24,7 +24,11 @@
 #include "src/objects/slots-inl.h"
 #include "src/objects/transitions.h"
 #include "src/roots/roots.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 
 namespace v8 {
 namespace internal {

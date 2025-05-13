@@ -26,7 +26,11 @@
 #include "src/objects/string.h"
 #include "src/objects/swiss-name-dictionary.h"
 #include "src/roots/roots.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 
 #if V8_ENABLE_WEBASSEMBLY
 #include "src/wasm/wasm-objects.h"

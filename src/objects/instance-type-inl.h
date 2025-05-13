@@ -9,7 +9,11 @@
 #include "src/execution/isolate-utils-inl.h"
 #include "src/objects/instance-type.h"
 #include "src/objects/map-inl.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"

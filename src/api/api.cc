@@ -115,7 +115,11 @@
 #include "src/profiler/profile-generator-inl.h"
 #include "src/profiler/tick-sample.h"
 #include "src/regexp/regexp-utils.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 #include "src/runtime/runtime.h"
 #include "src/sandbox/external-pointer.h"
 #include "src/sandbox/sandbox.h"

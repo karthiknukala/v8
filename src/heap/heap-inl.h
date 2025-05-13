@@ -49,7 +49,11 @@
 #include "src/objects/struct-inl.h"
 #include "src/objects/visitors-inl.h"
 #include "src/profiler/heap-profiler.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 #include "src/strings/string-hasher.h"
 #include "src/utils/ostreams.h"
 #include "src/zone/zone-list-inl.h"

@@ -8,7 +8,11 @@
 #include "src/objects/elements-kind.h"
 #include "src/objects/objects-inl.h"
 #include "src/objects/visitors.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 
 namespace v8 {
 namespace internal {

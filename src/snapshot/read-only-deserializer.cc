@@ -11,7 +11,11 @@
 #include "src/heap/read-only-heap.h"
 #include "src/logging/counters-scopes.h"
 #include "src/objects/slots.h"
+#ifdef __CHERI_PURE_CAPABILITY__
+#include "src/roots/static-roots-cheri.h"
+#else  // !__CHERI_PURE_CAPABILITY__
 #include "src/roots/static-roots.h"
+#endif  // __CHERI_PURE_CAPABILITY__
 #include "src/snapshot/embedded/embedded-data-inl.h"
 #include "src/snapshot/snapshot-data.h"
 
