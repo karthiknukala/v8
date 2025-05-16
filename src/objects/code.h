@@ -306,7 +306,8 @@ class Code : public HeapObject {
   DECL_VERIFIER(Code)
 
 // Layout description.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
+#ifdef V8_COMPRESS_POINTERS
 #define CODE_DATA_FIELDS(V)                                                   \
   /* Strong pointer fields. */                                                \
   V(kStartOfStrongFieldsOffset, 0)                                            \
@@ -334,6 +335,35 @@ class Code : public HeapObject {
   V(kUnalignedSize, OBJECT_POINTER_PADDING(kUnalignedSize))                   \
   /* Total size. */                                                           \
   V(kSize, 0)
+#else  // !V8_COMPRESS_POINTERS
+#define CODE_DATA_FIELDS(V)                                                   \
+  /* Strong pointer fields. */                                                \
+  V(kStartOfStrongFieldsOffset, 0)                                            \
+  V(kDeoptimizationDataOrInterpreterDataOffset, kTaggedSize)                  \
+  V(kPositionTableOffset, kTaggedSize)                                        \
+  V(kEndOfStrongFieldsWithMainCageBaseOffset, 0)                              \
+  /* The InstructionStream field is special: it uses code_cage_base. */       \
+  V(kInstructionStreamOffset, kTaggedSize)                                    \
+  V(kEndOfStrongFieldsOffset, 0)                                              \
+  /* Untagged data not directly visited by GC starts here. */                 \
+  V(kInstructionStartOffset, kSystemPointerSize)                              \
+  /* The serializer needs to copy bytes starting from here verbatim. */       \
+  V(kFlagsOffset, kUInt32Size)                                                \
+  V(kInstructionSizeOffset, kIntSize)                                         \
+  V(kMetadataSizeOffset, kIntSize)                                            \
+  /* TODO(jgruber): TF-specific fields could be merged with builtin_id. */    \
+  V(kInlinedBytecodeSizeOffset, kIntSize)                                     \
+  V(kOsrOffsetOffset, kInt32Size)                                             \
+  V(kHandlerTableOffsetOffset, kIntSize)                                      \
+  V(kUnwindingInfoOffsetOffset, kInt32Size)                                   \
+  V(kConstantPoolOffsetOffset, V8_EMBEDDED_CONSTANT_POOL_BOOL ? kIntSize : 0) \
+  V(kCodeCommentsOffsetOffset, kIntSize)                                      \
+  /* TODO(jgruber): 12 bits would suffice, steal from here if needed. */      \
+  V(kBuiltinIdOffset, kInt16Size)                                             \
+  V(kUnalignedSize, OBJECT_POINTER_PADDING(kUnalignedSize))                   \
+  /* Total size. */                                                           \
+  V(kSize, 0)
+#endif  // V8_COMPRESS_POINTERS
 #else   // !__CHERI_PURE_CAPABILITY__
 #define CODE_DATA_FIELDS(V)                                                   \
   /* Strong pointer fields. */                                                \

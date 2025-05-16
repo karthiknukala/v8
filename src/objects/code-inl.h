@@ -140,12 +140,11 @@ Address Code::metadata_start() const {
 #ifdef __CHERI_PURE_CAPABILITY__
     Address start = instruction_start();
     // FIXME(ds815): We might not be re-deriving this from the PCC.
-    if (__builtin_cheri_sealed_get(start)) {
-      Address pcc =
-          reinterpret_cast<Address>(__builtin_cheri_program_counter_get());
-      Address rval = __builtin_cheri_address_set(
-          pcc, (__builtin_cheri_address_get(start) | 1) + instruction_size());
-      return __builtin_cheri_seal_entry(rval);
+    if (V8_CHERI_SEALED(start)) {
+      Address pcc = reinterpret_cast<Address>(V8_CHERI_PCC);
+      Address rval = V8_CHERI_ADDR_SET(
+          pcc, (V8_CHERI_ADDR_GET(start) | 1) + instruction_size());
+      return V8_CHERI_TO_SENTRY(rval);
     }
 #endif  // __CHERI_PURE_CAPABILITY__
     return instruction_start() + instruction_size();
@@ -599,11 +598,12 @@ Object Code::raw_instruction_stream(PtrComprCageBase cage_base,
 }
 
 DEF_GETTER(Code, instruction_start, Address) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  return ReadFieldAlignUp<Address>(kInstructionStartOffset);
-#else   // !__CHERI_PURE_CAPABILITY__
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (COMPRESS_POINTERS_BOOL) {
+    return ReadFieldAlignUp<Address>(kInstructionStartOffset);
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   return ReadField<Address>(kInstructionStartOffset);
-#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 void Code::init_instruction_start(Isolate* isolate, Address value) {
@@ -611,11 +611,13 @@ void Code::init_instruction_start(Isolate* isolate, Address value) {
 }
 
 void Code::set_instruction_start(Isolate* isolate, Address value) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  WriteFieldAlignUp<Address>(kInstructionStartOffset, value);
-#else   // !__CHERI_PURE_CAPABILITY__
+#ifdef __CHERI_PURE_CAPABILITY__
+  if (COMPRESS_POINTERS_BOOL) {
+    WriteFieldAlignUp<Address>(kInstructionStartOffset, value);
+    return;
+  }
+#endif  // __CHERI_PURE_CAPABILITY__
   WriteField<Address>(kInstructionStartOffset, value);
-#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 void Code::SetInstructionStreamAndInstructionStart(Isolate* isolate_for_sandbox,
