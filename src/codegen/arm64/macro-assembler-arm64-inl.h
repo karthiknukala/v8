@@ -1708,7 +1708,11 @@ void MacroAssembler::SmiUntag(Register smi) { SmiUntag(smi, smi); }
 void MacroAssembler::SmiToInt32(Register smi) { SmiToInt32(smi, smi); }
 
 void MacroAssembler::SmiToInt32(Register dst, Register smi) {
+#ifdef __CHERI_PURE_CAPABILITY__
+  DCHECK(dst.Is64Bits() || dst.IsC());
+#else   // !__CHERI_PURE_CAPABILITY__
   DCHECK(dst.Is64Bits());
+#endif  // __CHERI_PURE_CAPABILITY__
   if (v8_flags.enable_slow_asserts) {
     AssertSmi(smi);
   }
@@ -1716,7 +1720,7 @@ void MacroAssembler::SmiToInt32(Register dst, Register smi) {
   if (COMPRESS_POINTERS_BOOL) {
     Asr(dst.W(), smi.W(), kSmiShift);
   } else {
-    Lsr(dst, smi, kSmiShift);
+    Lsr(dst.X(), smi.X(), kSmiShift);
   }
 }
 
