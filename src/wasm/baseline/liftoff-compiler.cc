@@ -111,6 +111,9 @@ struct assert_field_size {
 constexpr LoadType::LoadTypeValue kPointerLoadType =
     kSystemPointerAddrSize == 8 ? LoadType::kI64Load : LoadType::kI32Load;
 
+#ifdef __CHERI_PURE_CAPABILITY__
+constexpr ValueKind kCapability64Kind = LiftoffAssembler::kCapability64Kind;
+#endif  // __CHERI_PURE_CAPABILITY__
 constexpr ValueKind kIntPtrKind = LiftoffAssembler::kIntPtrKind;
 constexpr ValueKind kSmiKind = LiftoffAssembler::kSmiKind;
 
@@ -3394,7 +3397,7 @@ class LiftoffCompiler {
 #ifdef __CHERI_PURE_CAPABILITY__
     Register param_reg = descriptor.GetRegisterParameter(0).C();
     if (info.gp().C() != param_reg) {
-      __ Move(param_reg, info.gp().C(), kIntPtrKind);
+      __ Move(param_reg, info.gp().C(), kCapability64Kind);
     }
 #else   // !__CHERI_PURE_CAPABILITY__
     Register param_reg = descriptor.GetRegisterParameter(0);
@@ -5068,11 +5071,20 @@ class LiftoffCompiler {
     __ LoadConstant(encoded_size_reg, WasmValue::ForUintPtr(encoded_size));
 
     // Call the WasmAllocateFixedArray builtin to create the values array.
+#ifdef __CHERI_PURE_CAPABILITY__
+    CallRuntimeStub(
+        WasmCode::kWasmAllocateFixedArray,
+        MakeSig::Returns(kCapability64Kind).Params(kCapability64Kind),
+        {LiftoffAssembler::VarState{kCapability64Kind,
+                                    LiftoffRegister{encoded_size_reg}, 0}},
+        decoder->position());
+#else   // !__CHERI_PURE_CAPABILITY__
     CallRuntimeStub(WasmCode::kWasmAllocateFixedArray,
                     MakeSig::Returns(kIntPtrKind).Params(kIntPtrKind),
                     {LiftoffAssembler::VarState{
                         kIntPtrKind, LiftoffRegister{encoded_size_reg}, 0}},
                     decoder->position());
+#endif  // __CHERI_PURE_CAPABILITY__
     MaybeOSR();
 
     // The FixedArray for the exception values is now in the first gp return
@@ -5113,11 +5125,20 @@ class LiftoffCompiler {
 #endif  // __CHERI_PURE_CAPABILITY__
 
     // Finally, call WasmThrow.
+#ifdef __CHERI_PURE_CAPABILITY__
+    CallRuntimeStub(
+        WasmCode::kWasmThrow,
+        MakeSig::Params(kCapability64Kind, kCapability64Kind),
+        {LiftoffAssembler::VarState{kCapability64Kind, exception_tag, 0},
+         LiftoffAssembler::VarState{kCapability64Kind, values_array, 0}},
+        decoder->position());
+#else   // !__CHERI_PURE_CAPABILITY__
     CallRuntimeStub(WasmCode::kWasmThrow,
                     MakeSig::Params(kIntPtrKind, kIntPtrKind),
                     {LiftoffAssembler::VarState{kIntPtrKind, exception_tag, 0},
                      LiftoffAssembler::VarState{kIntPtrKind, values_array, 0}},
                     decoder->position());
+#endif  // __CHERI_PURE_CAPABILITY__
 
     RegisterDebugSideTableEntry(decoder, DebugSideTableBuilder::kDidSpill);
 
@@ -5698,7 +5719,11 @@ class LiftoffCompiler {
 
     Register instance = __ cache_state()->cached_instance;
     if (instance == no_reg) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      instance = __ GetUnusedRegister(kGpReg, pinned).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       instance = __ GetUnusedRegister(kGpReg, pinned).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       __ LoadInstanceFromFrame(instance);
     }
 
@@ -5713,8 +5738,14 @@ class LiftoffCompiler {
                         no_reg, trapping);
     }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+    auto sig =
+        MakeSig::Returns(kI32).Params(kCapability64Kind, kCapability64Kind,
+                                      kCapability64Kind, kCapability64Kind);
+#else   // !__CHERI_PURE_CAPABILITY__
     auto sig = MakeSig::Returns(kI32).Params(kIntPtrKind, kIntPtrKind,
                                              kIntPtrKind, kIntPtrKind);
+#endif  // __CHERI_PURE_CAPABILITY__
     LiftoffRegister args[] = {LiftoffRegister(instance), dst, src, size};
     // We don't need the instance anymore after the call. We can use the
     // register for the result.
@@ -5737,7 +5768,11 @@ class LiftoffCompiler {
 
     Register instance = __ cache_state()->cached_instance;
     if (instance == no_reg) {
+#ifdef __CHERI_PURE_CAPABILITY__
+      instance = __ GetUnusedRegister(kGpReg, pinned).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
       instance = __ GetUnusedRegister(kGpReg, pinned).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
       __ LoadInstanceFromFrame(instance);
     }
 
@@ -5752,8 +5787,13 @@ class LiftoffCompiler {
                         no_reg, trapping);
     }
 
+#ifdef __CHERI_PURE_CAPABILITY__
+    auto sig = MakeSig::Returns(kI32).Params(
+        kCapability64Kind, kCapability64Kind, kI32, kIntPtrKind);
+#else   // !__CHERI_PURE_CAPABILITY__
     auto sig = MakeSig::Returns(kI32).Params(kIntPtrKind, kIntPtrKind, kI32,
                                              kIntPtrKind);
+#endif  // __CHERI_PURE_CAPABILITY__
     LiftoffRegister args[] = {LiftoffRegister(instance), dst, value, size};
     // We don't need the instance anymore after the call. We can use the
     // register for the result.

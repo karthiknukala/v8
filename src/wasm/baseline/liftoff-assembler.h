@@ -106,6 +106,9 @@ class LiftoffAssembler : public MacroAssembler {
   static constexpr int kStackSlotSize = 8;
 #endif  // __CHERI_PURE_CAPABILITY__
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr ValueKind kCapability64Kind = kRef;
+#endif  // __CHERI_PURE_CAPABILITY__
   static constexpr ValueKind kIntPtrKind =
       kSystemPointerSize == kInt32Size ? kI32 : kI64;
   // A tagged value known to be a Smi can be treated like a ptr-sized int.

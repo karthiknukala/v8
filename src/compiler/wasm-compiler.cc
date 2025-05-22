@@ -5250,11 +5250,19 @@ void WasmGraphBuilder::MemoryFill(Node* dst, Node* value, Node* size,
 
   MemTypeToUintPtrOrOOBTrap({&dst, &size}, position);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  Node* stack_slot = StoreArgsInStackSlot(
+      {{MachineType::PointerRepresentation(), GetInstance()},
+       {MachineType::PointerRepresentation(), dst},
+       {MachineRepresentation::kWord32, value},
+       {MachineRepresentation::kWord64, size}});
+#else   // !__CHERI_PURE_CAPABILITY__
   Node* stack_slot = StoreArgsInStackSlot(
       {{MachineType::PointerRepresentation(), GetInstance()},
        {MachineType::PointerRepresentation(), dst},
        {MachineRepresentation::kWord32, value},
        {MachineType::PointerRepresentation(), size}});
+#endif  // __CHERI_PURE_CAPABILITY__
 
   auto sig = FixedSizeSignature<MachineType>::Returns(MachineType::Int32())
                  .Params(MachineType::Pointer());
