@@ -4865,9 +4865,11 @@ InstructionSelector::AlignmentRequirements() {
 #ifdef __CHERI_PURE_CAPABILITY__
   base::EnumSet<MachineRepresentation> req_aligned;
   req_aligned.Add(MachineRepresentation::kCapability64);
+#ifndef V8_COMPRESS_POINTERS
   req_aligned.Add(MachineRepresentation::kTaggedPointer);
   req_aligned.Add(MachineRepresentation::kTagged);
   req_aligned.Add(MachineRepresentation::kMapWord);
+#endif  // !V8_COMPRESS_POINTERS
   return MachineOperatorBuilder::AlignmentRequirements::
       SomeUnalignedAccessUnsupported(req_aligned, req_aligned);
 #else   // !__CHERI_PURE_CAPABILITY__
