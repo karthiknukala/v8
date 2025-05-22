@@ -3803,8 +3803,14 @@ void LiftoffAssembler::CallC(const ValueKindSig* sig,
 
   int arg_bytes = 0;
   for (ValueKind param_kind : sig->parameters()) {
+    int current_size = value_kind_size(param_kind);
+#ifdef __CHERI_PURE_CAPABILITY__
+    if (current_size == kSystemPointerSize) {
+      arg_bytes = ALIGN_TO_ALLOCATION_ALIGNMENT(arg_bytes);
+    }
+#endif  // __CHERI_PURE_CAPABILITY__
     Poke(liftoff::GetRegFromType(*args++, param_kind), arg_bytes);
-    arg_bytes += value_kind_size(param_kind);
+    arg_bytes += current_size;
   }
   DCHECK_LE(arg_bytes, stack_bytes);
 

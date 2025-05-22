@@ -1746,7 +1746,13 @@ class LiftoffCompiler {
     // Store arguments on our stack, then align the stack for calling to C.
     int param_bytes = 0;
     for (ValueKind param_kind : sig->parameters()) {
-      param_bytes += value_kind_size(param_kind);
+      int current_size = value_kind_size(param_kind);
+#ifdef __CHERI_PURE_CAPABILITY__
+      if (current_size == kSystemPointerSize) {
+        param_bytes = ALIGN_TO_ALLOCATION_ALIGNMENT(param_bytes);
+      }
+#endif  // __CHERI_PURE_CAPABILITY__
+      param_bytes += current_size;
     }
     int out_arg_bytes =
         out_argument_kind == kVoid ? 0 : value_kind_size(out_argument_kind);
