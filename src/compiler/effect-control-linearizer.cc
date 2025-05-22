@@ -6683,7 +6683,7 @@ Node* EffectControlLinearizer::AdaptFastCallTypedArrayArgument(
            stack_slot, 0, length_in_bytes);
   __ Store(StoreRepresentation(MachineType::PointerRepresentation(),
                                kNoWriteBarrier),
-           stack_slot, sizeof(size_t), data_ptr);
+           stack_slot, sizeof(uintptr_t), data_ptr);
 #if defined(__CHERI_PURE_CAPABILITY__)
   static_assert(sizeof(ptraddr_t) == sizeof(size_t),
 #else   // !__CHERI_PURE_CAPABILITY__)
@@ -6920,7 +6920,7 @@ Node* EffectControlLinearizer::AdaptFastCallArgument(
                      stack_slot, 0, data_ptr);
             __ Store(StoreRepresentation(MachineRepresentation::kWord32,
                                          kNoWriteBarrier),
-                     stack_slot, sizeof(size_t), length_in_bytes);
+                     stack_slot, sizeof(uintptr_t), length_in_bytes);
 
 #if defined(__CHERI_PURE_CAPABILITY__)
             static_assert(sizeof(ptraddr_t) == sizeof(size_t),
@@ -7173,6 +7173,10 @@ Node* EffectControlLinearizer::LowerFastApiCall(Node* node) {
       },
       // Initialize js-specific callback options.
       [this](Node* options_stack_slot) {
+        static_assert(static_cast<int>(
+                          offsetof(v8::FastApiCallbackOptions, wasm_memory)) %
+                          kSystemPointerSize ==
+                      0);
         __ Store(
             StoreRepresentation(MachineType::PointerRepresentation(),
                                 kNoWriteBarrier),
