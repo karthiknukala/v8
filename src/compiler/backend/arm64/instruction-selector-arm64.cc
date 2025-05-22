@@ -4862,8 +4862,18 @@ InstructionSelector::SupportedMachineOperatorFlags() {
 // static
 MachineOperatorBuilder::AlignmentRequirements
 InstructionSelector::AlignmentRequirements() {
+#ifdef __CHERI_PURE_CAPABILITY__
+  base::EnumSet<MachineRepresentation> req_aligned;
+  req_aligned.Add(MachineRepresentation::kCapability64);
+  req_aligned.Add(MachineRepresentation::kTaggedPointer);
+  req_aligned.Add(MachineRepresentation::kTagged);
+  req_aligned.Add(MachineRepresentation::kMapWord);
+  return MachineOperatorBuilder::AlignmentRequirements::
+      SomeUnalignedAccessUnsupported(req_aligned, req_aligned);
+#else   // !__CHERI_PURE_CAPABILITY__
   return MachineOperatorBuilder::AlignmentRequirements::
       FullUnalignedAccessSupport();
+#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 }  // namespace compiler
