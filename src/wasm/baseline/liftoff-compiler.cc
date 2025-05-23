@@ -1398,7 +1398,12 @@ class LiftoffCompiler {
     pinned.set(caught_tag);
 
     CODE_COMMENT("load expected exception tag");
+#ifdef __CHERI_PURE_CAPABILITY__
+    Register imm_tag =
+        pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
+#else   // !__CHERI_PURE_CAPABILITY__
     Register imm_tag = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+#endif  // __CHERI_PURE_CAPABILITY__
     LOAD_TAGGED_PTR_INSTANCE_FIELD(imm_tag, TagsTable, pinned);
     __ LoadTaggedPointer(
         imm_tag, imm_tag, no_reg,
