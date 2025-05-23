@@ -100,7 +100,9 @@ macro SwissNameDictionarySizeFor(capacity: intptr): intptr {
   const dynamic: intptr =
       capacity * FromConstexpr<intptr>(2 * kTaggedSize + 2) +
       FromConstexpr<intptr>(kGroupWidth);
-  return constant + dynamic;
+  // Account for padding on CHERI
+  @if(CHERI_PURECAP_UNCOMPRESSED) return constant + dynamic + 8;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) return constant + dynamic;
 }
 
 // Counterpart for SwissNameDictionary::MetaTableSizePerEntryFor in C++.
