@@ -4617,7 +4617,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     } else if (IsImmLSUnscaled(addr.offset())) {
       int offset = static_cast<int>(addr.offset());
       // Use the unscaled addressing mode.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
       if (rt.IsC()) {
         Emit(LoadStoreCapUnscaledOffsetNormalFixed | memop | ImmLS(offset));
         return;
