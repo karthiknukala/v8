@@ -96,6 +96,12 @@ extern class WasmIndirectFunctionTable extends Struct {
   size: uint32;
   @if(TAGGED_SIZE_8_BYTES) optional_padding: uint32;
   @ifnot(TAGGED_SIZE_8_BYTES) optional_padding: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_1: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_1: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_2: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_2: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_3: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_3: void;
 }
 
 extern class WasmContinuationObject extends HeapObject {
