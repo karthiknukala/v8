@@ -4835,11 +4835,23 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
           Operand(param_count, LSL, kSystemPointerSizeLog2));
   // Claim space for int and float params at once,
   // to be sure sp is aligned by kSystemPointerSize << 1 = 16.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   __ Sub(csp, csp, Operand(param_count, LSL, kSystemPointerSizeLog2));
-#else // defined(__CHERI_PURE_CAPABILITY__)
+  // Even though we don't strictly need to do this to align the stack pointer on
+  // purecap since pointer size is already 16 bytes, the rest of the code
+  // assumes this to be true.
+  //
+  // Since we can't encode a shift by 5 using Morello instructions, we face a
+  // choice:
+  //  (1) Acquire a temporary register, perform the shift and scvalue the csp;
+  //  (2) Perform the same sub again since n << 5 == (n << 4) + (n << 4).
+  //
+  //  XXX(ds815): Currently, we assume that acquiring another temporary register
+  //  plus an scvalue is going to be worse than simply performing the sub twice.
+  __ Sub(csp, csp, Operand(param_count, LSL, kSystemPointerSizeLog2));
+#else   // !__CHERI_PURE_CAPABILITY__
   __ Sub(sp, sp, Operand(param_count, LSL, kSystemPointerSizeLog2 + 1));
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // -------------------------------------------
   // Set up for the param evaluation loop.
@@ -5167,8 +5179,10 @@ void GenericJSToWasmWrapperHelper(MacroAssembler* masm, bool stack_switch) {
   // Sum int and float stack space requirements.
   __ Add(args_pointer.X(), args_pointer.X(), scratch.X());
   // Round up stack space to 16 divisor.
+#ifndef __CHERI_PURE_CAPABILITY__
   __ Add(scratch, args_pointer.X(), 0xF);
   __ Bic(scratch, scratch, 0xF);
+#endif  // __CHERI_PURE_CAPABILITY__
   // Reserve space for params on stack.
 #if defined(__CHERI_PURE_CAPABILITY__)
   __ Sub(csp, csp, scratch);
