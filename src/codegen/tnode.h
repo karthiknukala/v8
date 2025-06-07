@@ -446,7 +446,9 @@ class TNode {
   TNode operator=(TNode other) {
     DCHECK_NOT_NULL(other.node_);
     node_ = other.node_;
+#ifdef __CHERI_PURE_CAPABILITY__
     is_capability_ = other.is_capability_;
+#endif  // __CHERI_PURE_CAPABILITY__
     return *this;
   }
 

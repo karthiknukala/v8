@@ -1817,7 +1817,9 @@ class TypedCodeAssemblerVariable : public CodeAssemblerVariable {
   }
   void operator=(const TypedCodeAssemblerVariable<T>& variable) {
     Bind(variable.value());
+#ifdef __CHERI_PURE_CAPABILITY__
     is_capability_ = variable.is_capability_;
+#endif  // __CHERI_PURE_CAPABILITY__
   }
 
 #ifdef __CHERI_PURE_CAPABILITY__
