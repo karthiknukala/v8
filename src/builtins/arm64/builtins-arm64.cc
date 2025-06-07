@@ -4559,6 +4559,8 @@ class RegisterAllocator {
   DEFINE_REG(Name);           \
   Name = Name.C();            \
   RegisterAllocator::Scoped scope_##Name(&regs, &Name);
+#else  // !__CHERI_PURE_CAPABILITY__
+#define DEFINE_SCOPED_C(Name) DEFINE_SCOPED(Name)
 #endif  // __CHERI_PURE_CAPABILITY__
 
 #define FREE_REG(Name) \
