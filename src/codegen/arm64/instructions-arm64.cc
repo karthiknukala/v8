@@ -34,8 +34,7 @@ bool Instruction::IsLoad() const {
       default:
         return false;
     }
-   return false;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   } else if (Mask(LoadStoreCapAnyFMask) == LoadStoreCapAnyFixed) {
     LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreCapMask));
     switch (op) {
@@ -46,7 +45,7 @@ bool Instruction::IsLoad() const {
     }
   } else if (Mask(LoadStorePairCapAnyFMask) == LoadStorePairCapAnyFixed) {
     return Mask(LoadStorePairCapLBit) != 0;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     return false;
   }
@@ -54,7 +53,7 @@ bool Instruction::IsLoad() const {
 
 bool Instruction::IsStore() const {
   if (Mask(LoadStoreAnyFMask) == LoadStoreAnyFixed) {
-    LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreCapMask));
+    LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreMask));
     switch (op) {
       case STRB_w:
       case STRH_w:
@@ -73,16 +72,16 @@ bool Instruction::IsStore() const {
     return Mask(LoadStorePairLBit) == 0;
 #if defined(__CHERI_PURE_CAPABILITY__)
   } else if (Mask(LoadStoreCapAnyFMask) == LoadStoreCapAnyFixed) {
-    LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreMask));
+    LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreCapMask));
     switch (op) {
       case STR_c:
         return true;
       default:
         return false;
     }
- } else if (Mask(LoadStorePairCapAnyFMask) == LoadStorePairCapAnyFixed) {
+  } else if (Mask(LoadStorePairCapAnyFMask) == LoadStorePairCapAnyFixed) {
     return Mask(LoadStorePairCapLBit) == 0;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     return false;
   }
@@ -177,11 +176,11 @@ double Instruction::ImmNEONFP64() const {
 unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap) {
   DCHECK_EQ(static_cast<unsigned>(LSSize_offset + LSSize_width),
             kInstrSize * 8);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY_
   if (is_cap && (op == STR_c || op == LDR_c)) {
     return kCRegSizeLog2;
   }
-#endif // __CHERI_PURE_CAPABILITY_
+#endif  // __CHERI_PURE_CAPABILITY__
   unsigned size = static_cast<Instr>(op) >> LSSize_offset;
   if ((op & LSVector_mask) != 0) {
     // Vector register memory operations encode the access size in the "size"
@@ -205,12 +204,12 @@ unsigned CalcLSPairDataSize(LoadStorePairOp op) {
     case STP_d:
     case LDP_d:
       return kXRegSizeLog2;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     case STP_c:
       [[fallthrough]];
     case LDP_c:
       return kCRegSizeLog2;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
     default:
       return kWRegSizeLog2;
   }
@@ -228,7 +227,7 @@ unsigned CalcLSPairDataSize(LoadStorePairOp op, const CPURegister& rt) {
     case STP_d:
     case LDP_d:
       return kXRegSizeLog2;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     case STP_c:
       [[fallthrough]];
     case LDP_c:
@@ -240,7 +239,7 @@ unsigned CalcLSPairDataSize(LoadStorePairOp op, const CPURegister& rt) {
         return kWRegSizeLog2;
       else
         UNREACHABLE();
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif  // __CHERI_PURE_CAPABILITY__
     default:
       return kWRegSizeLog2;
   }
