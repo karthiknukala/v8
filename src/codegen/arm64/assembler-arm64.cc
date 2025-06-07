@@ -4600,7 +4600,11 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
   Instr memop = op | Rt(rt) | RnSP(base);
 
   if (addr.IsImmediateOffset()) {
+#ifdef __CHERI_PURE_CAPABILITY__
     unsigned size = CalcLSDataSize(op, rt.IsC());
+#else   // !__CHERI_PURE_CAPABILITY__
+    unsigned size = CalcLSDataSize(op, false);
+#endif  // __CHERI_PURE_CAPABILITY__
     if (IsImmLSScaled(addr.offset(), size)) {
       int offset = static_cast<int>(addr.offset());
 #ifdef __CHERI_PURE_CAPABILITY__
@@ -4642,8 +4646,12 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     // access size.
     DCHECK(
         (shift_amount == 0) ||
+#ifdef __CHERI_PURE_CAPABILITY__
         (shift_amount == static_cast<unsigned>(CalcLSDataSize(op, rt.IsC()))));
-#if defined(__CHERI_PURE_CAPABILITY__)
+#else   // !__CHERI_PURE_CAPABILITY__
+        (shift_amount == static_cast<unsigned>(CalcLSDataSize(op, false))));
+#endif  // __CHERI_PURE_CAPABILITY__
+#ifdef __CHERI_PURE_CAPABILITY__
     if (rt.IsC()) {
       Emit(LoadStoreCapRegisterOffsetNormalFixed | memop |
            Cm(addr.regoffset()) | ExtendMode(ext) |
@@ -4662,7 +4670,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     if (IsImmLSUnscaled(addr.offset())) {
       int offset = static_cast<int>(addr.offset());
       if (addr.IsPreIndex()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
         if (rt.IsC()) {
           unsigned size = CalcLSDataSize(op, rt.IsC());
           Emit(LoadStorePreCapIndexFixed | memop | ImmLS(offset >> size));
@@ -4672,7 +4680,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
         Emit(LoadStorePreIndexFixed | memop | ImmLS(offset));
       } else {
         DCHECK(addr.IsPostIndex());
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
         if (rt.IsC()) {
           unsigned size = CalcLSDataSize(op, rt.IsC());
           Emit(LoadStorePostCapIndexFixed | memop | ImmLS(offset >> size));
