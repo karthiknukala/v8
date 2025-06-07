@@ -1008,7 +1008,7 @@ LoadLiteralOp Assembler::LoadLiteralOpFor(const CPURegister& rt) {
   }
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 AddSubOp Assembler::AddOpFor(const CPURegister& rt) {
   if (rt.IsC()) {
     return ADD_c;
@@ -1024,7 +1024,15 @@ AddSubOp Assembler::SubOpFor(const CPURegister& rt) {
     return SUB;
   }
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#else   // !__CHERI_PURE_CAPABILITY__
+AddSubOp Assembler::AddOpFor([[maybe_unused]] const CPURegister& rt) {
+  return ADD;
+}
+
+AddSubOp Assembler::SubOpFor([[maybe_unused]] const CPURegister& rt) {
+  return SUB;
+}
+#endif  // __CHERI_PURE_CAPABILITY__
 
 int Assembler::LinkAndGetInstructionOffsetTo(Label* label) {
   DCHECK_EQ(kStartOfLabelLinkChain, 0);

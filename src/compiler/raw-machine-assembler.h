@@ -321,7 +321,6 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->CapabilityAtomicStore(params), base, index,
                    value);
   }
-#endif  // __CHERI_PURE_CAPABILITY__
 
 #define ATOMIC_FUNCTION(name)                                                  \
   Node* Atomic##name(MachineType type, Node* base, Node* index, Node* value) { \
@@ -354,6 +353,35 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   ATOMIC_FUNCTION(Xor)
 #undef ATOMIC_FUNCTION
 #undef VALUE_HALVES
+#else  // !__CHERI_PURE_CAPABILITY__
+#define ATOMIC_FUNCTION(name)                                                  \
+  Node* Atomic##name(MachineType type, Node* base, Node* index, Node* value) { \
+    DCHECK_NE(type.representation(), MachineRepresentation::kWord64);          \
+    return AddNode(machine()->Word32Atomic##name(type), base, index, value);   \
+  }                                                                            \
+  Node* Atomic##name##64(Node * base, Node * index, Node * value,              \
+                         Node * value_high) {                                  \
+    if (machine()->Is64()) {                                                   \
+      DCHECK_NULL(value_high);                                                 \
+      /* This uses Uint64() intentionally: Atomic operations are not  */       \
+      /* implemented for Int64(), which is fine because the machine   */       \
+      /* instruction only cares about words.                          */       \
+      return AddNode(machine()->Word64Atomic##name(MachineType::Uint64()),     \
+                     base, index, value);                                      \
+    } else {                                                                   \
+      return AddNode(machine()->Word32AtomicPair##name(), base, index,         \
+                     VALUE_HALVES);                                            \
+    }                                                                          \
+  }
+  ATOMIC_FUNCTION(Exchange)
+  ATOMIC_FUNCTION(Add)
+  ATOMIC_FUNCTION(Sub)
+  ATOMIC_FUNCTION(And)
+  ATOMIC_FUNCTION(Or)
+  ATOMIC_FUNCTION(Xor)
+#undef ATOMIC_FUNCTION
+#undef VALUE_HALVES
+#endif  // __CHERI_PURE_CAPABILITY__
 
   Node* AtomicCompareExchange(MachineType type, Node* base, Node* index,
                               Node* old_value, Node* new_value) {

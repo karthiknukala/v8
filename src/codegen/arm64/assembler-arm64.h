@@ -3291,10 +3291,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static inline LoadStorePairOp StorePairOpFor(const CPURegister& rt,
                                                const CPURegister& rt2);
   static inline LoadLiteralOp LoadLiteralOpFor(const CPURegister& rt);
-#if defined(__CHERI_PURE_CAPABILITY__)
   static inline AddSubOp AddOpFor(const CPURegister& rt);
   static inline AddSubOp SubOpFor(const CPURegister& rt);
-#endif // __CHERI_PURE_CAPABILITY__
 
   // Remove the specified branch from the unbound label link chain.
   // If available, a veneer for this label can be used for other branches in the

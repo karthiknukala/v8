@@ -66,7 +66,9 @@ MemOperand BaselineAssembler::RegisterFrameOperand(
 }
 void BaselineAssembler::RegisterFrameAddress(
     interpreter::Register interpreter_register, Register rscratch) {
+#ifdef __CHERI_PURE_CAPABILITY__
   DCHECK(rscratch.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
   return __ Add(rscratch, fp,
                 interpreter_register.ToOperand() * kSystemPointerSize);
 }
