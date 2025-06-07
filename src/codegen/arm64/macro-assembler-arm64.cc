@@ -1131,16 +1131,22 @@ void MacroAssembler::LoadStoreMacro(const CPURegister& rt,
     Register temp = temps.AcquireSameSizeAs(addr.base());
 #endif  // !__CHERI_PURE_CAPABILITY__
     Mov(temp, addr.offset());
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(addr.base().IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     LoadStore(rt, MemOperand(addr.base(), temp), op);
   } else if (addr.IsPostIndex() && !IsImmLSUnscaled(offset)) {
     // Post-index beyond unscaled addressing range.
     LoadStore(rt, MemOperand(addr.base()), op);
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(addr.base().IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     Add(addr.base(), addr.base(), offset);
   } else if (addr.IsPreIndex() && !IsImmLSUnscaled(offset)) {
     // Pre-index beyond unscaled addressing range.
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(addr.base().IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
     Add(addr.base(), addr.base(), offset);
     LoadStore(rt, MemOperand(addr.base()), op);
   } else {
@@ -1195,7 +1201,9 @@ void MacroAssembler::LoadStorePairMacro(const CPURegister& rt,
       LoadStorePair(rt, rt2, MemOperand(temp), op);
     } else if (addr.IsPostIndex()) {
       LoadStorePair(rt, rt2, MemOperand(base), op);
+#ifdef __CHERI_PURE_CAPABILITY__
       DCHECK(base.IsC());
+#endif  // __CHERI_PURE_CAPABILITY__
       Add(base, base, offset);
     } else {
       DCHECK(addr.IsPreIndex());
