@@ -1516,7 +1516,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
     BIND(&out);
     CSA_DCHECK(this, CapabilityIsTagged(result.value()));
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(result.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
     return result.value();
   }
 
