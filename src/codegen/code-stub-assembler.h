@@ -1414,9 +1414,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                              std::is_same<T, MaybeObject>::value,
                          int>::type = 0>
   void StoreReference(Reference reference, TNode<T> value) {
-#ifndef V8_COMPRESS_POINTERS
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(reference.object.IsCapability());
-#endif  // V8_COMPRESS_POINTERS
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     if (IsMapOffsetConstant(reference.offset)) {
       DCHECK((std::is_base_of<T, Map>::value));
       return StoreMap(CAST(reference.object), ReinterpretCast<Map>(value));

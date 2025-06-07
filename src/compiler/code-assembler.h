@@ -1350,15 +1350,21 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                               static_cast<TNode<WordT>>(right)));
   }
   TNode<RawPtrT> RawPtrAdd(TNode<RawPtrT> left, TNode<IntPtrT> right) {
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(left.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
     return ReinterpretCast<RawPtrT>(IntPtrAdd(left, right));
   }
   TNode<RawPtrT> RawPtrSub(TNode<RawPtrT> left, TNode<IntPtrT> right) {
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(left.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
     return ReinterpretCast<RawPtrT>(IntPtrSub(left, right));
   }
   TNode<IntPtrT> RawPtrSub(TNode<RawPtrT> left, TNode<RawPtrT> right) {
+#ifdef __CHERI_PURE_CAPABILITY__
     DCHECK(left.IsCapability());
+#endif  // __CHERI_PURE_CAPABILITY__
     return Signed(IntPtrSub(static_cast<TNode<WordT>>(left),
                             static_cast<TNode<WordT>>(right)));
   }
