@@ -535,11 +535,11 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   void MarkAsCompressed(Node* node) {
     MarkAsRepresentation(MachineRepresentation::kCompressed, node);
   }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   void MarkAsCapability(Node* node) {
     MarkAsRepresentation(MachineRepresentation::kCapability64, node);
   }
-#endif // defined(__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 
   // Inform the register allocation of the representation of the unallocated
   // operand {op}.
@@ -606,9 +606,7 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   MACHINE_OP_LIST(DECLARE_GENERATOR)
   MACHINE_SIMD128_OP_LIST(DECLARE_GENERATOR)
   MACHINE_SIMD256_OP_LIST(DECLARE_GENERATOR)
-#if defined(__CHERI_PURE_CAPABILITY__)
   PURECAP_OP_LIST(DECLARE_GENERATOR)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
 #undef DECLARE_GENERATOR
 
   // Visit the load node with a value and opcode to replace with.

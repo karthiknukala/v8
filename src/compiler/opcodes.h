@@ -1249,26 +1249,22 @@
   MACHINE_SIMD256_OP_LIST(V) \
   JS_OP_LIST(V)
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 #define PURECAP_OP_LIST(V) \
   V(CapAdd)                \
   V(CapSub)                \
   V(CapabilityIsTagged)    \
   V(AlignU)                \
   V(AlignD)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#else  // !__CHERI_PURE_CAPABILITY__
+#define PURECAP_OP_LIST(V) V(CapabilityIsTagged)
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // The combination of all operators at all levels and the common operators.
-#if defined(__CHERI_PURE_CAPABILITY__)
 #define ALL_OP_LIST(V) \
   CONTROL_OP_LIST(V)   \
   VALUE_OP_LIST(V)     \
   PURECAP_OP_LIST(V)
-#else // defined(__CHERI_PURE_CAPABILITY__)
-#define ALL_OP_LIST(V) \
-  CONTROL_OP_LIST(V)   \
-  VALUE_OP_LIST(V)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
 
 namespace v8 {
 namespace internal {
