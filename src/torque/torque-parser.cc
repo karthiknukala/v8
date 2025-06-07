@@ -75,6 +75,8 @@ class BuildFlags : public base::ContextualClass<BuildFlags> {
     build_flags_["DEBUG"] = DEBUG_BOOL;
 #ifdef __CHERI_PURE_CAPABILITY__
     build_flags_["CHERI_PURECAP"] = true;
+    build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] = V8_SFI_NEEDS_PADDING;
+    build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] = false;
 #ifdef V8_COMPRESS_POINTERS
     build_flags_["CHERI_PURECAP_COMPRESSED"] = true;
     build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = false;
@@ -86,6 +88,8 @@ class BuildFlags : public base::ContextualClass<BuildFlags> {
     build_flags_["CHERI_PURECAP"] = false;
     build_flags_["CHERI_PURECAP_COMPRESSED"] = false;
     build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = false;
+    build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] = false;
+    build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] = V8_SFI_NEEDS_PADDING;
 #endif  // __CHERI_PURE_CAPABILITY__
   }
   static bool GetFlag(const std::string& name, const char* production) {

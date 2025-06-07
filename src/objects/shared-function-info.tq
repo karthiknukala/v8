@@ -80,9 +80,8 @@ extern class SharedFunctionInfo extends HeapObject {
   // even if the GC moves this SharedFunctionInfo.
   @if(V8_SFI_HAS_UNIQUE_ID) unique_id: int32;
 
-  // FIXME(cheri): This is probably going to trip up an assertion on
-  // flat memory architectures.
-  @if(V8_SFI_NEEDS_PADDING) optional_padding: uintptr;
+  @if(V8_CHERI_SFI_NEEDS_PADDING) optional_padding: uintptr;
+  @if(V8_NONCHERI_SFI_NEEDS_PADDING) optional_padding: uint32;
   @ifnot(V8_SFI_NEEDS_PADDING) optional_padding: void;
 }
 
@@ -125,8 +124,6 @@ extern class UncompiledData extends HeapObject {
 extern class UncompiledDataWithoutPreparseData extends UncompiledData {
   @if(CHERI_PURECAP) optional_padding_1: uint32;
   @if(CHERI_PURECAP) optional_padding_2: uint32;
-  @ifnot(CHERI_PURECAP) optional_padding_1: void;
-  @ifnot(CHERI_PURECAP) optional_padding_2: void;
 }
 
 @generateBodyDescriptor
