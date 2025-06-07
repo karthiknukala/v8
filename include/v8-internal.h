@@ -64,9 +64,11 @@ constexpr int kScaledUintSize = 4;
  * Configuration of tagging scheme.
  */
 const int kApiSystemPointerSize = sizeof(void*);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 const int kApiSystemPointerAddrSize = sizeof(ptraddr_t);
-#endif   // __CHERI_PURE_CAPABILITY__
+#else   // !__CHERI_PURE_CAPABILITY__
+const int kApiSystemPointerAddrSize = sizeof(void*);
+#endif  // __CHERI_PURE_CAPABILITY__
 const int kApiDoubleSize = sizeof(double);
 const int kApiInt32Size = sizeof(int32_t);
 const int kApiInt64Size = sizeof(int64_t);
