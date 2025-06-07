@@ -241,8 +241,7 @@ RelocInfoStatus ConstantPool::RecordEntry(uint64_t data,
   return RecordKey(std::move(key), assm_->pc_offset());
 }
 
-RelocInfoStatus ConstantPool::RecordEntry(uintptr_t data,
-                                          RelocInfo::Mode rmode) {
+RelocInfoStatus ConstantPool::RecordEntry(void* data, RelocInfo::Mode rmode) {
   ConstantPoolKey key(data, rmode);
   CHECK(key.is_valueptr());
   return RecordKey(std::move(key), assm_->pc_offset());

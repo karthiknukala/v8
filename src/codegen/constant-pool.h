@@ -193,9 +193,11 @@ class ConstantPoolKey {
                            RelocInfo::Mode rmode = RelocInfo::NO_INFO)
       : type_(ConstantPoolKeyType::INT32), value32_(value), rmode_(rmode) {}
 
-  explicit ConstantPoolKey(uintptr_t value,
+  explicit ConstantPoolKey(void* value,
                            RelocInfo::Mode rmode = RelocInfo::NO_INFO)
-      : type_(ConstantPoolKeyType::INTPTR), valueptr_(value), rmode_(rmode) {}
+      : type_(ConstantPoolKeyType::INTPTR),
+        valueptr_(reinterpret_cast<uintptr_t>(value)),
+        rmode_(rmode) {}
 
   uint64_t value64() const {
     CHECK(type_ == ConstantPoolKeyType::INT64);
@@ -303,7 +305,7 @@ class ConstantPool {
   // Returns true when we need to write RelocInfo and false when we do not.
   RelocInfoStatus RecordEntry(uint32_t data, RelocInfo::Mode rmode);
   RelocInfoStatus RecordEntry(uint64_t data, RelocInfo::Mode rmode);
-  RelocInfoStatus RecordEntry(uintptr_t data, RelocInfo::Mode rmode);
+  RelocInfoStatus RecordEntry(void* data, RelocInfo::Mode rmode);
 
   size_t Entry32Count() const { return entry32_count_; }
   size_t Entry64Count() const { return entry64_count_; }
