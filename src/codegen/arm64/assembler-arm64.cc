@@ -5073,7 +5073,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data,
     } else {
       RelocInfoStatus status;
 #ifdef __CHERI_PURE_CAPABILITY__
-      if (as_pointer || __builtin_cheri_tag_get(data))
+      if (as_pointer || V8_CHERI_TAG_GET(data))
 #else   // !__CHERI_PURE_CAPABILITY__
       if (as_pointer)
 #endif  // __CHERI_PURE_CAPABILITY__
