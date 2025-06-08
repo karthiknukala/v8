@@ -61,6 +61,8 @@ class GlobalContext : public base::ContextualClass<GlobalContext> {
   static bool annotate_ir() { return Get().annotate_ir_; }
   static void SetTraceCheri() { Get().trace_cheri_ = true; }
   static bool trace_cheri() { return Get().trace_cheri_; }
+  static void SetCheriAbi() { Get().cheri_abi_ = true; }
+  static bool cheri_abi() { return Get().cheri_abi_; }
   static Ast* ast() { return &Get().ast_; }
   static std::string MakeUniqueName(const std::string& base) {
     return base + "_" + std::to_string(Get().fresh_ids_[base]++);
@@ -126,6 +128,7 @@ class GlobalContext : public base::ContextualClass<GlobalContext> {
   bool force_assert_statements_;
   bool annotate_ir_;
   bool trace_cheri_;
+  bool cheri_abi_;
   Namespace* default_namespace_;
   Ast ast_;
   std::vector<std::unique_ptr<Declarable>> declarables_;
@@ -148,12 +151,22 @@ class TargetArchitecture : public base::ContextualClass<TargetArchitecture> {
  public:
   explicit TargetArchitecture(bool force_32bit);
 
-  static size_t TaggedSize() { return Get().tagged_size_; }
-  static size_t RawPtrSize() { return Get().raw_ptr_size_; }
-  static size_t ExternalPointerSize() { return Get().external_ptr_size_; }
+  static size_t TaggedSize() {
+    return (GlobalContext::cheri_abi() && !COMPRESS_POINTERS_BOOL)
+               ? CapabilitySize()
+               : Get().tagged_size_;
+  }
+  static size_t RawPtrSize() {
+    return GlobalContext::cheri_abi() ? CapabilitySize() : Get().raw_ptr_size_;
+  }
+  static size_t ExternalPointerSize() {
+    return GlobalContext::cheri_abi() ? CapabilitySize()
+                                      : Get().external_ptr_size_;
+  }
   static size_t MaxHeapAlignment() { return TaggedSize(); }
   static bool ArePointersCompressed() { return TaggedSize() < RawPtrSize(); }
   static int SmiTagAndShiftSize() { return Get().smi_tag_and_shift_size_; }
+  static size_t CapabilitySize() { return 16; }
 
  private:
   const size_t tagged_size_;

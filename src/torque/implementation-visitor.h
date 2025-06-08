@@ -487,12 +487,10 @@ class ImplementationVisitor {
             .Throw();
       }
     }
-#ifndef __CHERI_PURE_CAPABILITY__
-    if (fields_size != initializers.size()) {
+    if (!GlobalContext::cheri_abi() && fields_size != initializers.size()) {
       ReportError("expected ", fields_size, " initializers for ",
                   aggregate_name, " found ", initializers.size());
     }
-#endif
   }
 
   InitializerResults VisitInitializerResults(

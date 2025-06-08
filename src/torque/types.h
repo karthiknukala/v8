@@ -425,14 +425,7 @@ class V8_EXPORT_PRIVATE UnionType final : public Type {
     return true;
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  bool InheritsRepresentationFrom(const Type* other) const override {
-    for (const Type* member : types_) {
-      if (member->InheritsRepresentationFrom(other)) return true;
-    }
-    return false;
-  }
-#endif // __CHERI_PURE_CAPABILITY__
+  bool InheritsRepresentationFrom(const Type* other) const override;
 
   bool IsSupertypeOf(const Type* other) const {
     for (const Type* member : types_) {
@@ -558,13 +551,7 @@ class AggregateType : public Type {
 
   virtual void Finalize() const = 0;
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  bool IsCapability() const override {
-    if (parent() != nullptr) return parent()->IsCapability();
-    if (fields_.size() == 0) return false;
-    return fields_[0].name_and_type.type->IsCapability();
-  }
-#endif  // __CHERI_PURE_CAPABILITY__
+  bool IsCapability() const override;
 
   void SetFields(std::vector<Field> fields) { fields_ = std::move(fields); }
   const std::vector<Field>& fields() const {

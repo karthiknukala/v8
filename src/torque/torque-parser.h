@@ -6,13 +6,14 @@
 #define V8_TORQUE_TORQUE_PARSER_H_
 
 #include "src/torque/ast.h"
+#include "src/torque/torque-compiler.h"
 
 namespace v8 {
 namespace internal {
 namespace torque {
 
 // Adds the parsed input to {CurrentAst}
-void ParseTorque(const std::string& input);
+void ParseTorque(const std::string& input, TorqueCompilerOptions options);
 
 }  // namespace torque
 }  // namespace internal

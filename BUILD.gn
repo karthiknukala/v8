@@ -4,6 +4,7 @@
 
 import("//build/config/android/config.gni")
 import("//build/config/arm.gni")
+import("//build/config/cheri.gni")
 import("//build/config/coverage/coverage.gni")
 import("//build/config/dcheck_always_on.gni")
 import("//build/config/host_byteorder.gni")
@@ -393,9 +394,6 @@ declare_args() {
   # iOS (non-simulator) does not have executable pages for 3rd party
   # applications yet so disable jit.
   v8_jitless = v8_enable_lite_mode || target_is_ios_device
-
-  # A global flag to enable all CHERI debugging.
-  v8_cheri_debug = false
 }
 
 # Derived defaults.
@@ -2078,6 +2076,9 @@ template("run_torque") {
     if (v8_cheri_debug) {
       args += [ "-trace-cheri" ]
     }
+    if (is_cheri && current_cpu == target_cpu) {
+      args += [ "-cheriabi" ]
+    }
     if (defined(invoker.args)) {
       args += invoker.args
     }
@@ -2504,6 +2505,7 @@ action("v8_dump_build_config") {
     "verify_csa=$v8_enable_verify_csa",
     "verify_heap=$v8_enable_verify_heap",
     "verify_predictable=$v8_enable_verify_predictable",
+    "is_cheri=$is_cheri",
   ]
 }
 

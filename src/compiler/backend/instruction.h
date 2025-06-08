@@ -500,7 +500,11 @@ class ImmediateOperand : public InstructionOperand {
 
   INSTRUCTION_OPERAND_CASTS(ImmediateOperand, IMMEDIATE)
 
+#ifdef __CHERI_PURE_CAPABILITY__
   using TypeField = KindField::Next<ImmediateType, 3>;
+#else   // !__CHERI_PURE_CAPABILITY__
+  using TypeField = KindField::Next<ImmediateType, 2>;
+#endif  // __CHERI_PURE_CAPABILITY__
   static_assert(TypeField::kLastUsedBit < 32);
   using ValueField = base::BitField64<int32_t, 32, 32>;
 };

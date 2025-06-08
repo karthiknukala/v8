@@ -42,7 +42,7 @@ struct EnumEntry {
 
 class BuildFlags : public base::ContextualClass<BuildFlags> {
  public:
-  BuildFlags() {
+  BuildFlags(TorqueCompilerOptions options) {
     build_flags_["V8_SFI_HAS_UNIQUE_ID"] = V8_SFI_HAS_UNIQUE_ID;
     build_flags_["V8_SFI_NEEDS_PADDING"] = V8_SFI_NEEDS_PADDING;
     build_flags_["V8_EXTERNAL_CODE_SPACE"] = V8_EXTERNAL_CODE_SPACE_BOOL;
@@ -77,19 +77,18 @@ class BuildFlags : public base::ContextualClass<BuildFlags> {
     build_flags_["CHERI_PURECAP"] = true;
     build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] = V8_SFI_NEEDS_PADDING;
     build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] = false;
-#ifdef V8_COMPRESS_POINTERS
-    build_flags_["CHERI_PURECAP_COMPRESSED"] = true;
-    build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = false;
-#else   // !V8_COMPRESS_POINTERS
-    build_flags_["CHERI_PURECAP_COMPRESSED"] = false;
-    build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = true;
-#endif  // V8_COMPRESS_POINTERS
+    build_flags_["CHERI_PURECAP_COMPRESSED"] = COMPRESS_POINTERS_BOOL;
+    build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = !COMPRESS_POINTERS_BOOL;
 #else   // !__CHERI_PURE_CAPABILITY__
-    build_flags_["CHERI_PURECAP"] = false;
-    build_flags_["CHERI_PURECAP_COMPRESSED"] = false;
-    build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = false;
-    build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] = false;
-    build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] = V8_SFI_NEEDS_PADDING;
+    build_flags_["CHERI_PURECAP"] = options.cheri_abi;
+    build_flags_["CHERI_PURECAP_COMPRESSED"] =
+        options.cheri_abi && COMPRESS_POINTERS_BOOL;
+    build_flags_["CHERI_PURECAP_UNCOMPRESSED"] =
+        options.cheri_abi && !COMPRESS_POINTERS_BOOL;
+    build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] =
+        options.cheri_abi && V8_SFI_NEEDS_PADDING;
+    build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] =
+        !options.cheri_abi && V8_SFI_NEEDS_PADDING;
 #endif  // __CHERI_PURE_CAPABILITY__
   }
   static bool GetFlag(const std::string& name, const char* production) {
@@ -2893,8 +2892,8 @@ struct TorqueGrammar : Grammar {
 
 }  // namespace
 
-void ParseTorque(const std::string& input) {
-  BuildFlags::Scope build_flags_scope;
+void ParseTorque(const std::string& input, TorqueCompilerOptions options) {
+  BuildFlags::Scope build_flags_scope(options);
   TorqueGrammar().Parse(input);
 }
 

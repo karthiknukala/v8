@@ -42,6 +42,9 @@ struct TorqueCompilerOptions {
   // Traces CHERI-related extensions to the Torque compiler such as alignment
   // enforcement.
   bool trace_cheri = false;
+
+  // Compile Torque files assuming CHERI ABI.
+  bool cheri_abi = false;
 };
 
 struct TorqueCompilerResult {

@@ -43,10 +43,10 @@ int WrappedMain(int argc, const char** argv) {
       options.annotate_ir = true;
     } else if (argument == "-strip-v8-root") {
       options.strip_v8_root = true;
-#ifdef __CHERI_PURE_CAPABILITY__
     } else if (argument == "-trace-cheri") {
       options.trace_cheri = true;
-#endif  // __CHERI_PURE_CAPABILITY__
+    } else if (argument == "-cheriabi") {
+      options.cheri_abi = true;
     } else {
       // Strip the v8-root in case it is a prefix of the file path itself.
       // This is used when building in Google3.
@@ -63,6 +63,12 @@ int WrappedMain(int argc, const char** argv) {
       }
     }
   }
+
+#ifdef __CHERI_PURE_CAPABILITY__
+  // FIXME(ds815): Hack. We want to be able to compile non-CHERI using a CHERI
+  // toolchain at some point as well.
+  options.cheri_abi = true;
+#endif  // __CHERI_PURE_CAPABILITY__
 
   TorqueCompilerResult result = CompileTorque(files, options);
 

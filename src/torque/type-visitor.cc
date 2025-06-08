@@ -126,19 +126,19 @@ void DeclareMethods(AggregateType* container_type,
 }
 
 uint8_t AlignToCapabilitySize(ResidueClass& offset) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  auto offset_opt = offset.SingleValue();
-  if (!offset_opt.has_value()) return 0;
-  auto maybe_unaligned_offset = offset_opt.value();
-  auto cap_size = TargetArchitecture::RawPtrSize();
-  auto aligned_offset =
-      (maybe_unaligned_offset + cap_size - 1) & (~(cap_size - 1));
-  auto offset_to_add = aligned_offset - maybe_unaligned_offset;
-  offset += offset_to_add;
-  return offset_to_add;
-#else
+  if (GlobalContext::cheri_abi() && !COMPRESS_POINTERS_BOOL) {
+    auto offset_opt = offset.SingleValue();
+    if (!offset_opt.has_value()) return 0;
+    auto maybe_unaligned_offset = offset_opt.value();
+    // FIXME(ds815): This is hard-coded for now.
+    auto cap_size = TargetArchitecture::CapabilitySize();
+    auto aligned_offset =
+        (maybe_unaligned_offset + cap_size - 1) & (~(cap_size - 1));
+    auto offset_to_add = aligned_offset - maybe_unaligned_offset;
+    offset += offset_to_add;
+    return offset_to_add;
+  }
   return 0;
-#endif
 }
 
 const BitFieldStructType* TypeVisitor::ComputeType(
@@ -225,7 +225,7 @@ const StructType* TypeVisitor::ComputeType(
       ReportError("struct field \"", field.name_and_type.name->value,
                   "\" carries constexpr type \"", *field_type, "\"");
     }
-    if (field_type->IsCapability()) {
+    if (GlobalContext::cheri_abi() && field_type->IsCapability()) {
       ResidueClass adjusted_offset = offset;
       uint8_t needed_padding = AlignToCapabilitySize(adjusted_offset);
       auto* u8 = TypeOracle::GetUint8Type();
@@ -504,7 +504,7 @@ void TypeVisitor::VisitClassFieldsAndMethods(
     base::Optional<ClassFieldIndexInfo> array_length = field_expression.index;
     bool is_indexed =
         field_expression.index && !field_expression.index->optional;
-    if (field_type->IsCapability()) {
+    if (GlobalContext::cheri_abi() && field_type->IsCapability()) {
       ResidueClass adjusted_offset = class_offset;
       uint8_t needed_padding = AlignToCapabilitySize(adjusted_offset);
       auto* u8 = TypeOracle::GetUint8Type();

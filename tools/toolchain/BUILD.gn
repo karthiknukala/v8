@@ -47,3 +47,28 @@ gcc_toolchain("mips64el-bundled") {
     is_clang = false
   }
 }
+
+gcc_toolchain("morello-buildroot") {
+  toolprefix = "/local/scratch/ds815/cheri/output/morello-sdk/bin"
+
+  cc = "${toolprefix}/clang"
+  cxx = "${toolprefix}/clang++"
+
+  readelf = "${toolprefix}/llvm-readelf"
+  nm = "${toolprefix}/llvm-nm"
+  ar = "${toolprefix}/llvm-ar"
+  ld = cxx
+
+  #extra_cxxflags = "-mabi=purecap -march=morello --target=aarch64c-unknown-freebsd -Xclang -morello-vararg=new"
+  #extra_cflags = "-mabi=purecap -march=morello --target=aarch64c-unknown-freebsd -Xclang -morello-vararg=new"
+  #extra_ldflags = "-mabi=purecap -march=morello"
+  #extra_asmflags = "-mabi=purecap -march=morello"
+
+  toolchain_args = {
+    current_cpu = "arm64"
+    current_os = "freebsd"
+    is_clang = true
+    is_cheri = true
+  }
+}
+

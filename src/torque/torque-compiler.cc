@@ -26,7 +26,8 @@ base::Optional<std::string> ReadFile(const std::string& path) {
                      std::istreambuf_iterator<char>()};
 }
 
-void ReadAndParseTorqueFile(const std::string& path) {
+void ReadAndParseTorqueFile(const std::string& path,
+                            TorqueCompilerOptions options) {
   SourceId source_id = SourceFileMap::AddSource(path);
   CurrentSourceFile::Scope source_id_scope(source_id);
 
@@ -42,7 +43,7 @@ void ReadAndParseTorqueFile(const std::string& path) {
     Error("Cannot open file path/uri: ", path).Throw();
   }
 
-  ParseTorque(*maybe_content);
+  ParseTorque(*maybe_content, options);
 }
 
 void CompileCurrentAst(TorqueCompilerOptions options) {
@@ -61,6 +62,9 @@ void CompileCurrentAst(TorqueCompilerOptions options) {
   }
   if (options.trace_cheri) {
     GlobalContext::SetTraceCheri();
+  }
+  if (options.cheri_abi) {
+    GlobalContext::SetCheriAbi();
   }
   TargetArchitecture::Scope target_architecture(options.force_32bit_output);
   TypeOracle::Scope type_oracle;
@@ -127,7 +131,7 @@ TorqueCompilerResult CompileTorque(const std::string& source,
 
   TorqueCompilerResult result;
   try {
-    ParseTorque(source);
+    ParseTorque(source, options);
     CompileCurrentAst(options);
   } catch (TorqueAbortCompilation&) {
     // Do nothing. The relevant TorqueMessage is part of the
@@ -152,7 +156,7 @@ TorqueCompilerResult CompileTorque(std::vector<std::string> files,
   TorqueCompilerResult result;
   try {
     for (const auto& path : files) {
-      ReadAndParseTorqueFile(path);
+      ReadAndParseTorqueFile(path, options);
     }
     CompileCurrentAst(options);
   } catch (TorqueAbortCompilation&) {
@@ -184,7 +188,7 @@ TorqueCompilerResult CompileTorqueForKythe(
     for (const auto& unit : units) {
       SourceId source_id = SourceFileMap::AddSource(unit.source_file_path);
       CurrentSourceFile::Scope source_id_scope(source_id);
-      ParseTorque(unit.file_content);
+      ParseTorque(unit.file_content, options);
     }
     CompileCurrentAst(options);
   } catch (TorqueAbortCompilation&) {

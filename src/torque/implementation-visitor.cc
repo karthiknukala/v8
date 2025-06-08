@@ -4188,8 +4188,7 @@ void CppClassGenerator::GenerateClass() {
   } else if (type_->ShouldGenerateBodyDescriptor() ||
              (!type_->IsAbstract() &&
               !type_->IsSubtypeOf(TypeOracle::GetJSObjectType()))) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    {
+    if (GlobalContext::cheri_abi() && !COMPRESS_POINTERS_BOOL) {
       // Add a helper to determine how much padding we have on CHERI systems.
       cpp::Function f(&c, "AddedCheriPadding");
       f.SetReturnType("int32_t");
@@ -4206,7 +4205,6 @@ void CppClassGenerator::GenerateClass() {
         stream << "    return size;\n";
       });
     }
-#endif // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     cpp::Function f(&c, "SizeFor");
     f.SetReturnType("int32_t");
     f.SetFlags(cpp::Function::kStatic | cpp::Function::kConstexpr |
@@ -4220,16 +4218,17 @@ void CppClassGenerator::GenerateClass() {
                << *type_->size().SingleValue() << ");\n";
       }
       stream << "    int32_t size = kHeaderSize;\n";
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-      for (const Field& field : type_->fields()) {
-        DCHECK_EQ(field.aggregate, type_);
-        if (ImplementationVisitor::IsInternal(field)) {
-          stream << "   if (" << *field.offset << " > kHeaderSize - 1)\n";
-          stream << "       size += 1;\n";
-          stream << "   DCHECK_GE(" << *field.offset << ", P::kHeaderSize);\n";
+      if (GlobalContext::cheri_abi() && !COMPRESS_POINTERS_BOOL) {
+        for (const Field& field : type_->fields()) {
+          DCHECK_EQ(field.aggregate, type_);
+          if (ImplementationVisitor::IsInternal(field)) {
+            stream << "   if (" << *field.offset << " > kHeaderSize - 1)\n";
+            stream << "       size += 1;\n";
+            stream << "   DCHECK_GE(" << *field.offset
+                   << ", P::kHeaderSize);\n";
+          }
         }
       }
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       for (const Field& field : type_->ComputeAllFields()) {
         if (field.index) {
           auto index_name_and_type =

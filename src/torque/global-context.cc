@@ -14,6 +14,7 @@ GlobalContext::GlobalContext(Ast ast)
       force_assert_statements_(false),
       annotate_ir_(false),
       trace_cheri_(false),
+      cheri_abi_(false),
       ast_(std::move(ast)) {
   CurrentScope::Scope current_scope(nullptr);
   CurrentSourcePosition::Scope current_source_position(

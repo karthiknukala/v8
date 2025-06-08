@@ -101,12 +101,13 @@ bool Type::IsSubtypeOf(const Type* supertype) const {
   return false;
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
 bool Type::InheritsRepresentationFrom(const Type* other) const {
+  CHECK(GlobalContext::cheri_abi());
   DCHECK(UnionType::DynamicCast(this) == nullptr);
   return IsSubtypeOf(other);
 }
 bool Type::IsCapability() const {
+  CHECK(GlobalContext::cheri_abi());
 #ifdef V8_COMPRESS_POINTERS
   return InheritsRepresentationFrom(TypeOracle::GetRawPtrType()) ||
          InheritsRepresentationFrom(TypeOracle::GetExternalPointerType());
@@ -120,10 +121,20 @@ bool Type::IsCapability() const {
          InheritsRepresentationFrom(TypeOracle::GetHeapObjectType());
 #endif  // V8_COMPRESS_POINTERS
 }
-#else   // !__CHERI_PURE_CAPABILITY__
-bool Type::InheritsRepresentationFrom(const Type* other) const { return false; }
-bool Type::IsCapability() const { return false; }
-#endif  // __CHERI_PURE_CAPABILITY__
+
+bool AggregateType::IsCapability() const {
+  CHECK(GlobalContext::cheri_abi());
+  if (parent() != nullptr) return parent()->IsCapability();
+  if (fields_.size() == 0) return false;
+  return fields_[0].name_and_type.type->IsCapability();
+}
+bool UnionType::InheritsRepresentationFrom(const Type* other) const {
+  CHECK(GlobalContext::cheri_abi());
+  for (const Type* member : types_) {
+    if (member->InheritsRepresentationFrom(other)) return true;
+  }
+  return false;
+}
 
 std::string Type::GetConstexprGeneratedTypeName() const {
   const Type* constexpr_version = ConstexprVersion();
