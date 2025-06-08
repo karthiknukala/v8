@@ -42,8 +42,8 @@ class V8_EXPORT CagedHeapBase {
     CPPGC_DCHECK(g_heap_base_);
     return !(((reinterpret_cast<uintptr_t>(addr1) ^
                static_cast<size_t>(g_heap_base_)) |
-              static_cast<ptraddr_t>((reinterpret_cast<uintptr_t>(addr2) ^
-                                      static_cast<size_t>(g_heap_base_)))) >>
+              static_cast<size_t>((reinterpret_cast<uintptr_t>(addr2) ^
+                                   static_cast<size_t>(g_heap_base_)))) >>
              kHalfWordShift);
   }
 
