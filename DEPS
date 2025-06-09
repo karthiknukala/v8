@@ -43,6 +43,7 @@ vars = {
   'checkout_v8_builtins_pgo_profiles': False,
 
   'chromium_url': 'https://chromium.googlesource.com',
+  'chromium_cheri_url': 'https://github.com/chromium-cheri',
   'android_url': 'https://android.googlesource.com',
   'download_gcmole': False,
   'download_jsfunfuzz': False,
@@ -110,9 +111,9 @@ deps = {
   'base/trace_event/common':
     Var('chromium_url') + '/chromium/src/base/trace_event/common.git' + '@' + '147f65333c38ddd1ebf554e89965c243c8ce50b3',
   'build':
-    Var('chromium_url') + '/chromium/src/build.git' + '@' + '7f93a1e7ae8de96f113834f37d01b869a74b7dd3',
+    Var('chromium_cheri_url') + '/build.git' + '@' + 'd07853bcfc851ad15931d7a09ece88fab56d8254',
   'buildtools':
-    Var('chromium_url') + '/chromium/src/buildtools.git' + '@' + '5d2ccbf93c7d956a9aff1d0acd21155e6b515ceb',
+    Var('chromium_cheri_url') + '/buildtools.git' + '@' + '8b16338d17cd71b04a6ba28da7322ab6739892c2',
   'buildtools/clang_format/script':
     Var('chromium_url') + '/external/github.com/llvm/llvm-project/clang/tools/clang-format.git' + '@' + 'f97059df7f8b205064625cdb5f97b56668a125ef',
   'buildtools/linux64': {
@@ -275,7 +276,7 @@ deps = {
       'condition': 'checkout_android',
   },
   'third_party/zlib':
-    Var('chromium_url') + '/chromium/src/third_party/zlib.git'+ '@' + '14dd4c4455602c9b71a1a89b5cafd1f4030d2e3f',
+    Var('chromium_cheri_url') + '/zlib.git'+ '@' + '05ca39ba1b282fc3ed9e5e3f0ebfadafaa25ef21',
   'tools/clang':
     Var('chromium_url') + '/chromium/src/tools/clang.git' + '@' + '4ee099ac1c0d6e86e53cedfdcfd7cd2d45e126ca',
   'tools/luci-go': {
