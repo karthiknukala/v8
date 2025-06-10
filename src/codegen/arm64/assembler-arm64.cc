@@ -504,7 +504,7 @@ void Assembler::CheckLabelLinkChain(Label const* label) {
     while (!end_of_chain) {
       if (++links_checked > kMaxLinksToCheck) break;
 #ifdef __CHERI_PURE_CAPABILITY__
-      DCHECK_GE(__builtin_cheri_length_get(buffer_start_), linkoffset);
+      DCHECK_GE(V8_CHERI_LENGTH_GET(buffer_start_), linkoffset);
 #endif  // __CHERI_PURE_CAPABILITY__
       Instruction* link = InstructionAt(linkoffset);
       int64_t linkpcoffset = link->ImmPCOffset();

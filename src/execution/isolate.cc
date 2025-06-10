@@ -4074,15 +4074,15 @@ void Isolate::MaybeRemapEmbeddedBuiltinsIntoCodeRange() {
   // Rederive embedded_blob_code_ from PCC for remapping
   uintptr_t sentry = reinterpret_cast<uintptr_t>(embedded_blob_code_);
   uintptr_t result_cap = sentry;
-  if (__builtin_cheri_sealed_get(sentry)) {
-    const ptraddr_t base_addr = __builtin_cheri_base_get(sentry);
-    const ptraddr_t sentry_addr = __builtin_cheri_address_get(sentry);
-    const void* pcc = __builtin_cheri_program_counter_get();
+  if (V8_CHERI_SEALED(sentry)) {
+    const ptraddr_t base_addr = V8_CHERI_BASE_GET(sentry);
+    const ptraddr_t sentry_addr = V8_CHERI_ADDR_GET(sentry);
+    const void* pcc = V8_CHERI_PCC;
     result_cap = reinterpret_cast<uintptr_t>(
-        __builtin_cheri_address_set(pcc, base_addr));
-    result_cap = __builtin_cheri_bounds_set_exact(
-        result_cap, __builtin_cheri_length_get(sentry));
-    result_cap = __builtin_cheri_address_set(result_cap, sentry_addr);
+        V8_CHERI_ADDR_SET(pcc, base_addr));
+    result_cap = V8_CHERI_SET_BOUNDS_EXACT(
+        result_cap, V8_CHERI_LENGTH_GET(sentry));
+    result_cap = V8_CHERI_ADDR_SET(result_cap, sentry_addr);
   }
   embedded_blob_code_ = reinterpret_cast<const uint8_t*>(result_cap);
 #endif // __CHERI_PURE_CAPABILITY__

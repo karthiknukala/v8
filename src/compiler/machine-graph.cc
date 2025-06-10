@@ -42,7 +42,7 @@ Node* MachineGraph::Capability64Constant(intptr_t value) {
 Node* MachineGraph::IntPtrConstant(intptr_t value) {
 #ifdef __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(kSystemPointerSize, 16);
-  if (__builtin_cheri_tag_get(value)) return Capability64Constant(value);
+  if (V8_CHERI_TAG_GET(value)) return Capability64Constant(value);
 #endif  // __CHERI_PURE_CAPABILITY__
   return machine()->Is32() ? Int32Constant(static_cast<int32_t>(value))
                            : Int64Constant(static_cast<int64_t>(value));
@@ -51,7 +51,7 @@ Node* MachineGraph::IntPtrConstant(intptr_t value) {
 Node* MachineGraph::UintPtrConstant(uintptr_t value) {
 #ifdef __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(kSystemPointerSize, 16);
-  if (__builtin_cheri_tag_get(value)) return Capability64Constant(value);
+  if (V8_CHERI_TAG_GET(value)) return Capability64Constant(value);
 #endif  // __CHERI_PURE_CAPABILITY__
   return machine()->Is32() ? Uint32Constant(static_cast<uint32_t>(value))
                            : Uint64Constant(static_cast<uint64_t>(value));

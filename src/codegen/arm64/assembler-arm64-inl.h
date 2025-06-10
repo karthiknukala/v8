@@ -26,8 +26,8 @@ void RelocInfo::apply(ScaledInt delta) {
     // Absolute code pointer inside code object moves with the code object.
 #ifdef __CHERI_PURE_CAPABILITY__
     intptr_t internal_ref = Memory<intptr_t>(pc_);
-    internal_ref = __builtin_cheri_address_set(
-        pc_, __builtin_cheri_address_get(internal_ref) + delta);
+    internal_ref =
+        V8_CHERI_ADDR_SET(pc_, V8_CHERI_ADDR_GET(internal_ref) + delta);
     Memory<Address>(pc_) = internal_ref;
 #else   // !__CHERI_PURE_CAPABILITY__
     intptr_t internal_ref = ReadUnalignedValue<intptr_t>(pc_);

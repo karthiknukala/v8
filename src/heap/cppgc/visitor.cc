@@ -45,7 +45,7 @@ void ConservativeTracingVisitor::TraceConservatively(
 #endif
     // First, check the full pointer.
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(CPPGC_POINTER_COMPRESSION)
-    if (!__builtin_cheri_tag_get(maybe_full_ptr)) continue;
+    if (!V8_CHERI_TAG_GET(maybe_full_ptr)) continue;
 #endif
     if (maybe_full_ptr > SentinelPointer::kSentinelValue)
       this->TraceConservativelyIfNeeded(

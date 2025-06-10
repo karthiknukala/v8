@@ -13451,22 +13451,22 @@ static void TestUScvtfHelper(uint64_t in,
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x0, __builtin_cheri_address_get(results_scvtf_x));
+  __ Mov(x0, V8_CHERI_ADDR_GET(results_scvtf_x));
   __ Scvalue(c0, csp, x0);
   __ Mov(x10, sizeof(results_scvtf_x));
   __ Scbndse(c0, c0, x10);
 
-  __ Mov(x1, __builtin_cheri_address_get(results_ucvtf_x));
+  __ Mov(x1, V8_CHERI_ADDR_GET(results_ucvtf_x));
   __ Scvalue(c1, csp, x1);
   __ Mov(x10, sizeof(results_ucvtf_x));
   __ Scbndse(c1, c1, x10);
 
-  __ Mov(x2, __builtin_cheri_address_get(results_scvtf_w));
+  __ Mov(x2, V8_CHERI_ADDR_GET(results_scvtf_w));
   __ Scvalue(c2, csp, x2);
   __ Mov(x10, sizeof(results_scvtf_w));
   __ Scbndse(c2, c2, x10);
 
-  __ Mov(x3, __builtin_cheri_address_get(results_ucvtf_w));
+  __ Mov(x3, V8_CHERI_ADDR_GET(results_ucvtf_w));
   __ Scvalue(c3, csp, x3);
   __ Mov(x10, sizeof(results_ucvtf_w));
   __ Scbndse(c3, c3, x10);
@@ -13633,22 +13633,22 @@ static void TestUScvtf32Helper(uint64_t in,
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x0, __builtin_cheri_address_get(results_scvtf_x));
+  __ Mov(x0, V8_CHERI_ADDR_GET(results_scvtf_x));
   __ Scvalue(c0, csp, x0);
   __ Mov(x10, sizeof(results_scvtf_x));
   __ Scbndse(c0, c0, x10);
 
-  __ Mov(x1, __builtin_cheri_address_get(results_ucvtf_x));
+  __ Mov(x1, V8_CHERI_ADDR_GET(results_ucvtf_x));
   __ Scvalue(c1, csp, x1);
   __ Mov(x10, sizeof(results_ucvtf_x));
   __ Scbndse(c1, c1, x10);
 
-  __ Mov(x2, __builtin_cheri_address_get(results_scvtf_w));
+  __ Mov(x2, V8_CHERI_ADDR_GET(results_scvtf_w));
   __ Scvalue(c2, csp, x2);
   __ Mov(x10, sizeof(results_scvtf_w));
   __ Scbndse(c2, c2, x10);
 
-  __ Mov(x3, __builtin_cheri_address_get(results_ucvtf_w));
+  __ Mov(x3, V8_CHERI_ADDR_GET(results_ucvtf_w));
   __ Scvalue(c3, csp, x3);
   __ Mov(x10, sizeof(results_ucvtf_w));
   __ Scbndse(c3, c3, x10);
@@ -16178,7 +16178,7 @@ TEST(printf) {
     __ Unreachable();
     __ Bind(&after_data);
   }
-  __ Mov(x3, __builtin_cheri_length_get(test_substring));
+  __ Mov(x3, V8_CHERI_LENGTH_GET(test_substring));
   __ Scbndse(c2, c2, x3);
   Register r2 = c2;
 #else   // !__CHERI_PURE_CAPABILITY__
@@ -16281,7 +16281,7 @@ TEST(printf_no_preserve) {
     __ Unreachable();
     __ Bind(&after_data);
   }
-  __ Mov(x3, __builtin_cheri_length_get(test_substring));
+  __ Mov(x3, V8_CHERI_LENGTH_GET(test_substring));
   __ Scbndse(c2, c2, x3);
   Register r2 = c2;
 #else   // !__CHERI_PURE_CAPABILITY__
@@ -16471,45 +16471,45 @@ TEST(cas_casa_casl_casal_w) {
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x21, __builtin_cheri_address_get(&data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(&data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(&data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(&data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(&data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(&data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
   __ Add(c23, c23, 4);
 
-  __ Mov(x24, __builtin_cheri_address_get(&data4));
+  __ Mov(x24, V8_CHERI_ADDR_GET(&data4));
   __ Scvalue(c24, csp, x24);
   __ Mov(x0, sizeof(data4));
   __ Scbndse(c24, c24, x0);
   __ Add(c24, c24, 4);
 
-  __ Mov(x25, __builtin_cheri_address_get(&data5));
+  __ Mov(x25, V8_CHERI_ADDR_GET(&data5));
   __ Scvalue(c25, csp, x25);
   __ Mov(x0, sizeof(data5));
   __ Scbndse(c25, c25, x0);
 
-  __ Mov(x26, __builtin_cheri_address_get(&data6));
+  __ Mov(x26, V8_CHERI_ADDR_GET(&data6));
   __ Scvalue(c26, csp, x26);
   __ Mov(x0, sizeof(data6));
   __ Scbndse(c26, c26, x0);
 
-  __ Mov(x27, __builtin_cheri_address_get(&data7));
+  __ Mov(x27, V8_CHERI_ADDR_GET(&data7));
   __ Scvalue(c27, csp, x27);
   __ Mov(x0, sizeof(data7));
   __ Scbndse(c27, c27, x0);
   __ Add(c27, c27, 4);
 
-  __ Mov(x28, __builtin_cheri_address_get(&data8));
+  __ Mov(x28, V8_CHERI_ADDR_GET(&data8));
   __ Scvalue(c28, csp, x28);
   __ Mov(x0, sizeof(data8));
   __ Scbndse(c28, c28, x0);
@@ -16605,42 +16605,42 @@ TEST(cas_casa_casl_casal_x) {
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x21, __builtin_cheri_address_get(&data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(&data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(&data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(&data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(&data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(&data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
 
-  __ Mov(x24, __builtin_cheri_address_get(&data4));
+  __ Mov(x24, V8_CHERI_ADDR_GET(&data4));
   __ Scvalue(c24, csp, x24);
   __ Mov(x0, sizeof(data4));
   __ Scbndse(c24, c24, x0);
 
-  __ Mov(x25, __builtin_cheri_address_get(&data5));
+  __ Mov(x25, V8_CHERI_ADDR_GET(&data5));
   __ Scvalue(c25, csp, x25);
   __ Mov(x0, sizeof(data5));
   __ Scbndse(c25, c25, x0);
 
-  __ Mov(x26, __builtin_cheri_address_get(&data6));
+  __ Mov(x26, V8_CHERI_ADDR_GET(&data6));
   __ Scvalue(c26, csp, x26);
   __ Mov(x0, sizeof(data6));
   __ Scbndse(c26, c26, x0);
 
-  __ Mov(x27, __builtin_cheri_address_get(&data7));
+  __ Mov(x27, V8_CHERI_ADDR_GET(&data7));
   __ Scvalue(c27, csp, x27);
   __ Mov(x0, sizeof(data7));
   __ Scbndse(c27, c27, x0);
 
-  __ Mov(x28, __builtin_cheri_address_get(&data8));
+  __ Mov(x28, V8_CHERI_ADDR_GET(&data8));
   __ Scvalue(c28, csp, x28);
   __ Mov(x0, sizeof(data8));
   __ Scbndse(c28, c28, x0);
@@ -16735,47 +16735,47 @@ TEST(casb_casab_caslb_casalb) {
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x21, __builtin_cheri_address_get(&data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(&data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(&data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(&data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(&data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(&data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
   __ Add(c23, c23, 1);
 
-  __ Mov(x24, __builtin_cheri_address_get(&data4));
+  __ Mov(x24, V8_CHERI_ADDR_GET(&data4));
   __ Scvalue(c24, csp, x24);
   __ Mov(x0, sizeof(data4));
   __ Scbndse(c24, c24, x0);
   __ Add(c24, c24, 1);
 
-  __ Mov(x25, __builtin_cheri_address_get(&data5));
+  __ Mov(x25, V8_CHERI_ADDR_GET(&data5));
   __ Scvalue(c25, csp, x25);
   __ Mov(x0, sizeof(data5));
   __ Scbndse(c25, c25, x0);
   __ Add(c25, c25, 2);
 
-  __ Mov(x26, __builtin_cheri_address_get(&data6));
+  __ Mov(x26, V8_CHERI_ADDR_GET(&data6));
   __ Scvalue(c26, csp, x26);
   __ Mov(x0, sizeof(data6));
   __ Scbndse(c26, c26, x0);
   __ Add(c26, c26, 2);
 
-  __ Mov(x27, __builtin_cheri_address_get(&data7));
+  __ Mov(x27, V8_CHERI_ADDR_GET(&data7));
   __ Scvalue(c27, csp, x27);
   __ Mov(x0, sizeof(data7));
   __ Scbndse(c27, c27, x0);
   __ Add(c27, c27, 3);
 
-  __ Mov(x28, __builtin_cheri_address_get(&data8));
+  __ Mov(x28, V8_CHERI_ADDR_GET(&data8));
   __ Scvalue(c28, csp, x28);
   __ Mov(x0, sizeof(data8));
   __ Scbndse(c28, c28, x0);
@@ -16871,47 +16871,47 @@ TEST(cash_casah_caslh_casalh) {
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x21, __builtin_cheri_address_get(&data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(&data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(&data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(&data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(&data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(&data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
   __ Add(c23, c23, 2);
 
-  __ Mov(x24, __builtin_cheri_address_get(&data4));
+  __ Mov(x24, V8_CHERI_ADDR_GET(&data4));
   __ Scvalue(c24, csp, x24);
   __ Mov(x0, sizeof(data4));
   __ Scbndse(c24, c24, x0);
   __ Add(c24, c24, 2);
 
-  __ Mov(x25, __builtin_cheri_address_get(&data5));
+  __ Mov(x25, V8_CHERI_ADDR_GET(&data5));
   __ Scvalue(c25, csp, x25);
   __ Mov(x0, sizeof(data5));
   __ Scbndse(c25, c25, x0);
   __ Add(c25, c25, 4);
 
-  __ Mov(x26, __builtin_cheri_address_get(&data6));
+  __ Mov(x26, V8_CHERI_ADDR_GET(&data6));
   __ Scvalue(c26, csp, x26);
   __ Mov(x0, sizeof(data6));
   __ Scbndse(c26, c26, x0);
   __ Add(c26, c26, 4);
 
-  __ Mov(x27, __builtin_cheri_address_get(&data7));
+  __ Mov(x27, V8_CHERI_ADDR_GET(&data7));
   __ Scvalue(c27, csp, x27);
   __ Mov(x0, sizeof(data7));
   __ Scbndse(c27, c27, x0);
   __ Add(c27, c27, 6);
 
-  __ Mov(x28, __builtin_cheri_address_get(&data8));
+  __ Mov(x28, V8_CHERI_ADDR_GET(&data8));
   __ Scvalue(c28, csp, x28);
   __ Mov(x0, sizeof(data8));
   __ Scbndse(c28, c28, x0);
@@ -17007,46 +17007,46 @@ TEST(casp_caspa_caspl_caspal_w) {
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x21, __builtin_cheri_address_get(&data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(&data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(&data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(&data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(&data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(&data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
   __ Add(c23, c23, 8);
 
-  __ Mov(x24, __builtin_cheri_address_get(&data4));
+  __ Mov(x24, V8_CHERI_ADDR_GET(&data4));
   __ Scvalue(c24, csp, x24);
   __ Mov(x0, sizeof(data4));
   __ Scbndse(c24, c24, x0);
   __ Add(c24, c24, 8);
 
-  __ Mov(x25, __builtin_cheri_address_get(&data5));
+  __ Mov(x25, V8_CHERI_ADDR_GET(&data5));
   __ Scvalue(c25, csp, x25);
   __ Mov(x0, sizeof(data5));
   __ Scbndse(c25, c25, x0);
   __ Add(c25, c25, 8);
 
-  __ Mov(x26, __builtin_cheri_address_get(&data6));
+  __ Mov(x26, V8_CHERI_ADDR_GET(&data6));
   __ Scvalue(c26, csp, x26);
   __ Mov(x0, sizeof(data6));
   __ Scbndse(c26, c26, x0);
   __ Add(c26, c26, 8);
 
-  __ Mov(x27, __builtin_cheri_address_get(&data7));
+  __ Mov(x27, V8_CHERI_ADDR_GET(&data7));
   __ Scvalue(c27, csp, x27);
   __ Mov(x0, sizeof(data7));
   __ Scbndse(c27, c27, x0);
 
-  __ Mov(x28, __builtin_cheri_address_get(&data8));
+  __ Mov(x28, V8_CHERI_ADDR_GET(&data8));
   __ Scvalue(c28, csp, x28);
   __ Mov(x0, sizeof(data8));
   __ Scbndse(c28, c28, x0);
@@ -17185,46 +17185,46 @@ TEST(casp_caspa_caspl_caspal_x) {
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x21, __builtin_cheri_address_get(&data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(&data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(&data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(&data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(&data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(&data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
   __ Add(c23, c23, 16);
 
-  __ Mov(x24, __builtin_cheri_address_get(&data4));
+  __ Mov(x24, V8_CHERI_ADDR_GET(&data4));
   __ Scvalue(c24, csp, x24);
   __ Mov(x0, sizeof(data4));
   __ Scbndse(c24, c24, x0);
   __ Add(c24, c24, 16);
 
-  __ Mov(x25, __builtin_cheri_address_get(&data5));
+  __ Mov(x25, V8_CHERI_ADDR_GET(&data5));
   __ Scvalue(c25, csp, x25);
   __ Mov(x0, sizeof(data5));
   __ Scbndse(c25, c25, x0);
   __ Add(c25, c25, 16);
 
-  __ Mov(x26, __builtin_cheri_address_get(&data6));
+  __ Mov(x26, V8_CHERI_ADDR_GET(&data6));
   __ Scvalue(c26, csp, x26);
   __ Mov(x0, sizeof(data6));
   __ Scbndse(c26, c26, x0);
   __ Add(c26, c26, 16);
 
-  __ Mov(x27, __builtin_cheri_address_get(&data7));
+  __ Mov(x27, V8_CHERI_ADDR_GET(&data7));
   __ Scvalue(c27, csp, x27);
   __ Mov(x0, sizeof(data7));
   __ Scbndse(c27, c27, x0);
 
-  __ Mov(x28, __builtin_cheri_address_get(&data8));
+  __ Mov(x28, V8_CHERI_ADDR_GET(&data8));
   __ Scvalue(c28, csp, x28);
   __ Mov(x0, sizeof(data8));
   __ Scbndse(c28, c28, x0);
@@ -17378,22 +17378,22 @@ static void AtomicMemoryWHelper(AtomicMemoryLoadSignature* load_funcs,
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x20, __builtin_cheri_address_get(data0));
+  __ Mov(x20, V8_CHERI_ADDR_GET(data0));
   __ Scvalue(c20, csp, x20);
   __ Mov(x0, sizeof(data0));
   __ Scbndse(c20, c20, x0);
 
-  __ Mov(x21, __builtin_cheri_address_get(data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
@@ -17426,12 +17426,12 @@ static void AtomicMemoryWHelper(AtomicMemoryLoadSignature* load_funcs,
 
   if (store_funcs != NULL) {
 #ifdef __CHERI_PURE_CAPABILITY__
-    __ Mov(x24, __builtin_cheri_address_get(data4));
+    __ Mov(x24, V8_CHERI_ADDR_GET(data4));
     __ Scvalue(c24, csp, x24);
     __ Mov(x0, sizeof(data5));
     __ Scbndse(c24, c24, x0);
 
-    __ Mov(x25, __builtin_cheri_address_get(data5));
+    __ Mov(x25, V8_CHERI_ADDR_GET(data5));
     __ Scvalue(c25, csp, x25);
     __ Mov(x0, sizeof(data5));
     __ Scbndse(c25, c25, x0);
@@ -17495,22 +17495,22 @@ static void AtomicMemoryXHelper(AtomicMemoryLoadSignature* load_funcs,
   START();
 
 #ifdef __CHERI_PURE_CAPABILITY__
-  __ Mov(x20, __builtin_cheri_address_get(data0));
+  __ Mov(x20, V8_CHERI_ADDR_GET(data0));
   __ Scvalue(c20, csp, x20);
   __ Mov(x0, sizeof(data0));
   __ Scbndse(c20, c20, x0);
 
-  __ Mov(x21, __builtin_cheri_address_get(data1));
+  __ Mov(x21, V8_CHERI_ADDR_GET(data1));
   __ Scvalue(c21, csp, x21);
   __ Mov(x0, sizeof(data1));
   __ Scbndse(c21, c21, x0);
 
-  __ Mov(x22, __builtin_cheri_address_get(data2));
+  __ Mov(x22, V8_CHERI_ADDR_GET(data2));
   __ Scvalue(c22, csp, x22);
   __ Mov(x0, sizeof(data2));
   __ Scbndse(c22, c22, x0);
 
-  __ Mov(x23, __builtin_cheri_address_get(data3));
+  __ Mov(x23, V8_CHERI_ADDR_GET(data3));
   __ Scvalue(c23, csp, x23);
   __ Mov(x0, sizeof(data3));
   __ Scbndse(c23, c23, x0);
@@ -17543,12 +17543,12 @@ static void AtomicMemoryXHelper(AtomicMemoryLoadSignature* load_funcs,
 
   if (store_funcs != NULL) {
 #ifdef __CHERI_PURE_CAPABILITY__
-    __ Mov(x24, __builtin_cheri_address_get(data4));
+    __ Mov(x24, V8_CHERI_ADDR_GET(data4));
     __ Scvalue(c24, csp, x24);
     __ Mov(x0, sizeof(data5));
     __ Scbndse(c24, c24, x0);
 
-    __ Mov(x25, __builtin_cheri_address_get(data5));
+    __ Mov(x25, V8_CHERI_ADDR_GET(data5));
     __ Scvalue(c25, csp, x25);
     __ Mov(x0, sizeof(data5));
     __ Scbndse(c25, c25, x0);

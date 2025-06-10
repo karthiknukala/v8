@@ -413,7 +413,7 @@ void RegisterDump::Dump(MacroAssembler* masm) {
 #ifdef __CHERI_PURE_CAPABILITY__
   // XXX(ds815): Right now this means that RegisterDump must be on the stack.
   // What if it's not?
-  __ Mov(dump_base.X(), __builtin_cheri_address_get(&dump_));
+  __ Mov(dump_base.X(), V8_CHERI_ADDR_GET(&dump_));
   __ Scvalue(dump_base, csp, dump_base.X());
   __ Mov(tmp.X(), sizeof(dump_));
   __ Scbndse(dump_base, dump_base, tmp.X());
