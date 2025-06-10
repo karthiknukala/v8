@@ -57,11 +57,11 @@ FieldAccess AccessBuilder::ForBigIntBitfield() {
 
 // static
 FieldAccess AccessBuilder::ForBigIntOptionalPadding() {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK_EQ(FIELD_SIZE(BigInt::kOptionalPaddingOffset), 12);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   DCHECK_EQ(FIELD_SIZE(BigInt::kOptionalPaddingOffset), 4);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   FieldAccess access = {
       kTaggedBase,      BigInt::kOptionalPaddingOffset, MaybeHandle<Name>(),
       OptionalMapRef(), TypeCache::Get()->kInt32,       MachineType::Uint32(),

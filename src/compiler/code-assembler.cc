@@ -446,16 +446,16 @@ void CodeAssembler::Return(TNode<Uint32T> value) {
 
 void CodeAssembler::Return(TNode<WordT> value) {
   DCHECK_EQ(1, raw_assembler()->call_descriptor()->ReturnCount());
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   DCHECK((MachineRepresentation::kWord64 ==
       raw_assembler()->call_descriptor()->GetReturnType(0).representation()) ||
       (MachineRepresentation::kWord32 ==
       raw_assembler()->call_descriptor()->GetReturnType(0).representation()));
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   DCHECK_EQ(
       MachineType::PointerRepresentation(),
       raw_assembler()->call_descriptor()->GetReturnType(0).representation());
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
   return raw_assembler()->Return(value);
 }
 
@@ -475,7 +475,7 @@ void CodeAssembler::Return(TNode<Float64T> value) {
 
 void CodeAssembler::Return(TNode<WordT> value1, TNode<WordT> value2) {
   DCHECK_EQ(2, raw_assembler()->call_descriptor()->ReturnCount());
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK(
       (MachineType::PointerRepresentation() ==
        raw_assembler()->call_descriptor()->GetReturnType(0).representation()) ||
@@ -486,14 +486,14 @@ void CodeAssembler::Return(TNode<WordT> value1, TNode<WordT> value2) {
        raw_assembler()->call_descriptor()->GetReturnType(1).representation()) ||
       (MachineRepresentation::kWord64 ==
        raw_assembler()->call_descriptor()->GetReturnType(1).representation()));
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   DCHECK_EQ(
       MachineType::PointerRepresentation(),
       raw_assembler()->call_descriptor()->GetReturnType(0).representation());
   DCHECK_EQ(
       MachineType::PointerRepresentation(),
       raw_assembler()->call_descriptor()->GetReturnType(1).representation());
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   return raw_assembler()->Return(value1, value2);
 }
 
@@ -583,7 +583,7 @@ TNode<RawPtrT> CodeAssembler::LoadParentFramePointer() {
   }
 CODE_ASSEMBLER_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_BINARY_OP
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP(name, ResType, Arg1Type,     \
                                                 Arg2Type)                    \
   TNode<ResType> CodeAssembler::name(TNode<Arg1Type> a, TNode<Arg2Type> b) { \
@@ -592,9 +592,9 @@ CODE_ASSEMBLER_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
   }
 CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_PURECAP_BINARY_OP
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define DEFINE_CODE_ASSEMBLER_BINARY_OP_MAYBECAP(name, ResType, Arg1Type,    \
                                                  Arg2Type)                   \
   TNode<ResType> CodeAssembler::name(TNode<Arg1Type> a, TNode<Arg2Type> b) { \
@@ -628,7 +628,7 @@ TNode<WordT> CodeAssembler::IntPtrSub(TNode<WordT> a, TNode<WordT> b) {
   }
   return UncheckedCast<WordT>(raw_assembler()->IntPtrSub(a, b)).MarkAsInteger();
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 TNode<WordT> CodeAssembler::WordShl(TNode<WordT> value, int shift) {
   return (shift != 0) ? WordShl(value, IntPtrConstant(shift)) : value;
@@ -729,7 +729,7 @@ TNode<Int32T> CodeAssembler::TruncateFloat32ToInt32(TNode<Float32T> value) {
 CODE_ASSEMBLER_UNARY_OP_LIST(DEFINE_CODE_ASSEMBLER_UNARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_UNARY_OP
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define DEFINE_CODE_ASSEMBLER_BITCAST_OP(name, ResType, ArgType)             \
   TNode<ResType> CodeAssembler::name(TNode<ArgType> a) {                     \
     if (a.IsCapability()) {                                                  \
@@ -740,7 +740,7 @@ CODE_ASSEMBLER_UNARY_OP_LIST(DEFINE_CODE_ASSEMBLER_UNARY_OP)
   }
 CODE_ASSEMBLER_BITCAST_OP_LIST(DEFINE_CODE_ASSEMBLER_BITCAST_OP)
 #undef DEFINE_CODE_ASSEMBLER_BITCAST_OP
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 Node* CodeAssembler::Load(MachineType type, Node* base) {
   return raw_assembler()->Load(type, base);
@@ -783,9 +783,9 @@ template TNode<AtomicUint64> CodeAssembler::AtomicLoad64<AtomicUint64>(
 
 Node* CodeAssembler::LoadFromObject(MachineType type, TNode<Object> object,
                                     TNode<IntPtrT> offset) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
   DCHECK(object.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
   return raw_assembler()->LoadFromObject(type, object, offset);
 }
 
@@ -825,9 +825,7 @@ TNode<Object> CodeAssembler::LoadRoot(RootIndex root_index) {
   // cases, it would boil down to loading from a fixed kRootRegister offset.
   TNode<ExternalReference> isolate_root =
       ExternalConstant(ExternalReference::isolate_root(isolate()));
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(isolate_root.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, isolate_root.IsCapability());
   int offset = IsolateData::root_slot_offset(root_index);
   return UncheckedCast<Object>(
       LoadFullTagged(isolate_root, IntPtrConstant(offset)));
@@ -840,12 +838,12 @@ Node* CodeAssembler::UnalignedLoad(MachineType type, TNode<RawPtrT> base,
 
 // XXX(cheri): This seems to be unused and we don't really fix it for CHERI, so
 // ifdef it out for now.
-#ifndef __CHERI_PURE_CAPABILITY__
+#if !V8_TARGET_CHERI
 void CodeAssembler::Store(Node* base, Node* value) {
   raw_assembler()->Store(MachineRepresentation::kTagged, base, value,
                          kFullWriteBarrier);
 }
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
 
 void CodeAssembler::StoreToObject(MachineRepresentation rep,
                                   TNode<Object> object, TNode<IntPtrT> offset,
@@ -972,7 +970,7 @@ void CodeAssembler::AtomicStore64(AtomicMemoryOrder order, TNode<RawPtrT> base,
       base, offset, value, value_high);
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 void CodeAssembler::AtomicStoreCapability(AtomicMemoryOrder order,
                                           TNode<RawPtrT> base,
                                           TNode<WordT> offset,
@@ -1023,7 +1021,7 @@ ATOMIC_FUNCTION(Or)
 ATOMIC_FUNCTION(Xor)
 ATOMIC_FUNCTION(Exchange)
 #undef ATOMIC_FUNCTION
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
 #define ATOMIC_FUNCTION(name)                                                 \
   TNode<Word32T> CodeAssembler::Atomic##name(                                 \
       MachineType type, TNode<RawPtrT> base, TNode<UintPtrT> offset,          \
@@ -1052,7 +1050,7 @@ ATOMIC_FUNCTION(Or)
 ATOMIC_FUNCTION(Xor)
 ATOMIC_FUNCTION(Exchange)
 #undef ATOMIC_FUNCTION
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 TNode<Word32T> CodeAssembler::AtomicCompareExchange(MachineType type,
                                                     TNode<RawPtrT> base,
@@ -1085,7 +1083,7 @@ CodeAssembler::AtomicCompareExchange64<AtomicUint64>(
     TNode<UintPtrT> new_value, TNode<UintPtrT> old_value_high,
     TNode<UintPtrT> new_value_high);
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 template <class Type>
 TNode<Type> CodeAssembler::AtomicCompareExchangeCapability(
     TNode<RawPtrT> base, TNode<WordT> offset, TNode<UintPtrT> old_value,

@@ -61,9 +61,7 @@ inline bool CPURegister::IsSP() const {
 
 inline void CPURegList::Combine(const CPURegList& other) {
   DCHECK(other.type() == type_);
-#ifndef __CHERI_PURE_CAPABILITY__
-  DCHECK(other.RegisterSizeInBits() == size_);
-#endif  // !__CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(!V8_TARGET_CHERI_BOOL, other.RegisterSizeInBits() == size_);
   list_ |= other.list_;
 }
 
@@ -75,13 +73,13 @@ inline void CPURegList::Remove(const CPURegList& other) {
 
 inline void CPURegList::Combine(const CPURegister& other) {
   DCHECK(other.type() == type_);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK(other.SizeInBits() == size_ ||
          (other.SizeInBits() == kXRegSizeInBits && size_ == kCRegSizeInBits) ||
          (other.SizeInBits() == kCRegSizeInBits && size_ == kXRegSizeInBits));
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   DCHECK(other.SizeInBits() == size_);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   Combine(other.code());
 }
 
@@ -124,7 +122,7 @@ inline Register Register::WRegFromCode(unsigned code) {
   }
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 inline Register Register::CRegFromCode(unsigned code) {
   if (code == kSPRegInternalCode) {
     return csp;
@@ -133,7 +131,11 @@ inline Register Register::CRegFromCode(unsigned code) {
     return Register::Create(code, kCRegSizeInBits);
   }
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#else
+inline Register Register::CRegFromCode(unsigned code) {
+  return XRegFromCode(code);
+}
+#endif
 
 inline VRegister VRegister::BRegFromCode(unsigned code) {
   DCHECK_LT(code, static_cast<unsigned>(kNumberOfVRegisters));
@@ -185,12 +187,16 @@ inline Register CPURegister::X() const {
   return Register::XRegFromCode(code());
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 inline Register CPURegister::C() const {
   DCHECK(IsRegister());
   return Register::CRegFromCode(code());
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#else
+inline Register CPURegister::C() const {
+  return Register::XRegFromCode(code());
+}
+#endif
 
 inline VRegister CPURegister::V() const {
   DCHECK(IsVRegister());
@@ -234,7 +240,7 @@ struct ImmediateInitializer {
   }
 };
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 template <>
 struct ImmediateInitializer<intptr_t> {
   static inline RelocInfo::Mode rmode_for(intptr_t) { return RelocInfo::NO_INFO; }
@@ -254,7 +260,7 @@ struct ImmediateInitializer<Address> {
     return static_cast<uintptr_t>(t);
   }
 };
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 
 template <>
 struct ImmediateInitializer<Smi> {
@@ -269,15 +275,15 @@ struct ImmediateInitializer<ExternalReference> {
   static inline RelocInfo::Mode rmode_for(ExternalReference t) {
     return RelocInfo::EXTERNAL_REFERENCE;
   }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   static inline uintptr_t immediate_for(ExternalReference t) {
     return static_cast<uintptr_t>(t.address());
   }
-#else
+#else   // !__CHERI_PURE_CAPABILITY__
   static inline int64_t immediate_for(ExternalReference t) {
     return static_cast<int64_t>(t.address());
   }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 };
 
 template <typename T>
@@ -310,14 +316,14 @@ Operand::Operand(Register reg, Shift shift, unsigned shift_amount)
       shift_(shift),
       extend_(NO_EXTEND),
       shift_amount_(shift_amount) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   DCHECK(reg.Is128Bits() || (shift_amount < kXRegSizeInBits));
   DCHECK(reg.Is64Bits() || (shift_amount < kWRegSizeInBits) || reg.Is128Bits());
   DCHECK(reg.Is32Bits() || (shift_amount < kXRegSizeInBits));
 #else
   DCHECK(reg.Is64Bits() || (shift_amount < kWRegSizeInBits));
   DCHECK(reg.Is32Bits() || (shift_amount < kXRegSizeInBits));
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   DCHECK_IMPLIES(reg.IsSP(), shift_amount == 0);
 }
 
@@ -376,18 +382,18 @@ Operand Operand::ToExtendedRegister() const {
 
 Operand Operand::ToW() const {
   if (IsShiftedRegister()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     DCHECK(reg_.Is64Bits() || reg_.Is128Bits());
 #else
     DCHECK(reg_.Is64Bits());
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return Operand(reg_.W(), shift(), shift_amount());
   } else if (IsExtendedRegister()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     DCHECK(reg_.Is64Bits() || reg_.Is128Bits());
 #else
     DCHECK(reg_.Is64Bits());
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return Operand(reg_.W(), extend(), shift_amount());
   }
   DCHECK(IsImmediate());
@@ -396,21 +402,17 @@ Operand Operand::ToW() const {
 
 Operand Operand::ToX() const {
   if (IsShiftedRegister()) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(reg_.Is128Bits() || reg_.Is64Bits());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, reg_.Is128Bits() || reg_.Is64Bits());
     return Operand(reg_.X(), shift(), shift_amount());
   } else if (IsExtendedRegister()) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(reg_.Is128Bits() || reg_.Is64Bits());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, reg_.Is128Bits() || reg_.Is64Bits());
     return Operand(reg_.X(), extend(), shift_amount());
   }
   DCHECK(IsImmediate());
   return *this;
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 Operand Operand::ToC() const {
   if (IsShiftedRegister()) {
     return Operand(reg_.C(), shift(), shift_amount());
@@ -428,7 +430,15 @@ bool Operand::IsC() const {
   DCHECK(IsImmediate());
   return false;
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#else
+Operand Operand::ToC() const {
+  return ToX();
+}
+
+bool Operand::IsC() const {
+  return false;
+}
+#endif
 
 Immediate Operand::immediate_for_heap_number_request() const {
   DCHECK(immediate_.rmode() == RelocInfo::FULL_EMBEDDED_OBJECT);
@@ -440,11 +450,11 @@ Immediate Operand::immediate() const {
   return immediate_;
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 intptr_t Operand::ImmediateValue() const {
 #else
 int64_t Operand::ImmediateValue() const {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   DCHECK(IsImmediate());
   return immediate_.value();
 }
@@ -491,11 +501,7 @@ MemOperand::MemOperand(Register base, int64_t offset, AddrMode addrmode)
       shift_(NO_SHIFT),
       extend_(NO_EXTEND),
       shift_amount_(0) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  DCHECK((base.Is64Bits() || base.Is128Bits()) && !base.IsZero());
-#else
-  DCHECK(base.Is64Bits() && !base.IsZero());
-#endif // _CHERI_PURE_CAPABILITY__
+  DCHECK((base.Is64Bits() || base.IsC()) && !base.IsZero());
 }
 
 MemOperand::MemOperand(Register base, Register regoffset, Extend extend,
@@ -507,11 +513,7 @@ MemOperand::MemOperand(Register base, Register regoffset, Extend extend,
       shift_(NO_SHIFT),
       extend_(extend),
       shift_amount_(shift_amount) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  DCHECK((base.Is64Bits() || base.Is128Bits()) && !base.IsZero());
-#else
-  DCHECK(base.Is64Bits() && !base.IsZero());
-#endif // _CHERI_PURE_CAPABILITY__
+  DCHECK((base.Is64Bits() || base.IsC()) && !base.IsZero());
   DCHECK(!regoffset.IsSP());
   DCHECK((extend == UXTW) || (extend == SXTW) || (extend == SXTX));
 
@@ -528,23 +530,14 @@ MemOperand::MemOperand(Register base, Register regoffset, Shift shift,
       shift_(shift),
       extend_(NO_EXTEND),
       shift_amount_(shift_amount) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  DCHECK((base.Is64Bits() || base.Is128Bits()) && !base.IsZero());
-  DCHECK((regoffset.Is64Bits() || regoffset.Is128Bits()) && !regoffset.IsSP());
-#else
-  DCHECK(base.Is64Bits() && !base.IsZero());
-  DCHECK(regoffset.Is64Bits() && !regoffset.IsSP());
-#endif // _CHERI_PURE_CAPABILITY__
+  DCHECK((base.Is64Bits() || base.IsC()) && !base.IsZero());
+  DCHECK((regoffset.Is64Bits() || regoffset.IsC()) && !regoffset.IsSP());
   DCHECK(shift == LSL);
 }
 
 MemOperand::MemOperand(Register base, const Operand& offset, AddrMode addrmode)
     : base_(base), regoffset_(NoReg), addrmode_(addrmode) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-  DCHECK((base.Is64Bits() || base.Is128Bits()) && !base.IsZero());
-#else
-  DCHECK(base.Is64Bits() && !base.IsZero());
-#endif // _CHERI_PURE_CAPABILITY__
+  DCHECK((base.Is64Bits() || base.IsC()) && !base.IsZero());
 
   if (offset.IsImmediate()) {
     offset_ = offset.ImmediateValue();
@@ -559,12 +552,8 @@ MemOperand::MemOperand(Register base, const Operand& offset, AddrMode addrmode)
     offset_ = 0;
 
     // These assertions match those in the shifted-register constructor.
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK((regoffset_.Is64Bits() || regoffset_.Is128Bits()) &&
+    DCHECK((regoffset_.Is64Bits() || regoffset_.IsC()) &&
            !regoffset_.IsSP());
-#else   // !__CHERI_PURE_CAPABILITY__
-    DCHECK(regoffset_.Is64Bits() && !regoffset_.IsSP());
-#endif  // __CHERI_PURE_CAPABILITY__
     DCHECK(shift_ == LSL);
   } else {
     DCHECK(offset.IsExtendedRegister());
@@ -600,22 +589,22 @@ void Assembler::Unreachable() { debug("UNREACHABLE", __LINE__, BREAK); }
 
 Address Assembler::target_pointer_address_at(Address pc) {
   Instruction* instr = reinterpret_cast<Instruction*>(pc);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   DCHECK(instr->IsLdrLiteralC() || instr->IsLdrLiteralX() || instr->IsLdrLiteralW());
 #else
   DCHECK(instr->IsLdrLiteralX() || instr->IsLdrLiteralW());
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   return reinterpret_cast<Address>(instr->ImmPCOffsetTarget(pc));
 }
 
 // Read/Modify the code target address in the branch/call instruction at pc.
 Address Assembler::target_address_at(Address pc, Address constant_pool) {
   Instruction* instr = reinterpret_cast<Instruction*>(pc);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) {
 #else
   if (instr->IsLdrLiteralX()) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return Memory<Address>(target_pointer_address_at(pc));
   } else {
     DCHECK(instr->IsBranchAndLink() || instr->IsUnconditionalBranch());
@@ -632,11 +621,11 @@ Tagged_t Assembler::target_compressed_address_at(Address pc,
 
 Handle<Code> Assembler::code_target_object_handle_at(Address pc) {
   Instruction* instr = reinterpret_cast<Instruction*>(pc);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) {
 #else
   if (instr->IsLdrLiteralX()) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return Handle<Code>(reinterpret_cast<Address*>(
         Assembler::target_address_at(pc, 0 /* unused */)));
   } else {
@@ -650,13 +639,13 @@ Handle<Code> Assembler::code_target_object_handle_at(Address pc) {
 AssemblerBase::EmbeddedObjectIndex
 Assembler::embedded_object_index_referenced_from(Address pc) {
   Instruction* instr = reinterpret_cast<Instruction*>(pc);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) {
     static_assert(sizeof(EmbeddedObjectIndex) == sizeof(ptraddr_t));
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   if (instr->IsLdrLiteralX()) {
     static_assert(sizeof(EmbeddedObjectIndex) == sizeof(intptr_t));
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     return Memory<EmbeddedObjectIndex>(target_pointer_address_at(pc));
   } else {
     DCHECK(instr->IsLdrLiteralW());
@@ -667,11 +656,11 @@ Assembler::embedded_object_index_referenced_from(Address pc) {
 void Assembler::set_embedded_object_index_referenced_from(
     Address pc, EmbeddedObjectIndex data) {
   Instruction* instr = reinterpret_cast<Instruction*>(pc);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) {
 #else
   if (instr->IsLdrLiteralX()) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     Memory<EmbeddedObjectIndex>(target_pointer_address_at(pc)) = data;
   } else {
     DCHECK(instr->IsLdrLiteralW());
@@ -737,11 +726,11 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
   Instruction* instr = reinterpret_cast<Instruction*>(pc);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) {
 #else
   if (instr->IsLdrLiteralX()) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     Memory<Address>(target_pointer_address_at(pc)) = target;
     // Intuitively, we would think it is necessary to always flush the
     // instruction cache after patching a target address in the code. However,
@@ -775,11 +764,11 @@ int RelocInfo::target_address_size() {
     return Assembler::kSpecialTargetSize;
   } else {
     Instruction* instr = reinterpret_cast<Instruction*>(pc_);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     DCHECK(instr->IsLdrLiteralC() || instr->IsLdrLiteralX() || instr->IsLdrLiteralW());
 #else
     DCHECK(instr->IsLdrLiteralX() || instr->IsLdrLiteralW());
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return instr->IsLdrLiteralW() ? kTaggedSize : kSystemPointerSize;
   }
 }
@@ -806,11 +795,11 @@ Address RelocInfo::target_address_address() {
   // address. We make sure that RelocInfo is ordered by the
   // target_address_address so that we do not skip over any relocatable
   // instruction sequences.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) {
 #else
   if (instr->IsLdrLiteralX()) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return constant_pool_entry_address();
   } else {
     DCHECK(instr->IsBranchAndLink() || instr->IsUnconditionalBranch());
@@ -916,11 +905,11 @@ void RelocInfo::WipeOut() {
 LoadStoreOp Assembler::LoadOpFor(const CPURegister& rt) {
   DCHECK(rt.is_valid());
   if (rt.IsRegister()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     return rt.Is128Bits() ? LDR_c : rt.Is64Bits() ? LDR_x : LDR_w;
 #else
     return rt.Is64Bits() ? LDR_x : LDR_w;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     DCHECK(rt.IsVRegister());
     switch (rt.SizeInBits()) {
@@ -942,11 +931,11 @@ LoadStoreOp Assembler::LoadOpFor(const CPURegister& rt) {
 LoadStoreOp Assembler::StoreOpFor(const CPURegister& rt) {
   DCHECK(rt.is_valid());
   if (rt.IsRegister()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     return rt.Is128Bits() ? STR_c : rt.Is64Bits() ? STR_x : STR_w;
 #else
     return rt.Is64Bits() ? STR_x : STR_w;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     DCHECK(rt.IsVRegister());
     switch (rt.SizeInBits()) {
@@ -977,9 +966,9 @@ LoadStorePairOp Assembler::StorePairOpFor(const CPURegister& rt,
   DCHECK(AreSameSizeAndType(rt, rt2));
   USE(rt2);
   if (rt.IsRegister()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     if (rt.Is128Bits()) return STP_c;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
     return rt.Is64Bits() ? STP_x : STP_w;
   } else {
     DCHECK(rt.IsVRegister());
@@ -997,18 +986,18 @@ LoadStorePairOp Assembler::StorePairOpFor(const CPURegister& rt,
 
 LoadLiteralOp Assembler::LoadLiteralOpFor(const CPURegister& rt) {
   if (rt.IsRegister()) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     return rt.Is128Bits() ? LDR_c_lit : rt.Is64Bits() ? LDR_x_lit : LDR_w_lit;
 #else
     return rt.Is64Bits() ? LDR_x_lit : LDR_w_lit;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     DCHECK(rt.IsVRegister());
     return rt.Is64Bits() ? LDR_d_lit : LDR_s_lit;
   }
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 AddSubOp Assembler::AddOpFor(const CPURegister& rt) {
   if (rt.IsC()) {
     return ADD_c;
@@ -1024,7 +1013,7 @@ AddSubOp Assembler::SubOpFor(const CPURegister& rt) {
     return SUB;
   }
 }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
 AddSubOp Assembler::AddOpFor([[maybe_unused]] const CPURegister& rt) {
   return ADD;
 }
@@ -1032,7 +1021,7 @@ AddSubOp Assembler::AddOpFor([[maybe_unused]] const CPURegister& rt) {
 AddSubOp Assembler::SubOpFor([[maybe_unused]] const CPURegister& rt) {
   return SUB;
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 int Assembler::LinkAndGetInstructionOffsetTo(Label* label) {
   DCHECK_EQ(kStartOfLabelLinkChain, 0);
@@ -1105,7 +1094,7 @@ Instr Assembler::ImmAddSub(int imm) {
 }
 
 Instr Assembler::ImmS(unsigned imms, unsigned reg_size) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK((reg_size == kCRegSizeInBits && is_uint6(imms)) ||
          ((reg_size == kXRegSizeInBits) && is_uint6(imms)) ||
          ((reg_size == kWRegSizeInBits) && is_uint5(imms)));
@@ -1118,7 +1107,7 @@ Instr Assembler::ImmS(unsigned imms, unsigned reg_size) {
 }
 
 Instr Assembler::ImmR(unsigned immr, unsigned reg_size) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK(((reg_size == kCRegSizeInBits) && is_uint6(immr)) ||
          ((reg_size == kXRegSizeInBits) && is_uint6(immr)) ||
          ((reg_size == kWRegSizeInBits) && is_uint5(immr)));
@@ -1132,7 +1121,7 @@ Instr Assembler::ImmR(unsigned immr, unsigned reg_size) {
 }
 
 Instr Assembler::ImmSetBits(unsigned imms, unsigned reg_size) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK((reg_size == kCRegSizeInBits) || (reg_size == kWRegSizeInBits) ||
          (reg_size == kXRegSizeInBits));
 #else
@@ -1145,7 +1134,7 @@ Instr Assembler::ImmSetBits(unsigned imms, unsigned reg_size) {
 }
 
 Instr Assembler::ImmRotate(unsigned immr, unsigned reg_size) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK((reg_size == kCRegSizeInBits) || (reg_size == kWRegSizeInBits) ||
          (reg_size == kXRegSizeInBits));
   DCHECK(((reg_size == kCRegSizeInBits) && is_uint6(immr)) ||
@@ -1160,7 +1149,7 @@ Instr Assembler::ImmRotate(unsigned immr, unsigned reg_size) {
   return immr << ImmRotate_offset;
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 Instr Assembler::ImmSealForm(Cheri::SealImmediateForm form) {
   return form << 13;
 }
@@ -1174,7 +1163,7 @@ Instr Assembler::CImmLLiteral(int imm17) {
   CHECK(is_int17(imm17));
   return truncate_to_int17(imm17) << CImmLLiteral_offset;
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 Instr Assembler::ImmLLiteral(int imm19) {
   CHECK(is_int19(imm19));
@@ -1182,13 +1171,8 @@ Instr Assembler::ImmLLiteral(int imm19) {
 }
 
 Instr Assembler::BitN(unsigned bitn, unsigned reg_size) {
-#ifdef __CHERI_PURE_CAPABILITY__
   DCHECK((reg_size == kCRegSizeInBits) || (reg_size == kWRegSizeInBits) ||
          (reg_size == kXRegSizeInBits));
-#else
-  DCHECK((reg_size == kWRegSizeInBits) || (reg_size == kXRegSizeInBits));
-  DCHECK((reg_size == kXRegSizeInBits) || (bitn == 0));
-#endif
   USE(reg_size);
   return bitn << BitN_offset;
 }
@@ -1271,11 +1255,11 @@ Instr Assembler::ImmBarrierType(int imm2) {
 
 unsigned Assembler::CalcLSDataSize(LoadStoreOp op, bool is_cap) {
   DCHECK((LSSize_offset + LSSize_width) == (kInstrSize * 8));
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   if (is_cap && (op == STR_c || op == LDR_c)) {
     return kCRegSizeLog2;
   }
-#endif  // __CHERI_PURE_CAPABILITY_
+#endif
   unsigned size = static_cast<Instr>(op >> LSSize_offset);
   if ((op & LSVector_mask) != 0) {
     // Vector register memory operations encode the access size in the "size"
@@ -1304,7 +1288,7 @@ Instr Assembler::FPScale(unsigned scale) {
   return scale << FPScale_offset;
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 Instr Assembler::ImmAddSubCapability(int imm) {
   DCHECK(IsImmAddSubCapability(imm));
   if (is_uint12(imm)) {  // No shift required.
@@ -1314,14 +1298,12 @@ Instr Assembler::ImmAddSubCapability(int imm) {
   }
   return imm;
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 const Register& Assembler::AppropriateZeroRegFor(const CPURegister& reg) const {
-#if defined(__CHERI_PURE_CAPABILITY__)
   if (reg.IsC()) {
     return czr;
   }
-#endif // __CHERI_PURE_CAPABILITY__
   return reg.Is64Bits() ? xzr : wzr;
 }
 

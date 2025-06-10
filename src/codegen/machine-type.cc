@@ -61,12 +61,12 @@ const char* MachineReprToString(MachineRepresentation rep) {
       return "kRepMapWord";
     case MachineRepresentation::kSandboxedPointer:
       return "kRepSandboxedPointer";
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case MachineRepresentation::kCapability64:
       return "kRepCapability64";
     case MachineRepresentation::kCapability32:
       return "kRepCapability32";
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   }
   UNREACHABLE();
 }

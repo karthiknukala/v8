@@ -283,13 +283,13 @@ std::ostream& operator<<(std::ostream& os, const InstructionOperand& op) {
         case MachineRepresentation::kSandboxedPointer:
           os << "|sb";
           break;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
         case MachineRepresentation::kCapability32:
           [[fallthrough]];
         case MachineRepresentation::kCapability64:
           os << "|cap";
           break;
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif
         case MachineRepresentation::kMapWord:
           UNREACHABLE();
       }
@@ -579,10 +579,10 @@ Constant::Constant(RelocatablePtrConstantInfo info) {
     type_ = kInt32;
   } else if (info.type() == RelocatablePtrConstantInfo::kInt64) {
     type_ = kInt64;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (info.type() == RelocatablePtrConstantInfo::kIntPtr) {
     type_ = kIntPtr;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     UNREACHABLE();
   }
@@ -610,10 +610,10 @@ std::ostream& operator<<(std::ostream& os, const Constant& constant) {
       return os << constant.ToInt32();
     case Constant::kInt64:
       return os << constant.ToInt64() << "l";
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case Constant::kIntPtr:
       return os << constant.ToIntPtr() << " (cap)";
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     case Constant::kFloat32:
       return os << constant.ToFloat32() << "f";
     case Constant::kFloat64:
@@ -974,7 +974,7 @@ static MachineRepresentation FilterRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kCompressedPointer:
     case MachineRepresentation::kCompressed:
     case MachineRepresentation::kSandboxedPointer:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case MachineRepresentation::kCapability64:
     case MachineRepresentation::kCapability32:
 #endif

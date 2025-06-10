@@ -250,11 +250,11 @@ Node* RepresentationChanger::GetRepresentationFor(
     case MachineRepresentation::kSimd256:
     case MachineRepresentation::kNone:
       return node;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case MachineRepresentation::kCapability64:
       return GetCapability64RepresentationFor(node, output_rep, output_type,
                                               use_node, use_info);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     case MachineRepresentation::kCompressed:
     case MachineRepresentation::kCompressedPointer:
     case MachineRepresentation::kSandboxedPointer:
@@ -303,12 +303,12 @@ Node* RepresentationChanger::GetTaggedSignedRepresentationFor(
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kTaggedSigned);
     }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (output_rep == MachineRepresentation::kWord64 ||
              output_rep == MachineRepresentation::kCapability64) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   } else if (output_rep == MachineRepresentation::kWord64) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     if (output_type.Is(Type::Signed31())) {
       // int64 -> int32 -> tagged signed
       node = InsertTruncateInt64ToInt32(node);
@@ -538,7 +538,7 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
   switch (node->opcode()) {
     case IrOpcode::kNumberConstant:
     case IrOpcode::kHeapConstant:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case IrOpcode::kCapability64Constant:
 #endif
       return node;  // No change necessary.
@@ -586,12 +586,12 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kTagged);
     }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (output_rep == MachineRepresentation::kWord64 ||
              output_rep == MachineRepresentation::kCapability64) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   } else if (output_rep == MachineRepresentation::kWord64) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     if (output_type.Is(Type::Signed31())) {
       // int64 -> int32 -> tagged signed
       node = InsertTruncateInt64ToInt32(node);
@@ -616,13 +616,13 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
     } else if (output_type.Is(Type::UnsignedBigInt64())) {
       // uint64 -> BigInt
       op = simplified()->ChangeUint64ToBigInt();
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     } else if (output_rep == MachineRepresentation::kCapability64) {
       // If we haven't performed a conversion by now, and the output
       // representation is a Capability64, we just return the node as we would
       // for any of the tagged representations at the start of this function.
       return node;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     } else {
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kTagged);
@@ -874,9 +874,9 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
     case IrOpcode::kInt64Constant:
     case IrOpcode::kFloat32Constant:
     case IrOpcode::kFloat64Constant:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case IrOpcode::kCapability64Constant:
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       UNREACHABLE();
     case IrOpcode::kNumberConstant: {
       double const fv = OpParameter<double>(node->op());
@@ -1019,12 +1019,12 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
     DCHECK(use_info.type_check() == TypeCheckKind::kSignedSmall ||
            use_info.type_check() == TypeCheckKind::kSigned32);
     return node;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (output_rep == MachineRepresentation::kWord64 ||
              output_rep == MachineRepresentation::kCapability64) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   } else if (output_rep == MachineRepresentation::kWord64) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     if (output_type.Is(Type::Signed32()) ||
         (output_type.Is(Type::Unsigned32()) &&
          use_info.type_check() == TypeCheckKind::kNone) ||
@@ -1120,7 +1120,7 @@ Node* RepresentationChanger::GetBitRepresentationFor(
     }
     return jsgraph()->graph()->NewNode(machine()->Word32Equal(), node,
                                        jsgraph()->Int32Constant(0));
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (output_rep == MachineRepresentation::kCapability64) {
     // XXX(ds815): Use regular integers here for now. It's currently unclear if
     // we need to use capabilities here.
@@ -1128,7 +1128,7 @@ Node* RepresentationChanger::GetBitRepresentationFor(
                                        jsgraph()->Int64Constant(0));
     return jsgraph()->graph()->NewNode(machine()->Word32Equal(), node,
                                        jsgraph()->Int32Constant(0));
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   } else if (IsWord(output_rep)) {
     node = jsgraph()->graph()->NewNode(machine()->Word32Equal(), node,
                                        jsgraph()->Int32Constant(0));
@@ -1154,7 +1154,7 @@ Node* RepresentationChanger::GetBitRepresentationFor(
   return jsgraph()->graph()->NewNode(op, node);
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 Node* RepresentationChanger::GetCapability64RepresentationFor(
     Node* node, MachineRepresentation output_rep, Type output_type,
     Node* use_node, UseInfo use_info) {
@@ -1349,7 +1349,7 @@ Node* RepresentationChanger::GetCapability64RepresentationFor(
   }
   return InsertConversion(node, op, use_node);
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 Node* RepresentationChanger::GetWord64RepresentationFor(
     Node* node, MachineRepresentation output_rep, Type output_type,
@@ -1534,10 +1534,10 @@ Node* RepresentationChanger::GetWord64RepresentationFor(
       return TypeError(node, output_rep, output_type,
                        MachineRepresentation::kWord64);
     }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (output_rep == MachineRepresentation::kCapability64) {
     return node;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     return TypeError(node, output_rep, output_type,
                      MachineRepresentation::kWord64);

@@ -146,9 +146,9 @@ UseInfo TruncatingUseInfoFromRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
     case MachineRepresentation::kMapWord:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case MachineRepresentation::kCapability64:
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       return UseInfo::AnyTagged();
     case MachineRepresentation::kFloat64:
       return UseInfo::TruncatingFloat64();
@@ -2214,9 +2214,9 @@ class RepresentationSelector {
       case IrOpcode::kInt64Constant:
         return VisitLeaf<T>(node, MachineRepresentation::kWord64);
       case IrOpcode::kExternalConstant:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case IrOpcode::kCapability64Constant:
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
         return VisitLeaf<T>(node, MachineType::PointerRepresentation());
       case IrOpcode::kNumberConstant: {
         double const value = OpParameter<double>(node->op());
@@ -3713,11 +3713,11 @@ class RepresentationSelector {
       }
 
       case IrOpcode::kAllocate: {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
         ProcessInput<T>(node, 0, UseInfo::Word64());
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
         ProcessInput<T>(node, 0, UseInfo::Word());
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
         ProcessRemainingInputs<T>(node, 1);
         SetOutput<T>(node, MachineRepresentation::kTaggedPointer);
         return;

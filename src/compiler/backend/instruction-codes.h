@@ -114,14 +114,14 @@ inline RecordWriteMode WriteBarrierKindToRecordWriteMode(
 // Currently not really used in the way it's intended to be used, but the way
 // the macros are set up here is useful for future opcodes, so we leave it this
 // way.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define COMMON_CHERI_ARCH_OPCODE_LIST(V) \
   V(ArchCapabilityIsTagged)              \
   V(ArchAlignU)                          \
   V(ArchAlignD)
-#else  // !__CHERI_PURE_CAPABILITY__
+#else
 #define COMMON_CHERI_ARCH_OPCODE_LIST(V) V(ArchCapabilityIsTagged)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 // Target-specific opcodes that specify which assembly sequence to emit.
 // Most opcodes specify a single instruction.

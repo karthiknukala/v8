@@ -1242,7 +1242,7 @@ const Operator* CommonOperatorBuilder::Int64Constant(int64_t value) {
       value);                                     // parameter
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 const Operator* CommonOperatorBuilder::Capability32Constant(intptr_t value) {
   return zone()->New<Operator1<intptr_t>>(               // --
       IrOpcode::kCapability32Constant, Operator::kPure,  // opcode
@@ -1365,7 +1365,7 @@ const Operator* CommonOperatorBuilder::RelocatableInt64Constant(
       RelocatablePtrConstantInfo(value, rmode));              // parameter
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 const Operator* CommonOperatorBuilder::RelocatableCapability64Constant(
     intptr_t value, RelocInfo::Mode rmode) {
   return zone()->New<Operator1<RelocatablePtrConstantInfo>>(        // --
@@ -1374,7 +1374,7 @@ const Operator* CommonOperatorBuilder::RelocatableCapability64Constant(
       0, 0, 0, 1, 0, 0,                                             // counts
       RelocatablePtrConstantInfo(value, rmode));                    // parameter
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 const Operator* CommonOperatorBuilder::ObjectId(uint32_t object_id) {
   return zone()->New<Operator1<uint32_t>>(   // --

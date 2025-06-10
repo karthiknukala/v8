@@ -208,11 +208,11 @@ class OperandGenerator {
     return sequence()->AddImmediate(Constant(immediate));
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   InstructionOperand UseImmediateIntPtr(intptr_t immediate) {
     return sequence()->AddImmediate(Constant(immediate));
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   InstructionOperand UseImmediate(Node* node) {
     return sequence()->AddImmediate(ToConstant(node));
@@ -345,7 +345,7 @@ class OperandGenerator {
         return Constant(OpParameter<int32_t>(node->op()));
       case IrOpcode::kInt64Constant:
         return Constant(OpParameter<int64_t>(node->op()));
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       case IrOpcode::kCapability32Constant:
         return Constant(OpParameter<intptr_t>(node->op()));
       case IrOpcode::kCapability64Constant:
@@ -368,9 +368,9 @@ class OperandGenerator {
         return Constant(OpParameter<float>(node->op()));
       case IrOpcode::kRelocatableInt32Constant:
       case IrOpcode::kRelocatableInt64Constant:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case IrOpcode::kRelocatableCapability64Constant:
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
         return Constant(OpParameter<RelocatablePtrConstantInfo>(node->op()));
       case IrOpcode::kFloat64Constant:
       case IrOpcode::kNumberConstant:
@@ -381,7 +381,7 @@ class OperandGenerator {
         // We cannot use {intptr_t} here, since the Constant constructor would
         // be ambiguous on some architectures.
         using ptrsize_int_t =
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
             intptr_t;
 #else   // !__CHERI_PURE_CAPABILITY__
             std::conditional<kSystemPointerSize == 8, int64_t, int32_t>::type;
@@ -402,10 +402,10 @@ class OperandGenerator {
           case MachineRepresentation::kTaggedPointer:
           case MachineRepresentation::kCompressed:
           case MachineRepresentation::kCompressedPointer:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
           case MachineRepresentation::kCapability64:
           case MachineRepresentation::kCapability32:
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
             return Constant(static_cast<int32_t>(0));
           case MachineRepresentation::kWord64:
             return Constant(static_cast<int64_t>(0));

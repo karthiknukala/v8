@@ -53,9 +53,9 @@ extern const float16 kFP16DefaultNaN;
 unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap = false);
 unsigned CalcLSPairDataSize(LoadStorePairOp op);
 unsigned CalcLSPairDataSize(LoadStorePairOp op, const CPURegister& rt);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 unsigned CalcLSPairCapDataSize(LoadStorePairOp op);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 enum ImmBranchType {
   UnknownBranchType = 0,
@@ -128,7 +128,7 @@ class Instruction {
 #define DEFINE_GETTER(Name, HighBit, LowBit, Func) \
   int32_t Name() const { return Func(HighBit, LowBit); }
   INSTRUCTION_FIELDS_LIST(DEFINE_GETTER)
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   AARCH64C_INSTRUCTION_FIELDS_LIST(DEFINE_GETTER)
 #endif
 #undef DEFINE_GETTER
@@ -212,25 +212,25 @@ class Instruction {
     return base::bit_cast<double>(result);
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   bool IsCapLdrLiteral() const {
     return Mask(LoadLiteralCapFMask) == LoadLiteralCapFixed;
   }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   bool IsLdrLiteral() const {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     return Mask(LoadLiteralFMask) == LoadLiteralFixed ||
         Mask(LoadLiteralCapFMask) == LoadLiteralCapFixed;
 #else
     return Mask(LoadLiteralFMask) == LoadLiteralFixed;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   }
 
   bool IsLdrLiteralX() const { return Mask(LoadLiteralMask) == LDR_x_lit; }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   bool IsLdrLiteralC() const { return Mask(LoadLiteralCapMask) == LDR_c_lit; }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   bool IsLdrLiteralW() const { return Mask(LoadLiteralMask) == LDR_w_lit; }
 
   bool IsPCRelAddressing() const {
@@ -263,7 +263,7 @@ class Instruction {
     return Mask(AddSubExtendedFMask) == AddSubExtendedFixed;
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   bool IsAddSubCapImmediate() const {
     return Mask(AddSubCapImmediateFMask) == AddSubCapImmediateFixed;
   }
@@ -271,7 +271,7 @@ class Instruction {
   bool IsAddSubCapExtended() const {
     return Mask(AddSubCapExtendedFMask) == AddSubCapExtendedFixed;
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Match any loads or stores, including pairs.
   bool IsLoadOrStore() const {
@@ -291,12 +291,12 @@ class Instruction {
     //  Add/sub (extended) when not setting the flags.
     //  Logical (immediate) when not setting the flags.
     // Otherwise, r31 is the zero register.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     if (IsAddSubImmediate() || IsAddSubExtended() || IsAddSubCapImmediate() ||
         IsAddSubCapExtended()) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     if (IsAddSubImmediate() || IsAddSubExtended()) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       if (Mask(AddSubSetFlagsBit)) {
         return Reg31IsZeroRegister;
       } else {
@@ -325,12 +325,12 @@ class Instruction {
     //  Add/sub (immediate).
     //  Add/sub (extended).
     // Otherwise, r31 is the zero register.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     if (IsLoadOrStore() || IsAddSubImmediate() || IsAddSubExtended() ||
         IsAddSubCapImmediate() || IsAddSubCapExtended()) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     if (IsLoadOrStore() || IsAddSubImmediate() || IsAddSubExtended()) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       return Reg31IsStackPointer;
     }
     return Reg31IsZeroRegister;
@@ -496,7 +496,7 @@ class Instruction {
   }
 
   V8_INLINE ptrdiff_t DistanceTo(Instruction* target) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     // If PSTATE.C64 = 1: The current instruction set if C64
     // PSTATE.C64 = Capability Value[0]
     const ptraddr_t c64_bitmask = 0x1;
@@ -504,7 +504,7 @@ class Instruction {
       reinterpret_cast<Address>(this);
 #else
     return reinterpret_cast<Address>(target) - reinterpret_cast<Address>(this);
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif
   }
 
   static const int ImmPCRelRangeBitwidth = 21;
@@ -555,9 +555,9 @@ const unsigned kPrintfMaxArgCount = 4;
 enum PrintfArgPattern {
   kPrintfArgW = 1,
   kPrintfArgX = 2,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   kPrintfArgC = 2,
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   // There is no kPrintfArgS because floats are always converted to doubles in C
   // varargs calls.
   kPrintfArgD = 3

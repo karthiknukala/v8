@@ -56,10 +56,10 @@ enum class DeoptimizationLiteralKind {
   kNumber,
   kSignedBigInt64,
   kUnsignedBigInt64,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   kSignedIntPtr,
   kUnsignedIntPtr,
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
   kInvalid
 };
 
@@ -80,14 +80,16 @@ class DeoptimizationLiteral {
   explicit DeoptimizationLiteral(uint64_t unsigned_bigint64)
       : kind_(DeoptimizationLiteralKind::kUnsignedBigInt64),
         unsigned_bigint64_(unsigned_bigint64) {}
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
+  // Since we require V8_TARGET_CHERI to only be defined if sizeof(void*) > 8,
+  // these constructors shouldn't conflict with the uint64_t and int64_t ones.
   explicit DeoptimizationLiteral(intptr_t signed_intptr)
       : kind_(DeoptimizationLiteralKind::kSignedIntPtr),
         signed_intptr_(signed_intptr) {}
   explicit DeoptimizationLiteral(uintptr_t unsigned_intptr)
       : kind_(DeoptimizationLiteralKind::kUnsignedIntPtr),
         unsigned_intptr_(unsigned_intptr) {}
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 
   Handle<Object> object() const { return object_; }
 
@@ -105,12 +107,12 @@ class DeoptimizationLiteral {
         return signed_bigint64_ == other.signed_bigint64_;
       case DeoptimizationLiteralKind::kUnsignedBigInt64:
         return unsigned_bigint64_ == other.unsigned_bigint64_;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       case DeoptimizationLiteralKind::kSignedIntPtr:
         return signed_intptr_ == other.signed_intptr_;
       case DeoptimizationLiteralKind::kUnsignedIntPtr:
         return unsigned_intptr_ == other.unsigned_intptr_;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
       case DeoptimizationLiteralKind::kInvalid:
         return true;
     }
@@ -136,10 +138,10 @@ class DeoptimizationLiteral {
     double number_;
     int64_t signed_bigint64_;
     uint64_t unsigned_bigint64_;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     intptr_t signed_intptr_;
     uintptr_t unsigned_intptr_;
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
   };
 };
 

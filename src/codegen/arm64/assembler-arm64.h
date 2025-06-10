@@ -49,19 +49,19 @@ class Immediate {
   template <typename T>
   inline Immediate(T value, RelocInfo::Mode rmode);
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   intptr_t value() const { return value_; }
 #else
   int64_t value() const { return value_; }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   RelocInfo::Mode rmode() const { return rmode_; }
 
  private:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   intptr_t value_;
 #else
   int64_t value_;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   RelocInfo::Mode rmode_;
 };
 
@@ -115,17 +115,15 @@ class Operand {
   // Returns new Operand adapted for using with W registers.
   inline Operand ToW() const;
   inline Operand ToX() const;
-#ifdef __CHERI_PURE_CAPABILITY__
   inline Operand ToC() const;
   inline bool IsC() const;
-#endif  // __CHERI_PURE_CAPABILITY__
 
   inline Immediate immediate() const;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   inline intptr_t ImmediateValue() const;
 #else
   inline int64_t ImmediateValue() const;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   inline RelocInfo::Mode ImmediateRMode() const;
   inline Register reg() const;
   inline Shift shift() const;
@@ -821,7 +819,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // Store integer or FP register.
   void str(const CPURegister& rt, const MemOperand& dst);
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   // Conditional select: cd = cond ? cn : cm.
   void cselc(const Register& cd, const Register& cn, const Register& cm,
             Condition cond);
@@ -859,7 +857,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // Seal a capability using an immediate form.
   void seal(const Register& cd, const Register& cn,
             Cheri::SealImmediateForm form);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Load word with sign extension.
   void ldrsw(const Register& rt, const MemOperand& src);
@@ -902,27 +900,27 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Load-acquire word.
   void ldar(const Register& rt, const Register& rn);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void ldar_c(const Register& ct, const Register& rn);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Load-acquire exclusive word.
   void ldaxr(const Register& rt, const Register& rn);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void ldaxr_c(const Register& ct, const Register& cn);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Store-release word.
   void stlr(const Register& rt, const Register& rn);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void stlr_c(const Register& ct, const Register& cn);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Store-release exclusive word.
   void stlxr(const Register& rs, const Register& rt, const Register& rn);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void stlxr_c(const Register& rs, const Register& ct, const Register& cn);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Load-acquire byte.
   void ldarb(const Register& rt, const Register& rn);
@@ -950,30 +948,30 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Compare and Swap word or doubleword in memory [Armv8.1].
   void cas(const Register& rs, const Register& rt, const MemOperand& src);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void cas_c(const Register& cs, const Register& ct, const MemOperand& src);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Compare and Swap word or doubleword in memory, with Load-acquire semantics
   // [Armv8.1].
   void casa(const Register& rs, const Register& rt, const MemOperand& src);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void casa_c(const Register& cs, const Register& ct, const MemOperand& src);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Compare and Swap word or doubleword in memory, with Store-release semantics
   // [Armv8.1].
   void casl(const Register& rs, const Register& rt, const MemOperand& src);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void casl_c(const Register& cs, const Register& ct, const MemOperand& src);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Compare and Swap word or doubleword in memory, with Load-acquire and
   // Store-release semantics [Armv8.1].
   void casal(const Register& rs, const Register& rt, const MemOperand& src);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void casal_c(const Register& cs, const Register& ct, const MemOperand& src);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Compare and Swap byte in memory [Armv8.1].
   void casb(const Register& rs, const Register& rt, const MemOperand& src);
@@ -1558,9 +1556,9 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // [Armv8.1]
   void swpalb(const Register& rs, const Register& rt, const MemOperand& src);
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void swpa_c(const Register& cs, const Register& ct, const MemOperand& src);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Swap halfword in memory [Armv8.1]
   void swph(const Register& rs, const Register& rt, const MemOperand& src);
@@ -1588,9 +1586,9 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // semantics [Armv8.1]
   void swpal(const Register& rs, const Register& rt, const MemOperand& src);
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void swp_c(const Register& cs, const Register& ct, const MemOperand& src);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Move instructions. The default shift of -1 indicates that the move
   // instruction will calculate an appropriate 16-bit immediate and left shift
@@ -2870,7 +2868,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     return (rn.code() & kRegCodeMask) << Rn_offset;
   }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   static Instr CdCSP(Register cd) {
     DCHECK(!cd.IsZero());
     return (cd.code() & kRegCodeMask) << Cd_offset;
@@ -2917,7 +2915,16 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     DCHECK_NE(cs.code(), kSPRegInternalCode);
     return cs.code() << Cs_offset;
   }
-#endif // __CHERI_PURE_CAPABILITY__
+#else
+  static Instr CdCSP(Register cd) { return RdSP(cd); }
+  static Instr CnCSP(Register cn) { return RnSP(cn); }
+  static Instr Cd(CPURegister cd) { return Rd(cd); }
+  static Instr Cn(CPURegister cn) { return Rn(cn); }
+  static Instr Cm(CPURegister cm) { return Rm(cm); }
+  static Instr Ct(CPURegister ct) { return Rt(ct); }
+  static Instr Ct2(CPURegister ct) { return Rt2(ct); }
+  static Instr Cs(CPURegister cs) { return Rs(cs); }
+#endif
 
   // Flags encoding.
   inline static Instr Flags(FlagsUpdate S);
@@ -2940,7 +2947,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline static Instr ImmR(unsigned immr, unsigned reg_size);
   inline static Instr ImmSetBits(unsigned imms, unsigned reg_size);
   inline static Instr ImmRotate(unsigned immr, unsigned reg_size);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   inline static Instr ImmSealForm(Cheri::SealImmediateForm form);
   inline static Instr AlignImmLiteral(int imm6);
   inline static Instr CImmLLiteral(int imm17);
@@ -2970,11 +2977,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline static Instr ImmBarrierType(int imm2);
   inline static unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap = false);
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   static bool IsImmAddSubCapability(int64_t immediate);
-
   inline static Instr ImmAddSubCapability(int imm);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Instruction bits for vector format in data processing operations.
   static Instr VFormat(VRegister vd) {
@@ -3135,9 +3141,9 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   static bool IsImmLSUnscaled(int64_t offset);
   static bool IsImmLSScaled(int64_t offset, unsigned size);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   static bool IsCImmLLiteral(int64_t offset);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   static bool IsImmLLiteral(int64_t offset);
 
   // Move immediates encoding.
@@ -3233,10 +3239,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline const Register& AppropriateZeroRegFor(const CPURegister& reg) const;
 
   void LoadStore(const CPURegister& rt, const MemOperand& addr, LoadStoreOp op);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   void LoadStorePairCap(const Register& rt, const Register& rt2,
                         const MemOperand& addr, LoadStorePairOp op);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   void LoadStorePair(const CPURegister& rt, const CPURegister& rt2,
                      const MemOperand& addr, LoadStorePairOp op);
   void LoadStoreStruct(const VRegister& vt, const MemOperand& addr,

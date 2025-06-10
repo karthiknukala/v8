@@ -16,11 +16,11 @@
 
 namespace v8::internal::compiler::turboshaft {
 // Operations are stored in possibly muliple sequential storage slots.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 using OperationStorageSlot = std::aligned_storage_t<16, 16>;
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
 using OperationStorageSlot = std::aligned_storage_t<8, 8>;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 // Operations occupy at least 2 slots, therefore we assign one id per two slots.
 constexpr size_t kSlotsPerId = 2;
 
@@ -92,20 +92,20 @@ struct Any {};
 template <size_t Bits>
 struct WordWithBits : public Any {
   static constexpr int bits = Bits;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   static_assert(Bits == 32 || Bits == 64 || Bits == 128);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   static_assert(Bits == 32 || Bits == 64);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 };
 
 using Word32 = WordWithBits<32>;
 using Word64 = WordWithBits<64>;
 using WordPtr = std::conditional_t<Is64(), Word64, Word32>;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 static_assert(kSystemPointerSize == 16);
 using Capability64 = WordWithBits<128>;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 template <size_t Bits>
 struct FloatWithBits : public Any {  // FloatAny {
@@ -182,7 +182,7 @@ struct v_traits<Word64> {
                            std::is_same_v<U, Word32>> {};
 };
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 template <>
 struct v_traits<Capability64> {
   static constexpr bool is_abstract_tag = true;
@@ -196,7 +196,7 @@ struct v_traits<Capability64> {
   struct implicitly_convertible_to
       : std::bool_constant<std::is_base_of_v<U, Capability64>> {};
 };
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 template <>
 struct v_traits<Float32> {

@@ -34,10 +34,10 @@ class CommonNodeCache final {
         heap_constants_(zone),
         relocatable_int32_constants_(zone),
         relocatable_int64_constants_(zone)
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
         ,
         relocatable_cap64_constants_(zone)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   {
   }
   ~CommonNodeCache() = default;
@@ -88,12 +88,12 @@ class CommonNodeCache final {
     return relocatable_int64_constants_.Find(std::make_pair(value, rmode));
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node** FindRelocatableCapability64Constant(intptr_t value,
                                              RelocInfoMode rmode) {
     return relocatable_cap64_constants_.Find(std::make_pair(value, rmode));
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Return all nodes from the cache.
   void GetCachedNodes(ZoneVector<Node*>* nodes);
@@ -110,9 +110,9 @@ class CommonNodeCache final {
   IntPtrNodeCache heap_constants_;
   RelocInt32NodeCache relocatable_int32_constants_;
   RelocInt64NodeCache relocatable_int64_constants_;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   RelocCapability64NodeCache relocatable_cap64_constants_;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 };
 
 }  // namespace compiler

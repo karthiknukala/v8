@@ -54,20 +54,12 @@ inline CPURegister GetRegFromType(const LiftoffRegister& reg, ValueKind kind) {
   switch (kind) {
     case kI32:
       return reg.gp().W();
-#ifdef __CHERI_PURE_CAPABILITY__
     case kI64:
       return reg.gp().X();
     case kRef:
     case kRefNull:
     case kRtt:
       return reg.gp().C();
-#else   // !__CHERI_PURE_CAPABILITY__
-    case kI64:
-    case kRef:
-    case kRefNull:
-    case kRtt:
-      return reg.gp().X();
-#endif  // __CHERI_PURE_CAPABILITY__
     case kF32:
       return reg.fp().S();
     case kF64:
@@ -81,11 +73,7 @@ inline CPURegister GetRegFromType(const LiftoffRegister& reg, ValueKind kind) {
 
 inline CPURegList PadRegList(RegList list) {
   if ((list.Count() & 1) != 0) list.set(padreg);
-#ifdef __CHERI_PURE_CAPABILITY__
   return CPURegList(kCRegSizeInBits, list);
-#else   // !__CHERI_PURE_CAPABILITY__
-  return CPURegList(kXRegSizeInBits, list);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 inline CPURegList PadVRegList(DoubleRegList list) {
@@ -98,18 +86,11 @@ inline CPURegister AcquireByType(UseScratchRegisterScope* temps,
   switch (kind) {
     case kI32:
       return temps->AcquireW();
-#ifdef __CHERI_PURE_CAPABILITY__
     case kI64:
       return temps->AcquireX();
     case kRef:
     case kRefNull:
       return temps->AcquireC();
-#else   // !__CHERI_PURE_CAPABILITY__
-    case kI64:
-    case kRef:
-    case kRefNull:
-      return temps->AcquireX();
-#endif  // __CHERI_PURE_CAPABILITY__
     case kF32:
       return temps->AcquireS();
     case kF64:
@@ -126,7 +107,7 @@ inline MemOperand GetMemOp(LiftoffAssembler* assm,
                            UseScratchRegisterScope* temps, Register addr,
                            Register offset, T offset_imm,
                            bool i64_offset = false, unsigned shift_amount = 0) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK(addr.IsC());
   if (!offset.is_valid()) return MemOperand(addr, offset_imm);
   Register effective_addr = addr;
@@ -141,7 +122,7 @@ inline MemOperand GetMemOp(LiftoffAssembler* assm,
     effective_addr = temps->AcquireX();
     assm->Add(effective_addr, addr.X(), offset_imm);
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   return i64_offset
              ? MemOperand(effective_addr, offset.X(), LSL, shift_amount)
              : MemOperand(effective_addr, offset.W(), UXTW, shift_amount);
@@ -157,12 +138,8 @@ inline Register GetEffectiveAddress(LiftoffAssembler* assm,
                                     uintptr_t offset_imm,
                                     bool i64_offset = false) {
   if (!offset.is_valid() && offset_imm == 0) return addr;
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(addr.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, addr.IsC());
   Register tmp = temps->AcquireC();
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register tmp = temps->AcquireX();
-#endif  // __CHERI_PURE_CAPABILITY__
   if (offset.is_valid()) {
     assm->Add(tmp, addr, i64_offset ? Operand(offset) : Operand(offset, UXTW));
     addr = tmp;
@@ -250,11 +227,7 @@ int LiftoffAssembler::PrepareStackFrame() {
   // how big the stack frame will be so we just emit a placeholder instruction.
   // PatchPrepareStackFrame will patch this in order to increase the stack
   // appropriately.
-#ifdef __CHERI_PURE_CAPABILITY__
   sub(csp, csp, 0);
-#else   // !__CHERI_PURE_CAPABILITY__
-  sub(sp, sp, 0);
-#endif  // __CHERI_PURE_CAPABILITY__
   return offset;
 }
 
@@ -277,7 +250,6 @@ void LiftoffAssembler::CallFrameSetupStub(int declared_function_index) {
 void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
                                        int stack_param_delta) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
   temps.Exclude(c16, c17);
 
   // This is the previous stack pointer value (before we push the lr and the
@@ -287,7 +259,13 @@ void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
 
   // Load the fp and lr of the old frame, they will be pushed in the new frame
   // during the actual call.
+#ifdef V8_ENABLE_CONTROL_FLOW_INTEGRITY
+  Ldp(fp, c17, MemOperand(fp));
+  Autib1716();
+  Mov(lr, c17);
+#else
   Ldp(fp, lr, MemOperand(fp));
+#endif
 
   temps.Include(c17);
 
@@ -302,38 +280,6 @@ void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
 
   // Set the new stack pointer.
   Sub(csp, c16, stack_param_delta * kSystemPointerSize);
-#else  // !__CHERI_PURE_CAPABILITY__
-  temps.Exclude(x16, x17);
-
-  // This is the previous stack pointer value (before we push the lr and the
-  // fp). We need to keep it to autenticate the lr and adjust the new stack
-  // pointer afterwards.
-  Add(x16, fp, 16);
-
-  // Load the fp and lr of the old frame, they will be pushed in the new frame
-  // during the actual call.
-#ifdef V8_ENABLE_CONTROL_FLOW_INTEGRITY
-  Ldp(fp, x17, MemOperand(fp));
-  Autib1716();
-  Mov(lr, x17);
-#else
-  Ldp(fp, lr, MemOperand(fp));
-#endif
-
-  temps.Include(x17);
-
-  Register scratch = temps.AcquireX();
-
-  // Shift the whole frame upwards, except for fp and lr.
-  int slot_count = num_callee_stack_params;
-  for (int i = slot_count - 1; i >= 0; --i) {
-    ldr(scratch, MemOperand(sp, i * 8));
-    str(scratch, MemOperand(x16, (i - stack_param_delta) * 8));
-  }
-
-  // Set the new stack pointer.
-  Sub(sp, x16, stack_param_delta * 8);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::AlignFrameSize() {
@@ -342,13 +288,8 @@ void LiftoffAssembler::AlignFrameSize() {
   // anymore.
   int frame_size = GetTotalFrameSize() - 2 * kSystemPointerSize;
 
-#ifdef __CHERI_PURE_CAPABILITY__
   static_assert(kStackSlotSize == kCRegSize,
                 "kStackSlotSize must equal kCRegSize");
-#else   // !__CHERI_PURE_CAPABILITY__
-  static_assert(kStackSlotSize == kXRegSize,
-                "kStackSlotSize must equal kXRegSize");
-#endif  // __CHERI_PURE_CAPABILITY__
 
   // The stack pointer is required to be quadword aligned.
   // Misalignment will cause a stack alignment fault.
@@ -412,21 +353,12 @@ void LiftoffAssembler::PatchPrepareStackFrame(
   Label continuation;
   if (frame_size < v8_flags.stack_size * 1024) {
     UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
     Register stack_limit = temps.AcquireC();
     Ldr(stack_limit,
         FieldMemOperand(kWasmInstanceRegister,
                         WasmInstanceObject::kRealStackLimitAddressOffset));
     Ldr(stack_limit, MemOperand(stack_limit));
     Add(stack_limit, stack_limit, Operand(frame_size));
-#else   // !__CHERI_PURE_CAPABILITY__
-    Register stack_limit = temps.AcquireX();
-    Ldr(stack_limit,
-        FieldMemOperand(kWasmInstanceRegister,
-                        WasmInstanceObject::kRealStackLimitAddressOffset));
-    Ldr(stack_limit, MemOperand(stack_limit));
-    Add(stack_limit, stack_limit, Operand(frame_size));
-#endif  // __CHERI_PURE_CAPABILITY__
     Cmp(sp, stack_limit);
     B(hs /* higher or same */, &continuation);
   }
@@ -473,13 +405,15 @@ bool LiftoffAssembler::NeedsAlignment(ValueKind kind) {
   return kind == kS128 || is_reference(kind);
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 void LiftoffAssembler::LoadCapabilityConstant(LiftoffRegister reg,
                                               uintptr_t value) {
+#ifdef __CHERI_PURE_CAPABILITY__
   DCHECK(V8_CHERI_TAG_GET(value));
+#endif  // __CHERI_PURE_CAPABILITY__
   Ldr(reg.gp().C(), value);
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value) {
   switch (value.type().kind()) {
@@ -501,18 +435,14 @@ void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value) {
 }
 
 void LiftoffAssembler::LoadInstanceFromFrame(Register dst) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
   Ldr(dst, liftoff::GetInstanceOperand());
 }
 
 void LiftoffAssembler::LoadFromInstance(Register dst, Register instance,
                                         int offset, int size) {
   DCHECK_LE(0, offset);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(instance.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, instance.IsC());
   MemOperand src{instance, offset};
   switch (size) {
     case 1:
@@ -524,11 +454,11 @@ void LiftoffAssembler::LoadFromInstance(Register dst, Register instance,
     case 8:
       Ldr(dst.X(), src);
       break;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case 16:
       Ldr(dst.C(), src);
       break;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif  // V8_TARGET_CHERI
     default:
       UNIMPLEMENTED();
   }
@@ -538,30 +468,22 @@ void LiftoffAssembler::LoadTaggedPointerFromInstance(Register dst,
                                                      Register instance,
                                                      int offset) {
   DCHECK_LE(0, offset);
-#ifdef __CHERI_PURE_CAPABILITY__
-  if (!COMPRESS_POINTERS_BOOL) {
-    DCHECK(dst.IsC());
-  }
-  DCHECK(instance.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL, dst.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, instance.IsC());
   LoadTaggedField(dst, MemOperand{instance, offset});
 }
 
 void LiftoffAssembler::LoadExternalPointer(Register dst, Register instance,
                                            int offset, ExternalPointerTag tag,
                                            Register /* scratch */) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst.IsC());
-  DCHECK(instance.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, instance.IsC());
   LoadExternalPointerField(dst, FieldMemOperand(instance, offset), tag,
                            kRootRegister);
 }
 
 void LiftoffAssembler::SpillInstance(Register instance) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(instance.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, instance.IsC());
   Str(instance, liftoff::GetInstanceOperand());
 }
 
@@ -571,35 +493,21 @@ void LiftoffAssembler::LoadTaggedPointer(Register dst, Register src_addr,
                                          Register offset_reg,
                                          int32_t offset_imm, bool needs_shift) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
   unsigned shift_amount = !needs_shift             ? 0
                           : COMPRESS_POINTERS_BOOL ? 2
                                                    : kSystemPointerSizeLog2;
-#else   // !__CHERI_PURE_CAPABILITY__
-  unsigned shift_amount = !needs_shift ? 0 : COMPRESS_POINTERS_BOOL ? 2 : 3;
-#endif  // __CHERI_PURE_CAPABILITY__
   MemOperand src_op = liftoff::GetMemOp(this, &temps, src_addr, offset_reg,
                                         offset_imm, false, shift_amount);
-#ifdef __CHERI_PURE_CAPABILITY__
-  if (!COMPRESS_POINTERS_BOOL) {
-    DCHECK(dst.IsC());
-  }
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL, dst.IsC());
   LoadTaggedField(dst, src_op);
 }
 
 void LiftoffAssembler::LoadFullPointer(Register dst, Register src_addr,
                                        int32_t offset_imm) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
   MemOperand src_op =
       liftoff::GetMemOp(this, &temps, src_addr.C(), no_reg, offset_imm);
   Ldr(dst.C(), src_op);
-#else   // !__CHERI_PURE_CAPABILITY__
-  MemOperand src_op =
-      liftoff::GetMemOp(this, &temps, src_addr, no_reg, offset_imm);
-  Ldr(dst.X(), src_op);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
@@ -609,9 +517,7 @@ void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
                                           LiftoffRegList /* pinned */,
                                           SkipWriteBarrier skip_write_barrier) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst_addr.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst_addr.IsC());
   Operand offset_op = offset_reg.is_valid() ? Operand(offset_reg.W(), UXTW)
                                             : Operand(offset_imm);
   // For the write barrier (below), we cannot have both an offset register and
@@ -622,15 +528,15 @@ void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
     Add(effective_offset.W(), offset_reg.W(), offset_imm);
     offset_op = effective_offset;
   }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   if (COMPRESS_POINTERS_BOOL) {
     StoreTaggedField(src.gp(), MemOperand(dst_addr, offset_op));
   } else {
     StoreTaggedField(src.gp().C(), MemOperand(dst_addr, offset_op));
   }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   StoreTaggedField(src.gp(), MemOperand(dst_addr.X(), offset_op));
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   if (skip_write_barrier || v8_flags.disable_write_barriers) return;
 
@@ -639,7 +545,7 @@ void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
   CheckPageFlag(dst_addr, MemoryChunk::kPointersFromHereAreInterestingMask,
                 kZero, &exit);
   JumpIfSmi(src.gp(), &exit);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   // FIXME(ds815): This is probably not going to work with pointer compression
   // enabled, because src isn't actually a valid pointer.
   CheckPageFlag(src.gp().C(), MemoryChunk::kPointersToHereAreInterestingMask,
@@ -647,13 +553,13 @@ void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
 #else
   CheckPageFlag(src.gp(), MemoryChunk::kPointersToHereAreInterestingMask, eq,
                 &exit);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   CallRecordWriteStubSaveRegisters(dst_addr, offset_op, SaveFPRegsMode::kSave,
                                    StubCallMode::kCallWasmRuntimeStub);
   bind(&exit);
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 void LiftoffAssembler::LoadCapability(LiftoffRegister dst, Register src_addr,
                                       Register offset_reg, uintptr_t offset_imm,
                                       uint32_t* protected_load_pc,
@@ -679,7 +585,7 @@ void LiftoffAssembler::StoreCapability(
   if (protected_store_pc) *protected_store_pc = pc_offset();
   Str(src.gp().C(), dst_op);
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
                             Register offset_reg, uintptr_t offset_imm,
@@ -688,13 +594,8 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
                             bool needs_shift) {
   UseScratchRegisterScope temps(this);
   unsigned shift_amount = needs_shift ? type.size_log_2() : 0;
-#ifdef __CHERI_PURE_CAPABILITY__
   MemOperand src_op = liftoff::GetMemOp(this, &temps, src_addr.C(), offset_reg,
                                         offset_imm, i64_offset, shift_amount);
-#else   // !__CHERI_PURE_CAPABILITY__
-  MemOperand src_op = liftoff::GetMemOp(this, &temps, src_addr, offset_reg,
-                                        offset_imm, i64_offset, shift_amount);
-#endif  // __CHERI_PURE_CAPABILITY__
   if (protected_load_pc) *protected_load_pc = pc_offset();
   switch (type.value()) {
     case LoadType::kI32Load8U:
@@ -745,13 +646,8 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
                              uint32_t* protected_store_pc,
                              bool /* is_store_mem */, bool i64_offset) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
   MemOperand dst_op = liftoff::GetMemOp(this, &temps, dst_addr.C(), offset_reg,
                                         offset_imm, i64_offset);
-#else   // !__CHERI_PURE_CAPABILITY__
-  MemOperand dst_op = liftoff::GetMemOp(this, &temps, dst_addr, offset_reg,
-                                        offset_imm, i64_offset);
-#endif  // __CHERI_PURE_CAPABILITY__
   if (protected_store_pc) *protected_store_pc = pc_offset();
   switch (type.value()) {
     case StoreType::kI32Store8:
@@ -790,10 +686,8 @@ inline Register CalculateActualAddress(LiftoffAssembler* lasm,
                                        Register result_reg) {
   DCHECK_NE(offset_reg, no_reg);
   DCHECK_NE(addr_reg, no_reg);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(addr_reg.IsC());
-  DCHECK(result_reg.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, addr_reg.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, result_reg.IsC());
   __ Add(result_reg, addr_reg, Operand(offset_reg));
   if (offset_imm != 0) {
     __ Add(result_reg, result_reg, Operand(offset_imm));
@@ -807,9 +701,7 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
                         Register offset_reg, uintptr_t offset_imm,
                         LiftoffRegister value, LiftoffRegister result,
                         StoreType type, Binop op) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst_addr.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst_addr.IsC());
   LiftoffRegList pinned{dst_addr, offset_reg, value, result};
   Register store_result = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
 
@@ -818,13 +710,8 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
          result.gp() != offset_reg);
 
   UseScratchRegisterScope temps(lasm);
-#ifdef __CHERI_PURE_CAPABILITY__
   Register actual_addr = liftoff::CalculateActualAddress(
       lasm, dst_addr, offset_reg, offset_imm, temps.AcquireC());
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register actual_addr = liftoff::CalculateActualAddress(
-      lasm, dst_addr, offset_reg, offset_imm, temps.AcquireX());
-#endif  // __CHERI_PURE_CAPABILITY__
 
   if (CpuFeatures::IsSupported(LSE)) {
     CpuFeatureScope scope(lasm, LSE);
@@ -1012,14 +899,9 @@ void LiftoffAssembler::AtomicLoad(LiftoffRegister dst, Register src_addr,
                                   LoadType type, LiftoffRegList /* pinned */,
                                   bool /* i64_offset */) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(src_addr.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, src_addr.IsC());
   Register src_reg = liftoff::CalculateActualAddress(
       this, src_addr, offset_reg, offset_imm, temps.AcquireC());
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register src_reg = liftoff::CalculateActualAddress(
-      this, src_addr, offset_reg, offset_imm, temps.AcquireX());
-#endif  // __CHERI_PURE_CAPABILITY__
   switch (type.value()) {
     case LoadType::kI32Load8U:
     case LoadType::kI64Load8U:
@@ -1046,14 +928,9 @@ void LiftoffAssembler::AtomicStore(Register dst_addr, Register offset_reg,
                                    StoreType type, LiftoffRegList /* pinned */,
                                    bool /* i64_offset */) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst_addr.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst_addr.IsC());
   Register dst_reg = liftoff::CalculateActualAddress(
       this, dst_addr, offset_reg, offset_imm, temps.AcquireC());
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register dst_reg = liftoff::CalculateActualAddress(
-      this, dst_addr, offset_reg, offset_imm, temps.AcquireX());
-#endif  // __CHERI_PURE_CAPABILITY__
   switch (type.value()) {
     case StoreType::kI64Store8:
     case StoreType::kI32Store8:
@@ -1128,9 +1005,7 @@ void LiftoffAssembler::AtomicCompareExchange(
     Register dst_addr, Register offset_reg, uintptr_t offset_imm,
     LiftoffRegister expected, LiftoffRegister new_value, LiftoffRegister result,
     StoreType type, bool /* i64_offset */) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst_addr.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst_addr.IsC());
   LiftoffRegList pinned{dst_addr, offset_reg, expected, new_value};
 
   Register result_reg = result.gp();
@@ -1140,13 +1015,8 @@ void LiftoffAssembler::AtomicCompareExchange(
 
   UseScratchRegisterScope temps(this);
 
-#ifdef __CHERI_PURE_CAPABILITY__
   Register actual_addr = liftoff::CalculateActualAddress(
       this, dst_addr, offset_reg, offset_imm, temps.AcquireC());
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register actual_addr = liftoff::CalculateActualAddress(
-      this, dst_addr, offset_reg, offset_imm, temps.AcquireX());
-#endif  // __CHERI_PURE_CAPABILITY__
 
   if (CpuFeatures::IsSupported(LSE)) {
     CpuFeatureScope scope(this, LSE);
@@ -1234,46 +1104,34 @@ void LiftoffAssembler::LoadCallerFrameSlot(LiftoffRegister dst,
                                            uint32_t caller_slot_idx,
                                            ValueKind kind) {
   int32_t offset = (caller_slot_idx + 1) * LiftoffAssembler::kStackSlotSize;
-#ifdef __CHERI_PURE_CAPABILITY__
   CPURegister cpu_reg = liftoff::GetRegFromType(dst, kind);
   if (cpu_reg.IsRegister()) {
     Ldr(cpu_reg.C(), MemOperand(fp, offset));
   } else {
     Ldr(cpu_reg, MemOperand(fp, offset));
   }
-#else   // !__CHERI_PURE_CAPABILITY__
-  Ldr(liftoff::GetRegFromType(dst, kind), MemOperand(fp, offset));
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::StoreCallerFrameSlot(LiftoffRegister src,
                                             uint32_t caller_slot_idx,
                                             ValueKind kind) {
   int32_t offset = (caller_slot_idx + 1) * LiftoffAssembler::kStackSlotSize;
-#ifdef __CHERI_PURE_CAPABILITY__
   CPURegister cpu_reg = liftoff::GetRegFromType(src, kind);
   if (cpu_reg.IsRegister()) {
     Str(cpu_reg.C(), MemOperand(fp, offset));
   } else {
     Str(cpu_reg, MemOperand(fp, offset));
   }
-#else   // !__CHERI_PURE_CAPABILITY__
-  Str(liftoff::GetRegFromType(src, kind), MemOperand(fp, offset));
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::LoadReturnStackSlot(LiftoffRegister dst, int offset,
                                            ValueKind kind) {
-#ifdef __CHERI_PURE_CAPABILITY__
   CPURegister cpu_reg = liftoff::GetRegFromType(dst, kind);
   if (cpu_reg.IsRegister()) {
     Ldr(cpu_reg.C(), MemOperand(csp, offset));
   } else {
     Ldr(cpu_reg, MemOperand(csp, offset));
   }
-#else   // !__CHERI_PURE_CAPABILITY__
-  Ldr(liftoff::GetRegFromType(dst, kind), MemOperand(sp, offset));
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::MoveStackValue(uint32_t dst_offset, uint32_t src_offset,
@@ -1289,11 +1147,7 @@ void LiftoffAssembler::Move(Register dst, Register src, ValueKind kind) {
     Mov(dst.W(), src.W());
   } else {
     DCHECK(kI64 == kind || is_reference(kind));
-#ifdef __CHERI_PURE_CAPABILITY__
     Mov(dst.C(), src.C());
-#else   // !__CHERI_PURE_CAPABILITY__
-    Mov(dst.X(), src.X());
-#endif  // __CHERI_PURE_CAPABILITY__
   }
 }
 
@@ -1346,7 +1200,6 @@ void LiftoffAssembler::Spill(int offset, WasmValue value) {
 
 void LiftoffAssembler::Fill(LiftoffRegister reg, int offset, ValueKind kind) {
   MemOperand src = liftoff::GetStackSlot(offset);
-#ifdef __CHERI_PURE_CAPABILITY__
   CPURegister cpu_reg = liftoff::GetRegFromType(reg, kind);
   if (cpu_reg.IsRegister()) {
     Ldr(cpu_reg.C(), src);
@@ -1354,9 +1207,6 @@ void LiftoffAssembler::Fill(LiftoffRegister reg, int offset, ValueKind kind) {
     // Not a general purpose register, don't cast it to a capability register.
     Ldr(cpu_reg, src);
   }
-#else   // !__CHERI_PURE_CAPABILITY__
-  Ldr(liftoff::GetRegFromType(reg, kind), src);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::FillI64Half(Register, int offset, RegPairHalf) {
@@ -1376,39 +1226,29 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
   // happen when a function has many params (>=32 i64), str cannot be encoded
   // properly. We can use Str, which will generate more instructions, so
   // fallback to the general case below.
-#ifdef __CHERI_PURE_CAPABILITY__
   if (size <= 12 * kStackSlotSize &&
       IsImmLSPair(max_stp_offset, kCRegSizeLog2) &&
       IsImmLSUnscaled(-start - 12)) {
-#else
-  if (size <= 12 * kStackSlotSize &&
-      IsImmLSPair(max_stp_offset, kXRegSizeLog2) &&
-      IsImmLSUnscaled(-start - 12)) {
-#endif  // __CHERI_PURE_CAPABILITY__
     // Special straight-line code for up to 12 slots. Generates one
     // instruction per two slots (<= 7 instructions total).
     static_assert(kStackSlotSize == kSystemPointerSize);
     uint32_t remainder = size;
     for (; remainder >= 2 * kStackSlotSize; remainder -= 2 * kStackSlotSize) {
-#ifdef __CHERI_PURE_CAPABILITY__
       // Use czr here to trap on invalid alignment as early as possible.
       stp(czr, czr, liftoff::GetStackSlot(start + remainder));
-#else   // !__CHERI_PURE_CAPABILITY__
-      stp(xzr, xzr, liftoff::GetStackSlot(start + remainder));
-#endif  // __CHERI_PURE_CAPABILITY__
     }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     DCHECK_GE(16, remainder);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     DCHECK_GE(12, remainder);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     switch (remainder) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case 16:
         str(czr, liftoff::GetStackSlot(start + remainder));
         break;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       case 12:
         str(xzr, liftoff::GetStackSlot(start + remainder));
         str(wzr, liftoff::GetStackSlot(start + remainder - 8));
@@ -1427,11 +1267,7 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
   } else {
     // General case for bigger counts (5-8 instructions).
     UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
     Register address_reg = temps.AcquireC();
-#else
-    Register address_reg = temps.AcquireX();
-#endif  // __CHERI_PURE_CAPABILITY__
     // This {Sub} might use another temp register if the offset is too large.
     Sub(address_reg, fp, start + size);
     Register count_reg = temps.AcquireX();
@@ -1440,20 +1276,18 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
     Label loop;
     bind(&loop);
     sub(count_reg, count_reg, 1);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     str(wzr, MemOperand(address_reg, kSystemPointerSize / 4, PostIndex));
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     str(wzr, MemOperand(address_reg, kSystemPointerSize / 2, PostIndex));
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     cbnz(count_reg, &loop);
   }
 }
 
 void LiftoffAssembler::LoadSpillAddress(Register dst, int offset,
                                         ValueKind /* kind */) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
   Sub(dst, fp, offset);
 }
 
@@ -1620,31 +1454,15 @@ void LiftoffAssembler::IncrementSmi(LiftoffRegister dst, int offset) {
   if (COMPRESS_POINTERS_BOOL) {
     DCHECK(SmiValuesAre31Bits());
     Register scratch = temps.AcquireW();
-#ifdef __CHERI_PURE_CAPABILITY__
     Ldr(scratch, MemOperand(dst.gp().C(), offset));
-#else   // !__CHERI_PURE_CAPABILITY__
-    Ldr(scratch, MemOperand(dst.gp(), offset));
-#endif  // __CHERI_PURE_CAPABILITY__
     Add(scratch, scratch, Operand(Smi::FromInt(1)));
-#ifdef __CHERI_PURE_CAPABILITY__
     Str(scratch, MemOperand(dst.gp().C(), offset));
-#else   // !__CHERI_PURE_CAPABILITY__
-    Str(scratch, MemOperand(dst.gp(), offset));
-#endif  // __CHERI_PURE_CAPABILITY__
   } else {
     Register scratch = temps.AcquireX();
-#ifdef __CHERI_PURE_CAPABILITY__
     SmiUntag(scratch, MemOperand(dst.gp().C(), offset));
-#else   // !__CHERI_PURE_CAPABILITY__
-    SmiUntag(scratch, MemOperand(dst.gp(), offset));
-#endif  // __CHERI_PURE_CAPABILITY__
     Add(scratch, scratch, Operand(1));
     SmiTag(scratch);
-#ifdef __CHERI_PURE_CAPABILITY__
     Str(scratch, MemOperand(dst.gp().C(), offset));
-#else   // !__CHERI_PURE_CAPABILITY__
-    Str(scratch, MemOperand(dst.gp(), offset));
-#endif  // __CHERI_PURE_CAPABILITY__
   }
 }
 
@@ -2133,9 +1951,7 @@ void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
                                      LoadTransformationKind transform,
                                      uint32_t* protected_load_pc) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(src_addr.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, src_addr.IsC());
   MemOperand src_op =
       transform == LoadTransformationKind::kSplat
           ? MemOperand{liftoff::GetEffectiveAddress(this, &temps, src_addr,
@@ -2191,9 +2007,7 @@ void LiftoffAssembler::LoadLane(LiftoffRegister dst, LiftoffRegister src,
                                 uint8_t laneidx, uint32_t* protected_load_pc,
                                 bool i64_offset) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(addr.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, addr.IsC());
   MemOperand src_op{liftoff::GetEffectiveAddress(this, &temps, addr, offset_reg,
                                                  offset_imm, i64_offset)};
 
@@ -2222,9 +2036,7 @@ void LiftoffAssembler::StoreLane(Register dst, Register offset,
                                  uint32_t* protected_store_pc,
                                  bool i64_offset) {
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
   MemOperand dst_op{liftoff::GetEffectiveAddress(this, &temps, dst, offset,
                                                  offset_imm, i64_offset)};
   if (protected_store_pc) *protected_store_pc = pc_offset();
@@ -3733,9 +3545,7 @@ void LiftoffAssembler::emit_f64x2_qfms(LiftoffRegister dst,
 #undef EMIT_QFMOP
 
 void LiftoffAssembler::StackCheck(Label* ool_code, Register limit_address) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(limit_address.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, limit_address.IsC());
   Ldr(limit_address, MemOperand(limit_address));
   Cmp(sp, limit_address);
   B(ool_code, ls);
@@ -3804,22 +3614,22 @@ void LiftoffAssembler::CallC(const ValueKindSig* sig,
   int arg_bytes = 0;
   for (ValueKind param_kind : sig->parameters()) {
     int current_size = value_kind_size(param_kind);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     if (current_size == kSystemPointerSize) {
-      arg_bytes = ALIGN_TO_ALLOCATION_ALIGNMENT(arg_bytes);
+      arg_bytes = RoundUp<kSystemPointerSize>(arg_bytes);
     }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     Poke(liftoff::GetRegFromType(*args++, param_kind), arg_bytes);
     arg_bytes += current_size;
   }
   DCHECK_LE(arg_bytes, stack_bytes);
 
   // Pass a pointer to the buffer with the arguments to the C function.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Mov(c0, csp);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   Mov(x0, sp);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Now call the C function.
   constexpr int kNumCCallArgs = 1;
@@ -3858,9 +3668,7 @@ void LiftoffAssembler::CallIndirect(const ValueKindSig* sig,
   // For Arm64, we have more cache registers than wasm parameters. That means
   // that target will always be in a register.
   DCHECK(target.is_valid());
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(target.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, target.IsC());
   Call(target);
 }
 
@@ -3870,16 +3678,10 @@ void LiftoffAssembler::TailCallIndirect(Register target) {
   // instruction, which enforces that the jump instruction is either a "blr", or
   // a "br" with x16 or x17 as its destination.
   UseScratchRegisterScope temps(this);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(target.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, target.IsC());
   temps.Exclude(c17);
   Mov(c17, target);
   Jump(c17);
-#else   // !__CHERI_PURE_CAPABILITY__
-  temps.Exclude(x17);
-  Mov(x17, target);
-  Jump(x17);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::CallRuntimeStub(WasmCode::RuntimeStubId sid) {
@@ -3890,16 +3692,10 @@ void LiftoffAssembler::CallRuntimeStub(WasmCode::RuntimeStubId sid) {
 
 void LiftoffAssembler::AllocateStackSlot(Register addr, uint32_t size) {
   // The stack pointer is required to be quadword aligned.
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(addr.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, addr.IsC());
   size = RoundUp(size, kQuadWordSizeInBytes);
   Claim(size, 1);
-#ifdef __CHERI_PURE_CAPABILITY__
   Mov(addr, csp);
-#else   // !__CHERI_PURE_CAPABILITY__
-  Mov(addr, sp);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void LiftoffAssembler::DeallocateStackSlot(uint32_t size) {
@@ -3913,9 +3709,7 @@ void LiftoffAssembler::MaybeOSR() {}
 void LiftoffAssembler::emit_set_if_nan(Register dst, DoubleRegister src,
                                        ValueKind kind) {
   Label not_nan;
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
   if (kind == kF32) {
     Fcmp(src.S(), src.S());
     B(eq, &not_nan);  // x != x iff isnan(x)
@@ -3936,9 +3730,7 @@ void LiftoffAssembler::emit_s128_set_if_nan(Register dst, LiftoffRegister src,
                                             Register tmp_gp,
                                             LiftoffRegister tmp_s128,
                                             ValueKind lane_kind) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(dst.IsC());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
   DoubleRegister tmp_fp = tmp_s128.fp();
   if (lane_kind == kF32) {
     Fmaxv(tmp_fp.S(), src.fp().V4S());

@@ -149,13 +149,12 @@ class Arm64OperandGenerator final : public OperandGenerator {
   bool CanBeLoadStoreShiftImmediate(Node* node, MachineRepresentation rep) {
     // TODO(arm64): Load and Store on 128 bit Q registers is not supported yet.
     DCHECK_GT(MachineRepresentation::kSimd128, rep);
-#if defined(__CHERI_PURE_CAPABILITY__)
-    // TODO(gcjenkinson): Not too sure about this, needs further consideration.
+#if V8_TARGET_CHERI
     if (rep == MachineRepresentation::kCapability64) {
       return IsIntegerConstant(node) &&
              (GetIntegerConstantValue(node) == 1 + ElementSizeLog2Of(rep));
     }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif
     return IsIntegerConstant(node) &&
            (GetIntegerConstantValue(node) == ElementSizeLog2Of(rep));
   }
@@ -469,17 +468,17 @@ uint8_t GetBinopProperties(InstructionCode opcode) {
       break;
     case kArm64Add32:
     case kArm64Add:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     case kArm64AddCap:
-#endif  // defined(__CHERI_PURE_CAPABILITY__)
+#endif
       result = CanCommuteField::update(result, true);
       result = IsAddSubField::update(result, true);
       break;
     case kArm64Sub32:
     case kArm64Sub:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     case kArm64SubCap:
-#endif  // defined(__CHERI_PURE_CAPABILITY__)
+#endif
       result = IsAddSubField::update(result, true);
       break;
     case kArm64Tst32:
@@ -893,14 +892,14 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:         // Fall through.
 #endif  // V8_COMPRESS_POINTERS
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case MachineRepresentation::kCapability64:
       // On purecap uncompressed builds, any tagged value is going to be
       // represented as a capability.
       opcode = kArm64LdrCapability;
       immediate_mode = kLoadStoreImm64;
       break;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     case MachineRepresentation::kWord64:
       opcode = kArm64Ldr;
       immediate_mode = kLoadStoreImm64;
@@ -1021,7 +1020,7 @@ void InstructionSelector::VisitStore(Node* node) {
 #else
         UNREACHABLE();
 #endif
-#if !defined(__CHERI_PURE_CAPABILITY__) || defined(V8_COMPRESS_POINTERS)
+#if !V8_TARGET_CHERI || defined(V8_COMPRESS_POINTERS)
       case MachineRepresentation::kTaggedSigned:   // Fall through.
       case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:
@@ -1037,11 +1036,11 @@ void InstructionSelector::VisitStore(Node* node) {
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 2);
           opcode = kArm64StrWPair;
 #else  // !V8_COMPRESS_POINTERS
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 4);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 3);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
           opcode = kArm64StrPair;
 #endif  // V8_COMPRESS_POINTERS
         } else {
@@ -1050,7 +1049,7 @@ void InstructionSelector::VisitStore(Node* node) {
         immediate_mode =
             COMPRESS_POINTERS_BOOL ? kLoadStoreImm32 : kLoadStoreImm64;
         break;
-#endif  // !defined(__CHERI_PURE_CAPABILITY__) || defined(V8_COMPRESS_POINTERS)
+#endif
       case MachineRepresentation::kSandboxedPointer:
         CHECK(!paired);
         opcode = kArm64StrEncodeSandboxedPointer;
@@ -1065,7 +1064,7 @@ void InstructionSelector::VisitStore(Node* node) {
         opcode = kArm64StrQ;
         immediate_mode = kNoImmediate;
         break;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 #ifndef V8_COMPRESS_POINTERS
       case MachineRepresentation::kTaggedSigned:   // Fall through.
       case MachineRepresentation::kTaggedPointer:  // Fall through.
@@ -1076,7 +1075,11 @@ void InstructionSelector::VisitStore(Node* node) {
 #ifdef V8_COMPRESS_POINTERS
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 2);
 #else   // !V8_COMPRESS_POINTERS
+#if V8_TARGET_CHERI
           static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 4);
+#else
+          static_assert(ElementSizeLog2Of(MachineRepresentation::kTagged) == 3);
+#endif
 #endif  // V8_COMPRESS_POINTERS
           opcode = kArm64StrPairCapability;
         } else {
@@ -1084,7 +1087,7 @@ void InstructionSelector::VisitStore(Node* node) {
         }
         immediate_mode = kLoadStoreImm64;
         break;
-#endif //defined( __CHERI_PURE_CAPABILITY__)
+#endif
       case MachineRepresentation::kSimd256:  // Fall through.
       case MachineRepresentation::kMapWord:  // Fall through.
       case MachineRepresentation::kNone:
@@ -1112,11 +1115,11 @@ void InstructionSelector::VisitStore(Node* node) {
       case 3:
         approx_rep = MachineRepresentation::kWord64;
         break;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case 4:
         approx_rep = MachineRepresentation::kCapability64;
         break;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
       default:
         UNREACHABLE();
     }
@@ -1203,14 +1206,14 @@ void InstructionSelector::VisitSimd128ReverseBytes(Node* node) {
 }
 
 // Architecture supports unaligned access, therefore VisitLoad is used instead
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 void InstructionSelector::VisitUnalignedLoad(Node* node) {
   // FIXME(ds815): Potentially add some extra stuff here for debugging.
   VisitLoad(node);
 }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
 void InstructionSelector::VisitUnalignedLoad(Node* node) { UNREACHABLE(); }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 // Architecture supports unaligned access, therefore VisitStore is used instead
 void InstructionSelector::VisitUnalignedStore(Node* node) { UNREACHABLE(); }
@@ -1817,7 +1820,7 @@ void InstructionSelector::VisitInt64Add(Node* node) {
   VisitAddSub<Int64BinopMatcher>(this, node, kArm64Add, kArm64Sub);
 }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 void InstructionSelector::VisitCapAdd(Node* node) {
   VisitAddSub<Int64BinopMatcher>(this, node, kArm64AddCap, kArm64SubCap);
 }
@@ -1825,7 +1828,7 @@ void InstructionSelector::VisitCapAdd(Node* node) {
 void InstructionSelector::VisitCapSub(Node* node) {
   VisitAddSub<Int64BinopMatcher>(this, node, kArm64SubCap, kArm64AddCap);
 }
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif
 
 void InstructionSelector::VisitInt32Sub(Node* node) {
   Arm64OperandGenerator g(this);
@@ -2987,15 +2990,15 @@ void VisitAtomicLoad(InstructionSelector* selector, Node* node,
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
       code = kArm64CapabilityAtomicLoad;
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
       if (kTaggedSize == 8) {
         code = kArm64Word64AtomicLoadUint64;
       } else {
         code = kAtomicLoadWord32;
       }
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
       break;
 #endif
     case MachineRepresentation::kCompressedPointer:  // Fall through.
@@ -3069,11 +3072,11 @@ void VisitAtomicStore(InstructionSelector* selector, Node* node,
       case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:
         DCHECK_EQ(AtomicWidthSize(width), kTaggedSize);
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
         code = kArm64CapabilityAtomicStore;
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
         code = kArm64StlrCompressTagged;
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
         break;
       case MachineRepresentation::kCompressedPointer:  // Fall through.
       case MachineRepresentation::kCompressed:
@@ -4869,7 +4872,7 @@ InstructionSelector::SupportedMachineOperatorFlags() {
 // static
 MachineOperatorBuilder::AlignmentRequirements
 InstructionSelector::AlignmentRequirements() {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   base::EnumSet<MachineRepresentation> req_aligned;
   req_aligned.Add(MachineRepresentation::kCapability64);
 #ifndef V8_COMPRESS_POINTERS
@@ -4879,10 +4882,10 @@ InstructionSelector::AlignmentRequirements() {
 #endif  // !V8_COMPRESS_POINTERS
   return MachineOperatorBuilder::AlignmentRequirements::
       SomeUnalignedAccessUnsupported(req_aligned, req_aligned);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   return MachineOperatorBuilder::AlignmentRequirements::
       FullUnalignedAccessSupport();
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 }
 
 }  // namespace compiler

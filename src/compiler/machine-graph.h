@@ -47,7 +47,7 @@ class V8_EXPORT_PRIVATE MachineGraph : public NON_EXPORTED_BASE(ZoneObject) {
   Node* Uint64Constant(uint64_t value) {
     return Int64Constant(base::bit_cast<int64_t>(value));
   }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   Node* Capability32Constant(intptr_t value);
   Node* Capability64Constant(intptr_t value);
 #endif
@@ -63,9 +63,9 @@ class V8_EXPORT_PRIVATE MachineGraph : public NON_EXPORTED_BASE(ZoneObject) {
 
   Node* RelocatableInt32Constant(int32_t value, RelocInfo::Mode rmode);
   Node* RelocatableInt64Constant(int64_t value, RelocInfo::Mode rmode);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node* RelocatableCapability64Constant(intptr_t value, RelocInfo::Mode rmode);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   Node* RelocatableIntPtrConstant(intptr_t value, RelocInfo::Mode rmode);
 
   // Creates a Float32Constant node, usually canonicalized.

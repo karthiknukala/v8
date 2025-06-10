@@ -20,11 +20,11 @@ Register JavaScriptFrame::context_register() { return cp; }
 Register JavaScriptFrame::constant_pool_pointer_register() { UNREACHABLE(); }
 
 int UnoptimizedFrameConstants::RegisterStackSlotCount(int register_count) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   static_assert(InterpreterFrameConstants::kFixedFrameSize % 16 == 0);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   static_assert(InterpreterFrameConstants::kFixedFrameSize % 16 == 8);
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
   // Interpreter frame header size is not 16-bytes aligned, so we'll need at
   // least one register slot to make the frame a multiple of 16 bytes. The code
   // below is equivalent to "RoundUp(register_count - 1, 2) + 1".

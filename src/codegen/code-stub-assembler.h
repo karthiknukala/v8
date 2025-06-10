@@ -14,9 +14,6 @@
 #include "src/common/globals.h"
 #include "src/common/message-template.h"
 #include "src/compiler/code-assembler.h"
-#ifdef __CHERI_PURE_CAPABILITY__
-#include "src/compiler/node.h" // TODO(ds815): Drop.
-#endif  // __CHERI_PURE_CAPABILITY__
 #include "src/numbers/integer-literal.h"
 #include "src/objects/api-callbacks.h"
 #include "src/objects/arguments.h"
@@ -537,14 +534,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   uintptr_t ConstexprWordNot(uintptr_t a) {
     return static_cast<uintptr_t>(~static_cast<uint64_t>(a));
   }
+  intptr_t ConstexprWordNot(ssize_t a) { return ~a; }
+  uintptr_t ConstexprWordNot(size_t a) { return ~a; }
 #else
   intptr_t ConstexprWordNot(intptr_t a) { return ~a; }
   uintptr_t ConstexprWordNot(uintptr_t a) { return ~a; }
-#endif  // __CHERI_PURE_CAPABILITY__
-#if defined(__CHERI_PURE_CAPABILITY__)
-  intptr_t ConstexprWordNot(ssize_t a) { return ~a; }
-  uintptr_t ConstexprWordNot(size_t a) { return ~a; }
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 
   TNode<BoolT> TaggedEqual(TNode<AnyTaggedT> a, TNode<AnyTaggedT> b) {
     if (COMPRESS_POINTERS_BOOL) {
@@ -689,12 +684,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<Smi> SmiShr(TNode<Smi> a, int shift) {
     TNode<Smi> result;
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
     // FIXME(cheri): This is kind of ugly.
     if (true) {
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
     if (kTaggedSize == kInt64Size) {
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
       result = BitcastWordToTaggedSigned(
           WordAnd(WordShr(BitcastTaggedToWordForTagAndSmiBits(a), shift),
                   BitcastTaggedToWordForTagAndSmiBits(SmiConstant(-1))));
@@ -720,12 +715,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     // The number of shift bits is |shift % 64| for 64-bits value and |shift %
     // 32| for 32-bits value. The DCHECK is to ensure valid inputs.
     DCHECK_LT(shift, 32);
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
     // FIXME(cheri): This is kind of ugly.
     if (true) {
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
     if (kTaggedSize == kInt64Size) {
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
       return BitcastWordToTaggedSigned(
           WordAnd(WordSar(BitcastTaggedToWordForTagAndSmiBits(a), shift),
                   BitcastTaggedToWordForTagAndSmiBits(SmiConstant(-1))));
@@ -747,7 +742,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     return WordShr(a, shift);
   }
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
 #define SMI_COMPARISON_OP(SmiOpName, IntPtrOpName, Int32OpName)  \
   TNode<BoolT> SmiOpName(TNode<Smi> a, TNode<Smi> b) {           \
     return IntPtrOpName(BitcastTaggedToWordForTagAndSmiBits(a),  \
@@ -1414,9 +1409,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                              std::is_same<T, MaybeObject>::value,
                          int>::type = 0>
   void StoreReference(Reference reference, TNode<T> value) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(reference.object.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   reference.object.IsCapability());
     if (IsMapOffsetConstant(reference.offset)) {
       DCHECK((std::is_base_of<T, Map>::value));
       return StoreMap(CAST(reference.object), ReinterpretCast<Map>(value));
@@ -1458,9 +1452,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                          int>::type = 0>
   void StoreReference(Reference reference, TNode<T> value) {
     DCHECK(!IsMapOffsetConstant(reference.offset));
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(reference.object.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   reference.object.IsCapability());
     Label offset_is_tagged(this), end(this);
     GotoIf(CapabilityIsTagged(reference.offset), &offset_is_tagged);
     {
@@ -1489,9 +1482,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<RawPtrT> GCUnsafeReferenceToRawPtr(TNode<Object> object,
                                            TNode<IntPtrT> offset) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(object.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   object.IsCapability());
     Label object_is_tagged(this), offset_is_tagged(this), out(this);
     TVARIABLE(RawPtrT, result);
     TNode<IntPtrT> object_intptr = BitcastTaggedToWord(object);
@@ -1516,9 +1508,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
     BIND(&out);
     CSA_DCHECK(this, CapabilityIsTagged(result.value()));
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(result.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, result.IsCapability());
     return result.value();
   }
 
@@ -1872,7 +1862,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void StoreObjectFieldNoWriteBarrier(TNode<HeapObject> object, int offset,
                                       TNode<T> value) {
     if (CanBeTaggedPointer(MachineRepresentationOf<T>::value)) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       if constexpr (std::is_same<Smi, T>::value) {
         OptimizedStoreFieldAssertNoWriteBarrier(MachineRepresentation::kWord64,
                                                 object, offset, value);
@@ -1880,12 +1870,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
         OptimizedStoreFieldAssertNoWriteBarrier(
             MachineRepresentationOf<T>::value, object, offset, value);
       }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
       OptimizedStoreFieldAssertNoWriteBarrier(MachineRepresentationOf<T>::value,
                                               object, offset, value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     } else {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       if constexpr (std::is_same<Smi, T>::value) {
         OptimizedStoreFieldUnsafeNoWriteBarrier(MachineRepresentation::kWord64,
                                                 object, offset, value);
@@ -1893,10 +1883,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
         OptimizedStoreFieldUnsafeNoWriteBarrier(
             MachineRepresentationOf<T>::value, object, offset, value);
       }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
       OptimizedStoreFieldUnsafeNoWriteBarrier(MachineRepresentationOf<T>::value,
                                               object, offset, value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     }
   }
 
@@ -3084,11 +3074,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                               uint32_t mask);
 
   // Decodes an unsigned (!) value from |word| to a word-size node.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   TNode<UintPtrT> DecodeWord(TNode<WordT> word, uint32_t shift, uint64_t mask);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   TNode<UintPtrT> DecodeWord(TNode<WordT> word, uint32_t shift, uintptr_t mask);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Returns a node that contains the updated values of a |BitField|.
   template <typename BitField>
@@ -3132,11 +3122,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Returns a node that contains the updated {value} inside {word} starting
   // at {shift} and fitting in {mask}.
   TNode<WordT> UpdateWord(TNode<WordT> word, TNode<UintPtrT> value,
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
                           uint32_t shift, uint64_t mask,
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
                           uint32_t shift, uintptr_t mask,
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
                           bool starts_as_zero = false);
 
   // Returns true if any of the |T|'s bits in given |word32| are set.

@@ -888,7 +888,7 @@ Type Typer::Visitor::TypeInt32Constant(Node* node) { return Type::Machine(); }
 
 Type Typer::Visitor::TypeInt64Constant(Node* node) { return Type::Machine(); }
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 Type Typer::Visitor::TypeCapability32Constant(Node* node) { return Type::Machine(); }
 
 Type Typer::Visitor::TypeCapability64Constant(Node* node) { return Type::Machine(); }
@@ -900,11 +900,11 @@ Type Typer::Visitor::TypeRelocatableInt32Constant(Node* node) { UNREACHABLE(); }
 
 Type Typer::Visitor::TypeRelocatableInt64Constant(Node* node) { UNREACHABLE(); }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 Type Typer::Visitor::TypeRelocatableCapability64Constant(Node* node) {
   UNREACHABLE();
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 Type Typer::Visitor::TypeFloat32Constant(Node* node) { UNREACHABLE(); }
 

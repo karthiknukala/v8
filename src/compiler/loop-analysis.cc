@@ -615,12 +615,12 @@ ZoneUnorderedSet<Node*>* LoopFinder::FindSmallInnermostLoopFromHeader(
           break;
         }
         Node* callee = node->InputAt(0);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
         if (callee->opcode() != IrOpcode::kRelocatableCapability64Constant) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
         if (callee->opcode() != IrOpcode::kRelocatableInt32Constant &&
             callee->opcode() != IrOpcode::kRelocatableInt64Constant) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
           return nullptr;
         }
         intptr_t info =

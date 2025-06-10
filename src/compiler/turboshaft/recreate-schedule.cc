@@ -588,12 +588,12 @@ Node* ScheduleBuilder::ProcessOperation(const FloatUnaryOp& op) {
 Node* ScheduleBuilder::ProcessOperation(const ShiftOp& op) {
   DCHECK(op.rep == WordRepresentation::Word32() ||
          op.rep == WordRepresentation::Word64());
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   bool word64 = op.rep == WordRepresentation::Word64() ||
                 op.rep == WordRepresentation::Capability64();
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   bool word64 = op.rep == WordRepresentation::Word64();
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   const Operator* o;
   switch (op.kind) {
     case ShiftOp::Kind::kShiftRightArithmeticShiftOutZeros:

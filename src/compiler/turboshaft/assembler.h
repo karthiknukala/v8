@@ -1224,24 +1224,24 @@ class AssemblerOpInterface {
   V<Word64> Word64Constant(int64_t value) {
     return Word64Constant(static_cast<uint64_t>(value));
   }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   V<Capability64> Capability64Constant(uintptr_t value) {
     if (V8_UNLIKELY(stack().generating_unreachable_operations())) {
       return OpIndex::Invalid();
     }
     return stack().ReduceConstant(ConstantOp::Kind::kCapability64, value);
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   OpIndex WordConstant(uintptr_t value, WordRepresentation rep) {
     switch (rep.value()) {
       case WordRepresentation::Word32():
         return Word32Constant(static_cast<uint32_t>(value));
       case WordRepresentation::Word64():
         return Word64Constant(static_cast<uint64_t>(value));
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case WordRepresentation::Capability64():
         return Capability64Constant(value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     }
   }
   V<WordPtr> IntPtrConstant(intptr_t value) {

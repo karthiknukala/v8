@@ -16,7 +16,7 @@ static_assert(sizeof(1L) == sizeof(int32_t));
 static_assert(sizeof(long) == sizeof(int64_t));  // NOLINT(runtime/int)
 static_assert(sizeof(1L) == sizeof(int64_t));
 #endif
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 static_assert(sizeof(ptraddr_t) == sizeof(int64_t));
 #else   // !__CHERI_PURE_CAPABILITY__
 static_assert(sizeof(void*) == sizeof(int64_t));
@@ -284,7 +284,7 @@ using float16 = uint16_t;
   V_(ImmNEONImmh, 22, 19, Bits)                         \
   V_(ImmNEONImmb, 18, 16, Bits)
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 #define AARCH64C_INSTRUCTION_FIELDS_LIST(V_)                       \
   V_(Cd, 4, 0, Bits)    /* Destination capability register.     */ \
   V_(Cn, 9, 5, Bits)    /* First source capability register.    */ \
@@ -300,7 +300,7 @@ using float16 = uint16_t;
   V_(CImmLLiteral, 21, 5, Bits)                                    \
   /* Morello AlignU/AlignD 6-bit immediate */                      \
   V_(AlignImmLiteral, 20, 15, Bits)
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 
 #define SYSTEM_REGISTER_FIELDS_LIST(V_, M_) \
   /* NZCV */                                \
@@ -327,9 +327,9 @@ using float16 = uint16_t;
   DECLARE_FIELDS_OFFSETS(Name, HighBit, LowBit, unused_1, unused_2)
 INSTRUCTION_FIELDS_LIST(DECLARE_INSTRUCTION_FIELDS_OFFSETS)
 SYSTEM_REGISTER_FIELDS_LIST(DECLARE_FIELDS_OFFSETS, NOTHING)
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 AARCH64C_INSTRUCTION_FIELDS_LIST(DECLARE_INSTRUCTION_FIELDS_OFFSETS)
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 #undef DECLARE_FIELDS_OFFSETS
 #undef DECLARE_INSTRUCTION_FIELDS_OFFSETS
 
@@ -576,7 +576,7 @@ constexpr PCRelAddressingOp ADRP = PCRelAddressingFixed | 0x80000000;
 // Add/sub (immediate, shifted and extended.)
 constexpr int kSFOffset = 31;
 using AddSubOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr AddSubOp ADD_c = 0x00000000;
 // Bit 23 is fixed for Add (extended register) and is used in
 // Add (immediate) to identify add and subtract operations.
@@ -585,7 +585,7 @@ constexpr AddSubOp CompareCapabilitiesFixed = 0xC2E09800;
 constexpr AddSubOp CompareCapabilitiesFMask = 0xC2E09800;
 constexpr AddSubOp CompareCapabilitiesMask = 0xC2E09800;
 constexpr AddSubOp SUBS_c = CompareCapabilitiesFixed;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr AddSubOp AddSubOpMask = 0x60000000;
 constexpr AddSubOp AddSubSetFlagsBit = 0x20000000;
 constexpr AddSubOp ADD = 0x00000000;
@@ -599,14 +599,14 @@ constexpr AddSubOp SUBS = SUB | AddSubSetFlagsBit;
   V(SUB);                  \
   V(SUBS)
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 #define ADD_SUB_CAP_OP_LIST(V) \
   V(ADD_c);                    \
   V(SUB_c)
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 
 using AddSubImmediateOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr AddSubImmediateOp AddSubCapImmediateFixed = 0x02000000;
 constexpr AddSubImmediateOp AddSubCapImmediateFMask = 0x0F000000;
 constexpr AddSubImmediateOp AddSubCapImmediateMask = 0xFFC00000;
@@ -618,7 +618,7 @@ constexpr AddSubImmediateOp AddSubCapImmediateMask = 0xFFC00000;
   constexpr AddSubImmediateOp A##_imm = AddSubCapImmediateFixed | A
 ADD_SUB_CAP_OP_LIST(ADD_SUB_CAP_IMMEDIATE);
 #undef ADD_SUB_CAP_IMMEDIATE
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr AddSubImmediateOp AddSubImmediateFixed = 0x11000000;
 constexpr AddSubImmediateOp AddSubImmediateFMask = 0x1F000000;
 constexpr AddSubImmediateOp AddSubImmediateMask = 0xFF000000;
@@ -640,7 +640,7 @@ ADD_SUB_OP_LIST(ADD_SUB_SHIFTED);
 #undef ADD_SUB_SHIFTED
 
 using AddSubExtendedOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr AddSubExtendedOp AddSubCapExtendedFixed = 0xC2A00000;
 constexpr AddSubExtendedOp AddSubCapExtendedFMask = 0xFFE00000;
 constexpr AddSubExtendedOp AddSubCapExtendedMask = 0xFFE00000;
@@ -649,7 +649,7 @@ constexpr AddSubExtendedOp AddSubCapExtendedMask = 0xFFE00000;
 // or zero-extened register value, followed by an optional left shift amount,
 // and writes the result to the destination Cpability register value field.
 constexpr AddSubExtendedOp ADD_c_ext = AddSubCapExtendedFixed;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr AddSubExtendedOp AddSubExtendedFixed = 0x0B200000;
 constexpr AddSubExtendedOp AddSubExtendedFMask = 0x1F200000;
 constexpr AddSubExtendedOp AddSubExtendedMask = 0xFFE00000;
@@ -792,7 +792,7 @@ constexpr UnconditionalBranchOp BL = UnconditionalBranchFixed | 0x80000000;
 
 // Unconditional branch to register.
 using UnconditionalBranchToRegisterOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFixed =
     0xC2C21000;
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFMask =
@@ -815,7 +815,7 @@ constexpr UnconditionalBranchToRegisterOp BLR =
 // return.
 constexpr UnconditionalBranchToRegisterOp RET =
     UnconditionalBranchToRegisterFixed | 0x00004000;
-#else    // __CHERI_PURE_CAPABILITY__
+#else   // !V8_TARGET_CHERI
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFixed =
     0xD6000000;
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFMask =
@@ -828,7 +828,7 @@ constexpr UnconditionalBranchToRegisterOp BLR =
     UnconditionalBranchToRegisterFixed | 0x003F0000;
 constexpr UnconditionalBranchToRegisterOp RET =
     UnconditionalBranchToRegisterFixed | 0x005F0000;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif  // V8_TARGET_CHERI
 
 // Compare and branch.
 using CompareBranchOp = uint32_t;
@@ -914,19 +914,19 @@ constexpr SystemPAuthOp AUTIBSP = SystemPAuthFixed | 0x000003E0;
 
 // Any load or store (including pair).
 using LoadStoreAnyOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStoreAnyOp LoadStoreCapAnyFMask = 0x82000000;
 constexpr LoadStoreAnyOp LoadStoreCapAnyFixed = 0xFF000000;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStoreAnyOp LoadStoreAnyFMask = 0x0A000000;
 constexpr LoadStoreAnyOp LoadStoreAnyFixed = 0x08000000;
 
 // Any load pair or store pair.
 using LoadStorePairAnyOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePairAnyOp LoadStorePairCapAnyFMask = 0xFF800000;
 constexpr LoadStorePairAnyOp LoadStorePairCapAnyFixed = 0x02800000;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePairAnyOp LoadStorePairAnyFMask = 0x3A000000;
 constexpr LoadStorePairAnyOp LoadStorePairAnyFixed = 0x28000000;
 
@@ -943,21 +943,21 @@ constexpr LoadStorePairAnyOp LoadStorePairAnyFixed = 0x28000000;
   V(STP, q, 0x84000000);           \
   V(LDP, q, 0x84400000)
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 #define LOAD_STORE_PAIR_CAP_OP_LIST(V)    \
   V(LDP, c, 0x00400000);                  \
   V(STP, c, 0x00000000)
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 
 // Load/store pair (post, pre and offset.)
 using LoadStorePairOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePairOp LoadStorePairCapMask = 0xFFC00000;
 constexpr LoadStorePairOp LoadStorePairCapLBit = 1 << 22;
 #define LOAD_STORE_PAIR_CAP(A, B, C) constexpr LoadStorePairOp A##_##B = C
 LOAD_STORE_PAIR_CAP_OP_LIST(LOAD_STORE_PAIR_CAP);
 #undef LOAD_STORE_PAIR
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePairOp LoadStorePairMask = 0xC4400000;
 constexpr LoadStorePairOp LoadStorePairLBit = 1 << 22;
 #define LOAD_STORE_PAIR(A, B, C) constexpr LoadStorePairOp A##_##B = C
@@ -965,7 +965,7 @@ LOAD_STORE_PAIR_OP_LIST(LOAD_STORE_PAIR);
 #undef LOAD_STORE_PAIR
 
 using LoadStorePairPostIndexOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePairPostIndexOp LoadStorePairCapPostIndexFixed = 0x22800000;
 constexpr LoadStorePairPostIndexOp LoadStorePairCapPostIndexFMask = 0xFF800000;
 constexpr LoadStorePairPostIndexOp LoadStorePairCapPostIndexMask = 0xFFC00000;
@@ -974,7 +974,7 @@ constexpr LoadStorePairPostIndexOp LoadStorePairCapPostIndexMask = 0xFFC00000;
       LoadStorePairCapPostIndexFixed | A##_##B
 LOAD_STORE_PAIR_CAP_OP_LIST(LOAD_STORE_PAIR_CAP_POST_INDEX);
 #undef LOAD_STORE_PAIR_POST_INDEX
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePairPostIndexOp LoadStorePairPostIndexFixed = 0x28800000;
 constexpr LoadStorePairPostIndexOp LoadStorePairPostIndexFMask = 0x3B800000;
 constexpr LoadStorePairPostIndexOp LoadStorePairPostIndexMask = 0xFFC00000;
@@ -985,7 +985,7 @@ LOAD_STORE_PAIR_OP_LIST(LOAD_STORE_PAIR_POST_INDEX);
 #undef LOAD_STORE_PAIR_POST_INDEX
 
 using LoadStorePairPreIndexOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePairPreIndexOp LoadStorePairCapPreIndexFixed = 0x62800000;
 constexpr LoadStorePairPreIndexOp LoadStorePairCapPreIndexFMask = 0xFF800000;
 constexpr LoadStorePairPreIndexOp LoadStorePairCapPreIndexMask = 0xFFC00000;
@@ -994,7 +994,7 @@ constexpr LoadStorePairPreIndexOp LoadStorePairCapPreIndexMask = 0xFFC00000;
       LoadStorePairCapPreIndexFixed | A##_##B
 LOAD_STORE_PAIR_CAP_OP_LIST(LOAD_STORE_PAIR_CAP_PRE_INDEX);
 #undef LOAD_STORE_PAIR_CAP_PRE_INDEX
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePairPreIndexOp LoadStorePairPreIndexFixed = 0x29800000;
 constexpr LoadStorePairPreIndexOp LoadStorePairPreIndexFMask = 0x3B800000;
 constexpr LoadStorePairPreIndexOp LoadStorePairPreIndexMask = 0xFFC00000;
@@ -1005,7 +1005,7 @@ LOAD_STORE_PAIR_OP_LIST(LOAD_STORE_PAIR_PRE_INDEX);
 #undef LOAD_STORE_PAIR_PRE_INDEX
 
 using LoadStorePairOffsetOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePairOffsetOp LoadStorePairCapOffsetFixed = 0x42800000;
 constexpr LoadStorePairOffsetOp LoadStorePairCapOffsetFMask = 0xFF800000;
 constexpr LoadStorePairOffsetOp LoadStorePairCapOffsetMask = 0xFFC00000;
@@ -1014,7 +1014,7 @@ constexpr LoadStorePairOffsetOp LoadStorePairCapOffsetMask = 0xFFC00000;
       LoadStorePairCapOffsetFixed | A##_##B
 LOAD_STORE_PAIR_CAP_OP_LIST(LOAD_STORE_PAIR_CAP_OFFSET);
 #undef LOAD_STORE_PAIR_CAP_OFFSET
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePairOffsetOp LoadStorePairOffsetFixed = 0x29000000;
 constexpr LoadStorePairOffsetOp LoadStorePairOffsetFMask = 0x3B800000;
 constexpr LoadStorePairOffsetOp LoadStorePairOffsetMask = 0xFFC00000;
@@ -1026,7 +1026,7 @@ LOAD_STORE_PAIR_OP_LIST(LOAD_STORE_PAIR_OFFSET);
 
 // Load literal.
 using LoadLiteralOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadLiteralOp LoadLiteralCapFixed = 0x82000000;
 constexpr LoadLiteralOp LoadLiteralCapFMask = 0xFFC00000;
 constexpr LoadLiteralOp LoadLiteralCapMask = 0xFFC00000;
@@ -1035,7 +1035,7 @@ constexpr LoadLiteralOp LoadLiteralCapMask = 0xFFC00000;
 // immediate offset, loads a capability from memory and writes it to a
 // Capability register.
 constexpr LoadLiteralOp LDR_c_lit = 0x82000000;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadLiteralOp LoadLiteralFixed = 0x18000000;
 constexpr LoadLiteralOp LoadLiteralFMask = 0x3B000000;
 constexpr LoadLiteralOp LoadLiteralMask = 0xFF000000;
@@ -1071,15 +1071,15 @@ constexpr LoadLiteralOp LDR_d_lit = LoadLiteralFixed | 0x44000000;
   V(LD, R, d, 0xC4400000);    \
   V(LD, R, q, 0x04C00000)
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define LOAD_STORE_CAP_OP_LIST(V) \
   V(LD, R, c, 0x00400000);        \
   V(ST, R, c, 0x00000000)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 // Load/store unscaled offset.
 using LoadStoreUnscaledOffsetOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStoreUnscaledOffsetOp
     LoadStoreCapUnscaledOffsetNormalFixed = 0xA2000000;
 constexpr LoadStoreUnscaledOffsetOp
@@ -1117,7 +1117,7 @@ constexpr LoadStoreUnscaledOffsetOp LDUR_c_normal =
 // 4.4.148 STUR (capability, normal base)
 constexpr LoadStoreUnscaledOffsetOp STUR_c_normal =
   LoadStoreCapUnscaledOffsetNormalFixed | StoreCapUnscaledOffsetNormal;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStoreUnscaledOffsetOp LoadStoreUnscaledOffsetFixed = 0x38000000;
 constexpr LoadStoreUnscaledOffsetOp LoadStoreUnscaledOffsetFMask = 0x3B200C00;
 constexpr LoadStoreUnscaledOffsetOp LoadStoreUnscaledOffsetMask = 0xFFE00C00;
@@ -1129,12 +1129,12 @@ LOAD_STORE_OP_LIST(LOAD_STORE_UNSCALED);
 
 // Load/store (post, pre, offset and unsigned.)
 using LoadStoreOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStoreOp LoadStoreCapMask = 0x00400000;
 #define LOAD_STORE(A, B, C, D) constexpr LoadStoreOp A##B##_##C = D
 LOAD_STORE_CAP_OP_LIST(LOAD_STORE);
 #undef LOAD_STORE
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStoreOp LoadStoreMask = 0xC4C00000;
 #define LOAD_STORE(A, B, C, D) constexpr LoadStoreOp A##B##_##C = D
 LOAD_STORE_OP_LIST(LOAD_STORE);
@@ -1143,7 +1143,7 @@ constexpr LoadStoreOp PRFM = 0xC0800000;
 
 // Load/store post index.
 using LoadStorePostIndex = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePostIndex LoadStorePostCapIndexFixed = 0xA2000400;
 constexpr LoadStorePostIndex LoadStorePostCapIndexFMask = 0xFF200400;
 constexpr LoadStorePostIndex LoadStorePostCapIndexMask = 0xFFE00400;
@@ -1160,7 +1160,7 @@ constexpr LoadStorePostIndex LDR_c_post = LoadStorePostCapIndexFixed |
 // capability to memory from a Capability register.
 constexpr LoadStorePostIndex STR_c_post = LoadStorePostCapIndexFixed |
                                           StorePostCapIndex;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePostIndex LoadStorePostIndexFixed = 0x38000400;
 constexpr LoadStorePostIndex LoadStorePostIndexFMask = 0x3B200C00;
 constexpr LoadStorePostIndex LoadStorePostIndexMask = 0xFFE00C00;
@@ -1171,7 +1171,7 @@ LOAD_STORE_OP_LIST(LOAD_STORE_POST_INDEX);
 
 // Load/store pre index.
 using LoadStorePreIndex = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStorePreIndex LoadStorePreCapIndexFixed = 0xA2000C00;
 constexpr LoadStorePreIndex LoadStorePreCapIndexFMask = 0xFF200C00;
 constexpr LoadStorePreIndex LoadStorePreCapIndexMask = 0xFFE00C00;
@@ -1188,7 +1188,7 @@ constexpr LoadStorePreIndex LDR_c_pre = LoadStorePreCapIndexFixed |
 // from a Capability regsiter.
 constexpr LoadStorePreIndex STR_c_pre = LoadStorePreCapIndexFixed |
                                         StorePreCapIndex;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStorePreIndex LoadStorePreIndexFixed = 0x38000C00;
 constexpr LoadStorePreIndex LoadStorePreIndexFMask = 0x3B200C00;
 constexpr LoadStorePreIndex LoadStorePreIndexMask = 0xFFE00C00;
@@ -1199,7 +1199,7 @@ LOAD_STORE_OP_LIST(LOAD_STORE_PRE_INDEX);
 
 // Load/store unsigned offset.
 using LoadStoreUnsignedOffset = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStoreUnsignedOffset
     LoadStoreCapUnsignedOffsetCapNormalFixed = 0xC2000000;
 constexpr LoadStoreUnsignedOffset
@@ -1259,7 +1259,7 @@ constexpr LoadStoreUnsignedOffset STR_c_unsigned_d =
 constexpr LoadStoreUnsignedOffset STR_c_unsigned_w =
     LoadStoreCapUnsignedOffsetIntegerFixed | StoreCapUnsignedOffsetInteger |
     LoadStoreCapUnsignedOffsetIntegerWord;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStoreUnsignedOffset LoadStoreUnsignedOffsetFixed = 0x39000000;
 constexpr LoadStoreUnsignedOffset LoadStoreUnsignedOffsetFMask = 0x3B000000;
 constexpr LoadStoreUnsignedOffset LoadStoreUnsignedOffsetMask = 0xFFC00000;
@@ -1273,7 +1273,7 @@ LOAD_STORE_OP_LIST(LOAD_STORE_UNSIGNED_OFFSET);
 
 // Load/store register offset.
 using LoadStoreRegisterOffset = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr LoadStoreRegisterOffset
     LoadStoreCapRegisterOffsetNormalFixed = 0xA2204800;
 constexpr LoadStoreRegisterOffset
@@ -1317,7 +1317,7 @@ constexpr LoadStoreRegisterOffset STR_c_reg_d =
     LoadStoreCapRegisterOffsetIntegerFixed | 0x00000400;
 constexpr LoadStoreRegisterOffset STR_c_reg_w =
     LoadStoreCapRegisterOffsetIntegerFixed | 0x00000000;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr LoadStoreRegisterOffset LoadStoreRegisterOffsetFixed = 0x38200800;
 constexpr LoadStoreRegisterOffset LoadStoreRegisterOffsetFMask = 0x3B200C00;
 constexpr LoadStoreRegisterOffset LoadStoreRegisterOffsetMask = 0xFFE00C00;
@@ -1366,7 +1366,7 @@ constexpr LoadStoreAcquireReleaseOp STLR_x =
     LoadStoreAcquireReleaseFixed | 0xC0808000;
 constexpr LoadStoreAcquireReleaseOp LDAR_x =
     LoadStoreAcquireReleaseFixed | 0xC0C08000;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 constexpr LoadStoreAcquireReleaseOp LoadStoreAcquireReleaseFixed_c = 0x0200FC00;
 constexpr LoadStoreAcquireReleaseOp LDAR_c =
     LoadStoreAcquireReleaseFixed_c | 0x405F0000;
@@ -1376,7 +1376,7 @@ constexpr LoadStoreAcquireReleaseOp LDAXR_c =
     LoadStoreAcquireReleaseFixed_c | 0x205F0000;
 constexpr LoadStoreAcquireReleaseOp STLXR_c =
     LoadStoreAcquireReleaseFixed_c | 0x20000000;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 // Compare and swap acquire/release [Armv8.1].
 constexpr LoadStoreAcquireReleaseOp LSEBit_l = 0x00400000;
@@ -1416,13 +1416,13 @@ constexpr LoadStoreAcquireReleaseOp CASPL_x = CASPFixed | LSEBit_o0 | LSEBit_sz;
 constexpr LoadStoreAcquireReleaseOp CASPAL_w = CASPFixed | LSEBit_l | LSEBit_o0;
 constexpr LoadStoreAcquireReleaseOp CASPAL_x =
     CASPFixed | LSEBit_l | LSEBit_o0 | LSEBit_sz;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 constexpr LoadStoreAcquireReleaseOp CASFixed_c = 0xA2A07C00;
 constexpr LoadStoreAcquireReleaseOp CAS_c = CASFixed_c;
 constexpr LoadStoreAcquireReleaseOp CASA_c = CASFixed_c | 0x00400000;
 constexpr LoadStoreAcquireReleaseOp CASL_c = CASFixed_c | 0x00008000;
 constexpr LoadStoreAcquireReleaseOp CASAL_c = CASFixed_c | 0x00408000;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 #define ATOMIC_MEMORY_SIMPLE_OPC_LIST(V) \
   V(LDADD, 0x00000000);                  \
@@ -1456,11 +1456,11 @@ constexpr AtomicMemoryOp SWPA_x = AtomicMemoryFixed | 0xC0808000;
 constexpr AtomicMemoryOp SWPL_x = AtomicMemoryFixed | 0xC0408000;
 constexpr AtomicMemoryOp SWPAL_x = AtomicMemoryFixed | 0xC0C08000;
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 constexpr AtomicMemoryOp AtomicCapabilityMemoryFixed = 0xA2208000;
 constexpr AtomicMemoryOp SWP_c = AtomicCapabilityMemoryFixed;
 constexpr AtomicMemoryOp SWPA_c = AtomicCapabilityMemoryFixed | 0x00800000;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 constexpr AtomicMemoryOp AtomicMemorySimpleFMask = 0x3B208C00;
 constexpr AtomicMemoryOp AtomicMemorySimpleOpMask = 0x00007000;
@@ -1528,7 +1528,7 @@ constexpr ConditionalCompareImmediateOp CCMP_x_imm =
 
 // Conditional select.
 using ConditionalSelectOp = uint32_t;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr ConditionalSelectOp ConditionalSelectCapFixed = 0xC2C00C00;
 constexpr ConditionalSelectOp ConditionalSelectCapFMask = 0xFFE00C00;
 constexpr ConditionalSelectOp ConditionalSelectCapMask = 0xFFE00C00;
@@ -1537,7 +1537,7 @@ constexpr ConditionalSelectOp ConditionalSelectCapMask = 0xFFE00C00;
 // value of the first source register if the condition is TRUE, and
 // otherwise writes the value of the second source capability register.
 constexpr ConditionalSelectOp CSEL_c = ConditionalSelectCapFixed;
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 constexpr ConditionalSelectOp ConditionalSelectFixed = 0x1A800000;
 constexpr ConditionalSelectOp ConditionalSelectFMask = 0x1FE00000;
 constexpr ConditionalSelectOp ConditionalSelectMask = 0xFFE00C00;
@@ -2964,7 +2964,7 @@ using UnallocatedOp = uint32_t;
 constexpr UnallocatedOp UnallocatedFixed = 0x00000000;
 constexpr UnallocatedOp UnallocatedFMask = 0x00000000;
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 using AlignCapabilityOp = uint32_t;
 constexpr AlignCapabilityOp AlignCapabilityFixed = 0x42C01800;
 constexpr AlignCapabilityOp ALIGNU = AlignCapabilityFixed | 0x20004000;
@@ -2972,9 +2972,9 @@ constexpr AlignCapabilityOp ALIGND = AlignCapabilityFixed | 0x80000000;
 
 static_assert(ALIGNU == 0x62c05800);
 static_assert(ALIGND == 0xc2c01800);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 using CopyCapabilityOp = uint32_t;
 constexpr CopyCapabilityOp CopyCapabilityFixed = 0xC2C19000;
 constexpr CopyCapabilityOp CopyCapabilityFMask = 0xFFFF9C00;
@@ -3049,7 +3049,7 @@ constexpr SealImmediateForm kSealFormLpb = 0b10;
 constexpr SealImmediateForm kSealFormLb = 0b11;
 }
 
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif
 
 }  // namespace internal
 }  // namespace v8

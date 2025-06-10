@@ -1230,7 +1230,7 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   // new_value_high, new_value_low
   const Operator* Word32AtomicPairCompareExchange();
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   const Operator* CapAdd();
   const Operator* CapSub();
 
@@ -1248,15 +1248,15 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   // AlignU/AlignD.
   const Operator* AlignU();
   const Operator* AlignD();
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Target machine word-size assumed by this builder.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   // For CHERI the machine representation is twice the word size of the
   // native architure.
   bool Is32() const {
     if (word() == MachineRepresentation::kCapability32) {
-      DCHECK(kSystemPointerSize == (2 * kSystemPointerAddrSize));
+      static_assert(kSystemPointerSize == (2 * kSystemPointerAddrSize));
       return kSystemPointerSize == sizeof(uint32_t) * 2;
     } else {
       return word() == MachineRepresentation::kWord32;
@@ -1264,16 +1264,16 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   }
   bool Is64() const {
     if (word() == MachineRepresentation::kCapability64) {
-      DCHECK(kSystemPointerSize == (2 * kSystemPointerAddrSize));
+      static_assert(kSystemPointerSize == (2 * kSystemPointerAddrSize));
       return kSystemPointerSize == sizeof(uint64_t) * 2;
     } else {
       return word() == MachineRepresentation::kWord64;
     }
   }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   bool Is32() const { return word() == MachineRepresentation::kWord32; }
   bool Is64() const { return word() == MachineRepresentation::kWord64; }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   MachineRepresentation word() const { return word_; }
 
   bool UnalignedLoadSupported(MachineRepresentation rep) {

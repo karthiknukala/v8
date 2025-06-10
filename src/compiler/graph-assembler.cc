@@ -194,7 +194,7 @@ TNode<BoolT> GraphAssembler::UintPtrLessThanOrEqual(TNode<UintPtrT> left,
 
 TNode<UintPtrT> GraphAssembler::UintPtrAdd(TNode<UintPtrT> left,
                                            TNode<UintPtrT> right) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   if (left.IsCapability()) {
     return TNode<UintPtrT>::UncheckedCast(CapAdd(left, right))
         .MarkAsCapability();
@@ -202,19 +202,19 @@ TNode<UintPtrT> GraphAssembler::UintPtrAdd(TNode<UintPtrT> left,
     return TNode<UintPtrT>::UncheckedCast(CapAdd(right, left))
         .MarkAsCapability();
   }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   return kSystemPointerAddrSize == 8
              ? TNode<UintPtrT>::UncheckedCast(Int64Add(left, right))
              : TNode<UintPtrT>::UncheckedCast(Int32Add(left, right));
 }
 TNode<UintPtrT> GraphAssembler::UintPtrSub(TNode<UintPtrT> left,
                                            TNode<UintPtrT> right) {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   if (left.IsCapability()) {
     return TNode<UintPtrT>::UncheckedCast(CapSub(left, right))
         .MarkAsCapability();
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   return kSystemPointerAddrSize == 8
              ? TNode<UintPtrT>::UncheckedCast(Int64Sub(left, right))
              : TNode<UintPtrT>::UncheckedCast(Int32Sub(left, right));
@@ -984,7 +984,7 @@ Node* GraphAssembler::Retain(Node* buffer) {
   return AddNode(graph()->NewNode(common()->Retain(), buffer, effect()));
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 Node* GraphAssembler::CapAdd(Node* a, Node* b) {
   return AddNode(graph()->NewNode(machine()->CapAdd(), a, b));
 }
@@ -1002,7 +1002,7 @@ Node* GraphAssembler::AlignU(Node* a, Node* b) {
 Node* GraphAssembler::AlignD(Node* a, Node* b) {
   return AddNode(graph()->NewNode(machine()->AlignD(), a, b));
 }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 Node* GraphAssembler::IntPtrAdd(Node* a, Node* b) {
   return AddNode(graph()->NewNode(

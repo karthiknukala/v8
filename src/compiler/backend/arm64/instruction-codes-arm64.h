@@ -13,7 +13,7 @@ namespace compiler {
 // Most opcodes specify a single instruction.
 
 // Opcodes that support a MemoryAccessMode.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 #define TARGET_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V) \
   ARM64_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V)        \
   V(Arm64StrCapability)                                    \
@@ -64,7 +64,7 @@ namespace compiler {
   V(Arm64Word64AtomicLoadUint64)                           \
   V(Arm64Word64AtomicStoreWord64)
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define TARGET_ARCH_OPCODE_PURECAP_LIST(V) \
   V(Arm64CapabilityAtomicAdd)              \
   V(Arm64CapabilityAtomicSub)              \
@@ -73,9 +73,9 @@ namespace compiler {
   V(Arm64CapabilityAtomicXor)              \
   V(Arm64CapabilityAtomicExchange)         \
   V(Arm64CapabilityAtomicCompareExchange)
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
 #define TARGET_ARCH_OPCODE_PURECAP_LIST(V)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 #define TARGET_ARCH_OPCODE_LIST(V)                   \
   TARGET_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V) \

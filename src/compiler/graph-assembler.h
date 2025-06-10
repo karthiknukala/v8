@@ -419,14 +419,14 @@ class V8_EXPORT_PRIVATE GraphAssembler {
                         Node* value);
 
   Node* Retain(Node* buffer);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node* CapAdd(Node* a, Node* b);
   Node* CapSub(Node* a, Node* b);
   Node* CapabilityIsTagged(Node* maybe_cap);
 
   Node* AlignU(Node* a, Node* b);
   Node* AlignD(Node* a, Node* b);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   Node* IntPtrAdd(Node* a, Node* b);
   Node* IntPtrSub(Node* a, Node* b);
 

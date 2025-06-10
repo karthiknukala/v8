@@ -446,14 +446,14 @@ bool InstructionSelector::CanAddressRelativeToRootsRegister(
   //    execution?
   const bool all_root_relative_offsets_are_constant =
       (enable_roots_relative_addressing_ == kEnableRootsRelativeAddressing);
-#ifndef __CHERI_PURE_CAPABILITY__
+#if !V8_TARGET_CHERI
   // XXX(cheri): We don't run this check because kRootRegister isn't guaranteed
   // to have a capability that spans *all* the data. Notably, any external
   // reference to something inside the Debug class will not be reachable via the
   // kRootRegister, so we have to disable this check in ordet to correctly
   // generate the IR opcodes.
   if (all_root_relative_offsets_are_constant) return true;
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
 
   // 3. IsAddressableThroughRootRegister: Is the target address guaranteed to
   //    have a fixed root-relative offset? If so, we can ignore 2.
@@ -1041,20 +1041,20 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
     case CallDescriptor::kCallWasmCapiFunction:
     case CallDescriptor::kCallWasmFunction:
     case CallDescriptor::kCallWasmImportWrapper:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       DCHECK_IMPLIES(
           call_address_immediate,
           callee->opcode() != IrOpcode::kRelocatableInt64Constant &&
               callee->opcode() != IrOpcode::kRelocatableInt32Constant);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       buffer->instruction_args.push_back(
           (call_address_immediate &&
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
            callee->opcode() == IrOpcode::kRelocatableCapability64Constant)
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
            (callee->opcode() == IrOpcode::kRelocatableInt64Constant ||
             callee->opcode() == IrOpcode::kRelocatableInt32Constant))
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
               ? g.UseImmediate(callee)
               : call_use_fixed_target_reg
                     ? g.UseFixed(callee, kJavaScriptCallCodeStartRegister)
@@ -1664,12 +1664,12 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord64(node), VisitUint64Mod(node);
     case IrOpcode::kBitcastTaggedToWord:
     case IrOpcode::kBitcastTaggedToWordForTagAndSmiBits:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       return MarkAsWord64(node), VisitBitcastTaggedToWord(node);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
       return MarkAsRepresentation(MachineType::PointerRepresentation(), node),
              VisitBitcastTaggedToWord(node);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     case IrOpcode::kBitcastWordToTagged:
       return MarkAsTagged(node), VisitBitcastWordToTagged(node);
     case IrOpcode::kBitcastWordToTaggedSigned:
@@ -2679,7 +2679,7 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kI16x16ExtMulI8x16U:
       return MarkAsSimd256(node), VisitI16x16ExtMulI8x16U(node);
 #endif  //  V8_TARGET_ARCH_X64
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case IrOpcode::kCapAdd:
       return MarkAsCapability(node), VisitCapAdd(node);
     case IrOpcode::kCapSub:
@@ -2692,7 +2692,7 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsCapability(node), VisitAlignU(node);
     case IrOpcode::kAlignD:
       return MarkAsCapability(node), VisitAlignD(node);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     case IrOpcode::kCapabilityIsTagged:
       return MarkAsRepresentation(MachineRepresentation::kWord8, node),
              VisitCapabilityIsTagged(node);
@@ -3603,7 +3603,7 @@ void InstructionSelector::VisitDebugBreak(Node* node) {
   Emit(kArchDebugBreak, g.NoOutput());
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 void InstructionSelector::VisitAlignU(Node* node) {
   OperandGenerator g(this);
   Node* to_boundary = node->InputAt(1);
@@ -3619,7 +3619,7 @@ void InstructionSelector::VisitAlignD(Node* node) {
   Emit(kArchAlignD, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
        g.UseImmediate(to_boundary));
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 void InstructionSelector::VisitCapabilityIsTagged(Node* node) {
   OperandGenerator g(this);

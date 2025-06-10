@@ -125,16 +125,16 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* RelocatableInt64Constant(int64_t value, RelocInfo::Mode rmode) {
     return AddNode(common()->RelocatableInt64Constant(value, rmode));
   }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node* RelocatableCapability64Constant(intptr_t value, RelocInfo::Mode rmode) {
     return AddNode(common()->RelocatableCapability64Constant(value, rmode));
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   Node* Projection(int index, Node* a) {
     return AddNode(common()->Projection(index), a);
   }
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   Node* Capability32Constant(intptr_t value) {
     return AddNode(common()->Capability32Constant(value));
   }
@@ -272,19 +272,19 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     }
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node* AtomicLoadCapability(AtomicLoadParameters rep, Node* base,
                              Node* index) {
     DCHECK_EQ(rep.representation().representation(),
               MachineType::PointerRepresentation());
     return AddNode(machine()->CapabilityAtomicLoad(rep), base, index);
   }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   [[noreturn]] Node* AtomicLoadCapability(AtomicLoadParameters rep, Node* base,
                                           Node* index) {
     CHECK_WITH_MSG(false, "This code path is not supported on non-CHERI.");
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 #if defined(V8_TARGET_BIG_ENDIAN)
 #define VALUE_HALVES value_high, value
@@ -313,7 +313,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     }
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node* AtomicStoreCapability(AtomicStoreParameters params, Node* base,
                               Node* index, Node* value) {
     DCHECK(!IsMapOffsetConstantMinusTag(index));
@@ -353,7 +353,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   ATOMIC_FUNCTION(Xor)
 #undef ATOMIC_FUNCTION
 #undef VALUE_HALVES
-#else  // !__CHERI_PURE_CAPABILITY__
+#else
 #define ATOMIC_FUNCTION(name)                                                  \
   Node* Atomic##name(MachineType type, Node* base, Node* index, Node* value) { \
     DCHECK_NE(type.representation(), MachineRepresentation::kWord64);          \
@@ -381,7 +381,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   ATOMIC_FUNCTION(Xor)
 #undef ATOMIC_FUNCTION
 #undef VALUE_HALVES
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   Node* AtomicCompareExchange(MachineType type, Node* base, Node* index,
                               Node* old_value, Node* new_value) {
@@ -412,12 +412,12 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->MemoryBarrier(order));
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   // CHERI alignment instructions. Maps to alignu/alignd on Morello and will get
   // expanded upon on CHERI-RISC-V.
   Node* AlignU(Node* a, Node* b) { return AddNode(machine()->AlignU(), a, b); }
   Node* AlignD(Node* a, Node* b) { return AddNode(machine()->AlignD(), a, b); }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Arithmetic Operations.
   Node* WordAnd(Node* a, Node* b) {
@@ -685,14 +685,14 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->CapabilityIsTagged(), value);
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Node* CapAdd(Node* a, Node* b) {
     return AddNode(machine()->CapAdd(), a, b);
   }
   Node* CapSub(Node* a, Node* b) {
     return AddNode(machine()->CapSub(), a, b);
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 #define INTPTR_BINOP(prefix, name)                           \
   Node* IntPtr##name(Node* a, Node* b) {                     \

@@ -183,7 +183,7 @@ class MachineRepresentationInferrer {
             representation_vector_[node->id()] =
                 MachineRepresentation::kCompressedPointer;
             break;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
           case IrOpcode::kCapAdd:
           case IrOpcode::kCapSub:
           case IrOpcode::kCapability32Constant:
@@ -687,7 +687,7 @@ class MachineRepresentationChecker {
           case IrOpcode::kFrameState:
           case IrOpcode::kStaticAssert:
             break;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
           case IrOpcode::kCapAdd:
             CheckValueInputIsTaggedOrPointer(node, 0);
             CheckValueInputRepresentationIs(
@@ -710,22 +710,22 @@ class MachineRepresentationChecker {
 
  private:
   static bool Is32() {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kCapability32;
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kWord32;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   }
   static bool Is64() {
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kCapability64;
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     return MachineType::PointerRepresentation() ==
            MachineRepresentation::kWord64;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   }
 
   void CheckValueInputRepresentationIs(Node const* node, int index,
@@ -733,7 +733,7 @@ class MachineRepresentationChecker {
     Node const* input = node->InputAt(index);
     MachineRepresentation input_representation =
         inferrer_->GetRepresentation(input);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
     switch (input_representation) {
       case MachineRepresentation::kWord32:
         if (representation == MachineRepresentation::kCapability32) {
@@ -844,7 +844,7 @@ class MachineRepresentationChecker {
       case MachineRepresentation::kWord8:
       case MachineRepresentation::kWord16:
       case MachineRepresentation::kWord32:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       case MachineRepresentation::kCapability32:
 #endif
         if (Is32()) {
@@ -852,7 +852,7 @@ class MachineRepresentationChecker {
         }
         break;
       case MachineRepresentation::kWord64:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       case MachineRepresentation::kCapability64:
 
 #endif
@@ -945,7 +945,7 @@ class MachineRepresentationChecker {
         inferrer_->GetRepresentation(input);
     switch (input_representation) {
       case MachineRepresentation::kWord64:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       case MachineRepresentation::kCapability64:
 #endif
         return;
@@ -1053,7 +1053,7 @@ class MachineRepresentationChecker {
       case MachineRepresentation::kWord8:
       case MachineRepresentation::kWord16:
       case MachineRepresentation::kWord64:
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       return (actual == MachineRepresentation::kCapability64 ||
               actual == expected);
 #else
@@ -1064,7 +1064,7 @@ class MachineRepresentationChecker {
                 actual == MachineRepresentation::kWord8 ||
                 actual == MachineRepresentation::kWord16 ||
                 actual == MachineRepresentation::kWord32);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
       case MachineRepresentation::kCapability32:
       return (actual == MachineRepresentation::kWord32 ||
               actual == expected);

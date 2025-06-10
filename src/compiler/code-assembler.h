@@ -230,7 +230,7 @@ class CodeAssemblerParameterizedLabel;
   V(UintPtrGreaterThan, BoolT, WordT, WordT)              \
   V(UintPtrGreaterThanOrEqual, BoolT, WordT, WordT)
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(V) \
   V(CapAdd, WordT, WordT, WordT)                 \
   V(CapSub, WordT, WordT, WordT)
@@ -299,7 +299,7 @@ class CodeAssemblerParameterizedLabel;
   V(Word64Shl, Word64T, Word64T, Word64T)                               \
   V(Word64Shr, Word64T, Word64T, Word64T)                               \
   V(Word64Sar, Word64T, Word64T, Word64T)
-#else // !__CHERI_PURE_CAPABILITY__
+#else
 #define CODE_ASSEMBLER_BINARY_OP_LIST(V)                                \
   CODE_ASSEMBLER_COMPARE_BINARY_OP_LIST(V)                              \
   V(Float64Add, Float64T, Float64T, Float64T)                           \
@@ -364,11 +364,11 @@ class CodeAssemblerParameterizedLabel;
   V(Word64Shl, Word64T, Word64T, Word64T)                               \
   V(Word64Shr, Word64T, Word64T, Word64T)                               \
   V(Word64Sar, Word64T, Word64T, Word64T)
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define CODE_ASSEMBLER_BITCAST_OP_LIST(V)                     \
   V(BitcastTaggedToWord, IntPtrT, Object)                     \
   V(BitcastMaybeObjectToWord, IntPtrT, MaybeObject)           \
@@ -437,7 +437,7 @@ TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
   V(Word32BinaryNot, BoolT, Word32T)                           \
   V(StackPointerGreaterThan, BoolT, WordT)                     \
   V(CapabilityIsTagged, BoolT, WordT)
-#else  // !__CHERI_PURE_CAPABILITY__
+#else
 #define CODE_ASSEMBLER_UNARY_OP_LIST(V)                        \
   V(Float64Abs, Float64T, Float64T)                            \
   V(Float64Acos, Float64T, Float64T)                           \
@@ -504,9 +504,9 @@ TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
   V(Word32BinaryNot, BoolT, Word32T)                           \
   V(StackPointerGreaterThan, BoolT, WordT)                     \
   V(CapabilityIsTagged, BoolT, WordT)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 static_assert(!is_capability<Smi>::value);
 static_assert(is_capability<Object>::value);
 static_assert(is_capability<MaybeObject>::value);
@@ -522,7 +522,7 @@ static_assert(is_capability<RawPtrT>::value);
 static_assert(!is_capability<BInt>::value);
 static_assert(is_capability<HeapObjectReference>::value);
 static_assert(!is_capability<BigInt>::value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 // A "public" interface used by components outside of compiler directory to
 // create code objects with TurboFan's backend. This class is mostly a thin
@@ -1014,64 +1014,64 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void AtomicStore64(AtomicMemoryOrder order, TNode<RawPtrT> base,
                      TNode<WordT> offset, TNode<UintPtrT> value,
                      TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void AtomicStoreCapability(AtomicMemoryOrder order, TNode<RawPtrT> base,
                              TNode<WordT> offset, TNode<UintPtrT> value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   TNode<Word32T> AtomicAdd(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicAdd64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicAddCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                   TNode<UintPtrT> value);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   TNode<Word32T> AtomicSub(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicSub64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicSubCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                   TNode<UintPtrT> value);
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   TNode<Word32T> AtomicAnd(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicAnd64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicAndCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                   TNode<UintPtrT> value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   TNode<Word32T> AtomicOr(MachineType type, TNode<RawPtrT> base,
                           TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicOr64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                          TNode<UintPtrT> value, TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicOrCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                  TNode<UintPtrT> value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   TNode<Word32T> AtomicXor(MachineType type, TNode<RawPtrT> base,
                            TNode<UintPtrT> offset, TNode<Word32T> value);
   template <class Type>
   TNode<Type> AtomicXor64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                           TNode<UintPtrT> value, TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicXorCapability(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                   TNode<UintPtrT> value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Exchange value at raw memory location
   TNode<Word32T> AtomicExchange(MachineType type, TNode<RawPtrT> base,
@@ -1080,12 +1080,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<Type> AtomicExchange64(TNode<RawPtrT> base, TNode<UintPtrT> offset,
                                TNode<UintPtrT> value,
                                TNode<UintPtrT> value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicExchangeCapability(TNode<RawPtrT> base,
                                        TNode<UintPtrT> offset,
                                        TNode<UintPtrT> value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Compare and Exchange value at raw memory location
   TNode<Word32T> AtomicCompareExchange(MachineType type, TNode<RawPtrT> base,
@@ -1099,13 +1099,13 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                                       TNode<UintPtrT> new_value,
                                       TNode<UintPtrT> old_value_high,
                                       TNode<UintPtrT> new_value_high);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   template <class Type>
   TNode<Type> AtomicCompareExchangeCapability(TNode<RawPtrT> base,
                                               TNode<WordT> offset,
                                               TNode<UintPtrT> old_value,
                                               TNode<UintPtrT> new_value);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   void MemoryBarrier(AtomicMemoryOrder order);
 
@@ -1116,12 +1116,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #define DECLARE_CODE_ASSEMBLER_BINARY_OP(name, ResType, Arg1Type, Arg2Type) \
   TNode<ResType> name(TNode<Arg1Type> a, TNode<Arg2Type> b);
   CODE_ASSEMBLER_BINARY_OP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   CODE_ASSEMBLER_PURECAP_BINARY_OP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
   CODE_ASSEMBLER_BINARY_MAYBECAP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
   TNode<WordT> IntPtrAdd(TNode<WordT> a, TNode<WordT> b);
   TNode<WordT> IntPtrSub(TNode<WordT> a, TNode<WordT> b);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 #undef DECLARE_CODE_ASSEMBLER_BINARY_OP
 
   TNode<UintPtrT> WordShr(TNode<UintPtrT> left, TNode<IntegralT> right) {
@@ -1350,21 +1350,15 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                               static_cast<TNode<WordT>>(right)));
   }
   TNode<RawPtrT> RawPtrAdd(TNode<RawPtrT> left, TNode<IntPtrT> right) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(left.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, left.IsCapability());
     return ReinterpretCast<RawPtrT>(IntPtrAdd(left, right));
   }
   TNode<RawPtrT> RawPtrSub(TNode<RawPtrT> left, TNode<IntPtrT> right) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(left.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, left.IsCapability());
     return ReinterpretCast<RawPtrT>(IntPtrSub(left, right));
   }
   TNode<IntPtrT> RawPtrSub(TNode<RawPtrT> left, TNode<RawPtrT> right) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(left.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, left.IsCapability());
     return Signed(IntPtrSub(static_cast<TNode<WordT>>(left),
                             static_cast<TNode<WordT>>(right)));
   }
@@ -1403,9 +1397,9 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #define DECLARE_CODE_ASSEMBLER_UNARY_OP(name, ResType, ArgType) \
   TNode<ResType> name(TNode<ArgType> a);
   CODE_ASSEMBLER_UNARY_OP_LIST(DECLARE_CODE_ASSEMBLER_UNARY_OP)
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   CODE_ASSEMBLER_BITCAST_OP_LIST(DECLARE_CODE_ASSEMBLER_UNARY_OP)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 #undef DECLARE_CODE_ASSEMBLER_UNARY_OP
 
   template <class Dummy = void>
@@ -1823,26 +1817,26 @@ class TypedCodeAssemblerVariable : public CodeAssemblerVariable {
   }
   void operator=(const TypedCodeAssemblerVariable<T>& variable) {
     Bind(variable.value());
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     is_capability_ = variable.is_capability_;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void MarkAsCapability() { is_capability_ = true; }
   void MarkAsInteger() { is_capability_ = false; }
   bool IsCapability() const { return is_capability_; }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   void MarkAsCapability() {}
   void MarkAsInteger() {}
   bool IsCapability() const { return false; }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
  private:
   using CodeAssemblerVariable::Bind;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   bool is_capability_ = false;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 };
 
 class V8_EXPORT_PRIVATE CodeAssemblerLabel {

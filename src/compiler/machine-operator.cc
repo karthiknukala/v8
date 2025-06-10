@@ -777,19 +777,13 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(S256Select, Operator::kNoProperties, 3, 0, 1)                          \
   V(S256AndNot, Operator::kNoProperties, 2, 0, 1)
 
-#if defined(__CHERI_PURE_CAPABILITY__)
-// The format is:
-// V(Name, properties, value_input_count, control_input_count, output_count)
-// TODO(gcjenkinson): I'm not sure about the commutative property here,
-// I'm adding an IntPtrT to a WordT, drawing a distinction between a
-// pointer and an integer constant so I don't think the operation is
-// commutative.
+#if V8_TARGET_CHERI
 #define MACHINE_PURE_OP_LIST_PURECAP(V)       \
   V(CapAdd, Operator::kAssociative, 2, 0, 1)  \
   V(CapSub, Operator::kNoProperties, 2, 0, 1) \
   V(AlignU, Operator::kNoProperties, 2, 0, 1) \
   V(AlignD, Operator::kNoProperties, 2, 0, 1)
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 // The format is:
 // V(Name, properties, value_input_count, control_input_count, output_count)
@@ -852,7 +846,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(AnyCompressed)           \
   V(Simd256)
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define MACHINE_REPRESENTATION_LIST(V) \
   V(kFloat32)                          \
   V(kFloat64)                          \
@@ -871,7 +865,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(kSimd256)                          \
   V(kCapability64)                     \
   V(kCapability32)
-#else // !__CHERI_PURE_CAPABILITY__
+#else
 #define MACHINE_REPRESENTATION_LIST(V) \
   V(kFloat32)                          \
   V(kFloat64)                          \
@@ -935,7 +929,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 
 #else
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define STORE_PAIR_MACHINE_REPRESENTATION_LIST(V) \
   V(kWord32, kWord32)                             \
   V(kWord64, kWord64)                             \
@@ -948,7 +942,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(kTaggedPointer, kTagged)                      \
   V(kTaggedPointer, kTaggedSigned)                \
   V(kTaggedPointer, kTaggedPointer)
-#else // !__CHERI_PURE_CAPABILITY__
+#else
 #define STORE_PAIR_MACHINE_REPRESENTATION_LIST(V) \
   V(kWord32, kWord32)                             \
   V(kWord64, kWord64)                             \
@@ -967,7 +961,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(kTaggedPointer, kTagged)                      \
   V(kTaggedPointer, kTaggedSigned)                \
   V(kTaggedPointer, kTaggedPointer)
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
 #endif  // V8_COMPRESS_POINTERS
 
@@ -993,13 +987,11 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(S256Load32Splat)           \
   V(S256Load64Splat)
 
-#if TAGGED_SIZE_8_BYTES
+#if TAGGED_SIZE_8_BYTES && !V8_TARGET_CHERI
 
 #ifdef __CHERI_PURE_CAPABILITY__
 #error "CHERI is not supported with tagged size of 8 bytes"
 #endif  // __CHERI_PURE_CAPABILITY__
-
-#define ATOMIC_TAGGED_TYPE_LIST(V)
 
 #define ATOMIC64_TAGGED_TYPE_LIST(V) \
   V(TaggedSigned)                    \
@@ -1020,9 +1012,9 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 
 #define ATOMIC_CAPABILITY_TYPE_LIST(V) V(Pointer)
 #else  // !V8_COMPRESS_POINTERS
-#ifndef __CHERI_PURE_CAPABILITY__
+#if !V8_TARGET_CHERI
 #error "This configuration is only supported with purecap"
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
 
 #define ATOMIC_TAGGED_TYPE_LIST(V) \
   V(TaggedSigned)                  \
@@ -1053,7 +1045,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   ATOMIC_U32_TYPE_LIST(V)       \
   V(Uint64)
 
-#if TAGGED_SIZE_8_BYTES
+#if TAGGED_SIZE_8_BYTES && !V8_TARGET_CHERI
 
 #ifdef __CHERI_PURE_CAPABILITY__
 #error "CHERI is not supported with tagged size of 8 bytes"
@@ -1066,7 +1058,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(kTaggedPointer)                            \
   V(kTagged)
 
-#else
+#else  // !(TAGGED_SIZE_8_BYTES && !V8_TARGET_CHERI)
 
 #ifdef V8_COMPRESS_POINTERS
 #define ATOMIC_TAGGED_REPRESENTATION_LIST(V) \
@@ -1079,10 +1071,10 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 #define ATOMIC_CAPABILITY_REPRESENTATION_LIST(V) \
   V(kCapability32)                               \
   V(kCapability64)
-#else  // !V8_COMPRESS_POINTERS
-#ifndef __CHERI_PURE_CAPABILITY__
+#else  // !V8_COMPRESS_POINTERS && !V8_TARGET_CHERI
+#if !V8_TARGET_CHERI
 #error "This configuration is only supported with purecap"
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
 
 #define ATOMIC_TAGGED_REPRESENTATION_LIST(V) \
   V(kTaggedSigned)                           \
@@ -1155,9 +1147,9 @@ struct MachineOperatorGlobalCache {
   };                                                                           \
   Name##Operator k##Name;
   MACHINE_PURE_OP_LIST(PURE)
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   MACHINE_PURE_OP_LIST_PURECAP(PURE)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif
   struct NormalWord32SarOperator final : public Operator1<ShiftKind> {
     NormalWord32SarOperator()
         : Operator1<ShiftKind>(IrOpcode::kWord32Sar, Operator::kPure,
@@ -1513,7 +1505,7 @@ struct MachineOperatorGlobalCache {
 #undef ATOMIC_LOAD_WITH_KIND
 #undef ATOMIC_LOAD
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define ATOMIC_LOAD_WITH_KIND(Type, Kind)                               \
   struct CapabilitySeqCstLoad##Type##Kind##Operator                     \
       : public Operator1<AtomicLoadParameters> {                        \
@@ -1532,7 +1524,7 @@ struct MachineOperatorGlobalCache {
   ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_LOAD)
 #undef ATOMIC_LOAD_WITH_KIND
 #undef ATOMIC_LOAD
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 #define ATOMIC_STORE_WITH_KIND(Type, Kind)                                 \
   struct Word32SeqCstStore##Type##Kind##Operator                           \
@@ -1576,7 +1568,7 @@ struct MachineOperatorGlobalCache {
 #undef ATOMIC_STORE_WITH_KIND
 #undef ATOMIC_STORE
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define ATOMIC_STORE_WITH_KIND(Type, Kind)                                   \
   struct CapabilitySeqCstStore##Type##Kind##Operator                         \
       : public Operator1<AtomicStoreParameters> {                            \
@@ -1597,7 +1589,7 @@ struct MachineOperatorGlobalCache {
   ATOMIC_CAPABILITY_REPRESENTATION_LIST(ATOMIC_STORE)
 #undef ATOMIC_STORE_WITH_KIND
 #undef ATOMIC_STORE
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 #define ATOMIC_OP(op, type, kind)                                              \
   struct op##type##kind##Operator : public Operator1<AtomicOpParameters> {     \
@@ -1636,7 +1628,7 @@ struct MachineOperatorGlobalCache {
   ATOMIC_U64_TYPE_LIST(ATOMIC64_OP_LIST)
 #undef ATOMIC64_OP_LIST_WITH_KIND
 #undef ATOMIC64_OP_LIST
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, kind) \
   ATOMIC_OP(CapabilityAtomicAdd, type, kind)            \
   ATOMIC_OP(CapabilityAtomicSub, type, kind)            \
@@ -1650,7 +1642,7 @@ struct MachineOperatorGlobalCache {
   ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_CAPABILITY_OP_LIST)
 #undef ATOMIC_CAPABILITY_OP_LIST_WITH_KIND
 #undef ATOMIC_CAPABILITY_OP_LIST
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 #undef ATOMIC_OP
 
 #define ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Kind)                          \
@@ -1697,7 +1689,7 @@ struct MachineOperatorGlobalCache {
 #undef ATOMIC_COMPARE_EXCHANGE_WITH_KIND
 #undef ATOMIC_COMPARE_EXCHANGE
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #define ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Kind)              \
   struct CapabilityAtomicCompareExchange##Type##Kind##Operator     \
       : public Operator1<AtomicOpParameters> {                     \
@@ -1717,7 +1709,7 @@ struct MachineOperatorGlobalCache {
   ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_COMPARE_EXCHANGE)
 #undef ATOMIC_COMPARE_EXCHANGE_WITH_KIND
 #undef ATOMIC_COMPARE_EXCHANGE
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   struct Word32SeqCstPairLoadOperator : public Operator1<AtomicMemoryOrder> {
     Word32SeqCstPairLoadOperator()
@@ -1871,15 +1863,15 @@ MachineOperatorBuilder::MachineOperatorBuilder(
       word_(word),
       flags_(flags),
       alignment_requirements_(alignmentRequirements) {
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   DCHECK(word == MachineRepresentation::kWord32 ||
          word == MachineRepresentation::kWord64 ||
          word == MachineRepresentation::kCapability32 ||
          word == MachineRepresentation::kCapability64);
-#else   // !defined(__CHERI_PURE_CAPABILITY__)
+#else
   DCHECK(word == MachineRepresentation::kWord32 ||
          word == MachineRepresentation::kWord64);
-#endif  // defined(__CHERI_PURE_CAPABILITY__)
+#endif
 }
 
 const Operator* MachineOperatorBuilder::UnalignedLoad(LoadRepresentation rep) {
@@ -1911,9 +1903,9 @@ const Operator* MachineOperatorBuilder::UnalignedStore(
              output_count)                                             \
   const Operator* MachineOperatorBuilder::Name() { return &cache_.k##Name; }
 MACHINE_PURE_OP_LIST(PURE)
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 MACHINE_PURE_OP_LIST_PURECAP(PURE)
-#endif // defined(__CHERI_PURE_CAPABILITY__)
+#endif
 #undef PURE
 
 const Operator* MachineOperatorBuilder::Word32Sar(ShiftKind kind) {
@@ -2478,7 +2470,7 @@ const Operator* MachineOperatorBuilder::Word64AtomicLoad(
   UNREACHABLE();
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 const Operator* MachineOperatorBuilder::CapabilityAtomicLoad(
     AtomicLoadParameters params) {
 #define CACHED_LOAD_WITH_KIND(Type, Kind)               \
@@ -2505,7 +2497,7 @@ const Operator* MachineOperatorBuilder::CapabilityAtomicLoad(
 
   UNREACHABLE();
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 const Operator* MachineOperatorBuilder::Word64AtomicStore(
     AtomicStoreParameters params) {
@@ -2536,7 +2528,7 @@ const Operator* MachineOperatorBuilder::Word64AtomicStore(
   UNREACHABLE();
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 const Operator* MachineOperatorBuilder::CapabilityAtomicStore(
     AtomicStoreParameters params) {
 #define CACHED_STORE_WITH_KIND(kRep, Kind)                      \
@@ -2564,7 +2556,7 @@ const Operator* MachineOperatorBuilder::CapabilityAtomicStore(
 
   UNREACHABLE();
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 const Operator* MachineOperatorBuilder::Word64AtomicAdd(
     AtomicOpParameters params) {
@@ -2678,7 +2670,7 @@ const Operator* MachineOperatorBuilder::Word64AtomicCompareExchange(
   UNREACHABLE();
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 const Operator* MachineOperatorBuilder::CapabilityAtomicCompareExchange(
     AtomicOpParameters params) {
 #define OP_WITH_KIND(kType, Kind)                             \
@@ -2694,7 +2686,7 @@ const Operator* MachineOperatorBuilder::CapabilityAtomicCompareExchange(
 #undef OP
   UNREACHABLE();
 }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
 const Operator* MachineOperatorBuilder::Word32AtomicPairLoad(
     AtomicMemoryOrder order) {
@@ -2853,9 +2845,9 @@ const Operator* MachineOperatorBuilder::ExtractF128(int32_t lane_index) {
 #undef PURE_BINARY_OP_LIST_32
 #undef PURE_BINARY_OP_LIST_64
 #undef MACHINE_PURE_OP_LIST
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 #undef MACHINE_PURE_OP_LIST_PURECAP
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 #undef PURE_OPTIONAL_OP_LIST
 #undef OVERFLOW_OP_LIST
 #undef MACHINE_TYPE_LIST

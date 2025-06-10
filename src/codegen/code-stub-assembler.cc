@@ -668,15 +668,15 @@ TNode<IntPtrT> CodeStubAssembler::PopulationCountFallback(
   // C++ code and comments from there for reference.
   // Fall back to divide-and-conquer popcount (see "Hacker's Delight" by Henry
   // S. Warren,  Jr.), chapter 5-1.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   constexpr uint64_t mask[] = {static_cast<uint64_t>(0x5555555555555555),
                                static_cast<uint64_t>(0x3333333333333333),
                                static_cast<uint64_t>(0x0f0f0f0f0f0f0f0f)};
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   constexpr uintptr_t mask[] = {static_cast<uintptr_t>(0x5555555555555555),
                                 static_cast<uintptr_t>(0x3333333333333333),
                                 static_cast<uintptr_t>(0x0f0f0f0f0f0f0f0f)};
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // TNode<UintPtrT> value = Unsigned(value_word);
   TNode<UintPtrT> lhs, rhs;
@@ -1392,27 +1392,25 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
   TNode<RawPtrT> top = Load<RawPtrT>(top_address);
   TNode<RawPtrT> limit = Load<RawPtrT>(limit_address);
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(top_address.IsCapability());
-  DCHECK(limit_address.IsCapability());
-  DCHECK(top.IsCapability());
-  DCHECK(limit.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, top_address.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, limit_address.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, top.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, limit.IsCapability());
 
   // If there's not enough space, call the runtime.
   TVARIABLE(Object, result);
   Label runtime_call(this, Label::kDeferred), no_runtime_call(this), out(this);
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
   // By setting this to false, a call to the runtime will default to
   // kTaggedAligned, which on a CHERI build is going to be correctly aligned to
   // the pointer size boundary.
   // TODO(cheri): Might make sense to make this encoding explicit?
   // TODO(cheri): Enable for compressed builds too? Unclear at this point.
   constexpr bool needs_double_alignment = false;
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
   bool needs_double_alignment = flags & AllocationFlag::kDoubleAlignment;
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
   bool allow_large_object_allocation =
       flags & AllocationFlag::kAllowLargeObjectAllocation;
 
@@ -1433,20 +1431,20 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
 
   TVARIABLE(IntPtrT, adjusted_size, size_in_bytes);
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
   // Do this unconditionally on CHERI because we always need to check
   // alignment.
   {
     constexpr ScaledInt alignment_mask = kSystemPointerAlignmentMask;
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
   if (needs_double_alignment) {
     constexpr ScaledInt alignment_mask = kDoubleAlignmentMask;
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
     Label next(this);
     GotoIfNot(Word32And(TruncateIntPtrToInt32(UncheckedCast<IntPtrT>(top)),
                                         Uint32Constant(alignment_mask)), &next);
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
     DCHECK(top.IsCapability());
     TNode<IntPtrT> rounded_top = IntPtrRoundUpToByteBoundary(
         UncheckedCast<IntPtrT>(top).MarkAsCapability(), kSystemPointerSize);
@@ -1456,26 +1454,26 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
     DCHECK(!padding_needed.IsCapability());
     adjusted_size = IntPtrAdd(size_in_bytes, padding_needed);
     DCHECK(!adjusted_size.IsCapability());
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
     adjusted_size = IntPtrAdd(size_in_bytes, IntPtrConstant(4));
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
     Goto(&next);
 
     BIND(&next);
   }
 
   adjusted_size = AlignToAllocationAlignment(adjusted_size.value());
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK(!adjusted_size.IsCapability());
   TNode<IntPtrT> new_top = IntPtrRoundUpToByteBoundary(
       IntPtrAdd(UncheckedCast<IntPtrT>(top).MarkAsCapability(),
                 adjusted_size.value()),
       kSystemPointerSize);
   DCHECK(new_top.IsCapability());
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   TNode<IntPtrT> new_top = IntPtrAdd(
       UncheckedCast<IntPtrT>(top).MarkAsCapability(), adjusted_size.value());
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   Branch(UintPtrGreaterThanOrEqual(new_top, limit), &runtime_call,
          &no_runtime_call);
@@ -1505,17 +1503,17 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
 
     TVARIABLE(IntPtrT, address, UncheckedCast<IntPtrT>(top).MarkAsCapability());
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
     // Do this unconditionally on CHERI because we always need to check
     // alignment.
     {
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
     if (needs_double_alignment) {
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
       Label next(this);
       GotoIf(IntPtrEqual(adjusted_size.value(), size_in_bytes), &next);
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
       // TODO/FIXME(cheri): Figure out how to store a filler here without making
       // a mess. The issue is (roughly) that a filler map size is going to be
       // kSystemPointerSized, which on CHERI will be 16, but we are padding up
@@ -1532,12 +1530,12 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
       address = IntPtrAdd(UncheckedCast<IntPtrT>(top).MarkAsCapability(),
                           padding_needed);
       DCHECK(address.IsCapability());
-#else   // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
+#else
       // Store a filler and increase the address by 4.
       StoreNoWriteBarrier(MachineRepresentation::kTagged, top,
                           OnePointerFillerMapConstant());
       address = IntPtrAdd(UncheckedCast<IntPtrT>(top), IntPtrConstant(4));
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+#endif
       Goto(&next);
 
       BIND(&next);
@@ -1545,9 +1543,7 @@ TNode<HeapObject> CodeStubAssembler::AllocateRaw(TNode<IntPtrT> size_in_bytes,
 
     result = BitcastWordToTagged(
         IntPtrAdd(address.value(), IntPtrConstant(kHeapObjectTag)));
-#ifdef __CHERI_PURE_CAPABILITY__
-    DCHECK(result.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, result.IsCapability());
     Goto(&out);
   }
 
@@ -1881,9 +1877,7 @@ void CodeStubAssembler::StoreExternalPointerToObject(TNode<HeapObject> object,
 
   TNode<UintPtrT> value = UncheckedCast<UintPtrT>(pointer);
   value = UncheckedCast<UintPtrT>(WordOr(pointer, UintPtrConstant(tag)));
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, value.IsCapability());
   StoreNoWriteBarrier(MachineType::PointerRepresentation(), table, table_offset,
                       value);
 #else
@@ -2623,9 +2617,8 @@ void CodeStubAssembler::FixedArrayBoundsCheck(TNode<FixedArrayBase> array,
 TNode<Object> CodeStubAssembler::LoadPropertyArrayElement(
     TNode<PropertyArray> object, TNode<IntPtrT> index) {
   int additional_offset = 0;
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  DCHECK(object.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 object.IsCapability());
   return CAST(LoadArrayElement(object, PropertyArray::kHeaderSize, index,
                                additional_offset));
 }
@@ -2660,10 +2653,8 @@ TNode<RawPtrT> CodeStubAssembler::LoadJSTypedArrayDataPtr(
                            typed_array, JSTypedArray::kBasePointerOffset))
                        .MarkAsCapability();
   }
-#ifdef __CHERI_PURE_CAPABILITY__
-#ifndef V8_COMPRESS_POINTERS
-  DCHECK(base_pointer.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
+  DCHECK_IMPLIES(!COMPRESS_POINTERS_BOOL, base_pointer.IsCapability());
   Label base_is_cap(this), done(this);
   TVARIABLE(RawPtrT, result);
   GotoIf(CapabilityIsTagged(UncheckedCast<UintPtrT>(base_pointer)),
@@ -2682,9 +2673,9 @@ TNode<RawPtrT> CodeStubAssembler::LoadJSTypedArrayDataPtr(
   }
   BIND(&done);
   return result.value();
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   return RawPtrAdd(external_pointer, base_pointer);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 }
 
 TNode<BigInt> CodeStubAssembler::LoadFixedBigInt64ArrayElementAsTagged(
@@ -3375,9 +3366,8 @@ void CodeStubAssembler::StoreObjectField(TNode<HeapObject> object,
   if (TryToInt32Constant(offset, &const_offset)) {
     StoreObjectField(object, const_offset, value);
   } else {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   value.IsCapability());
     Store(object, IntPtrSub(offset, IntPtrConstant(kHeapObjectTag)), value);
   }
 }
@@ -3402,9 +3392,8 @@ void CodeStubAssembler::StoreSharedObjectField(TNode<HeapObject> object,
   if (TryToInt32Constant(offset, &const_offset)) {
     StoreObjectField(object, const_offset, value);
   } else {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   value.IsCapability());
     Store(object, IntPtrSub(offset, IntPtrConstant(kHeapObjectTag)), value);
   }
 }
@@ -3488,9 +3477,8 @@ void CodeStubAssembler::StoreFixedArrayOrPropertyArrayElement(
   } else if (barrier_mode == UPDATE_EPHEMERON_KEY_WRITE_BARRIER) {
     StoreEphemeronKey(object, offset, value);
   } else {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   value.IsCapability());
     Store(object, offset, value);
   }
 }
@@ -3558,9 +3546,8 @@ void CodeStubAssembler::StoreFeedbackVectorSlot(
     UnsafeStoreNoWriteBarrier(MachineRepresentation::kTagged, feedback_vector,
                               offset, value);
   } else {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   value.IsCapability());
     Store(feedback_vector, offset, value);
   }
 }
@@ -3763,9 +3750,9 @@ TNode<BigInt> CodeStubAssembler::AllocateRawBigInt(TNode<IntPtrT> length) {
       Allocate(size, AllocationFlag::kAllowLargeObjectAllocation);
   StoreMapNoWriteBarrier(raw_result, RootIndex::kBigIntMap);
   if (FIELD_SIZE(BigInt::kOptionalPaddingOffset) != 0) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if V8_TARGET_CHERI && !defined(V8_COMPRESS_POINTERS)
     DCHECK_EQ(12, FIELD_SIZE(BigInt::kOptionalPaddingOffset));
-#elif defined(__CHERI_PURE_CAPABILITY__) && defined(V8_COMPRESS_POINTERS)
+#elif V8_TARGET_CHERI && defined(V8_COMPRESS_POINTERS)
     DCHECK_EQ(8, FIELD_SIZE(BigInt::kOptionalPaddingOffset));
 #else
     DCHECK_EQ(4, FIELD_SIZE(BigInt::kOptionalPaddingOffset));
@@ -3897,9 +3884,8 @@ TNode<ByteArray> CodeStubAssembler::AllocateByteArray(TNode<UintPtrT> length,
   }
 
   BIND(&if_join);
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  DCHECK(var_result.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 var_result.IsCapability());
   return CAST(var_result.value());
 }
 
@@ -5195,16 +5181,11 @@ void CodeStubAssembler::FillFixedArrayWithSmiZero(ElementsKind kind,
   // Call out to memset to perform initialization.
   TNode<ExternalReference> memset =
       ExternalConstant(ExternalReference::libc_memset_function());
-#if defined(__CHERI_PURE_CAPABILITY__)
-  // TODO(gcjenkinson): Code Stub Assembler uses IntPtr for integer values,
-  // hence the check as to whether the size matches that of size_t. Longer
-  // term this must be change on CHERI as using a capability carrying type
-  // for an integer value is wasteful and confusing as it makes it unclear
-  // where a capability speciifc load/store/add should be generated.
+#if V8_TARGET_CHERI
   static_assert(kSizetSize == kSystemPointerAddrSize);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   static_assert(kSizetSize == kIntptrSize);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   CallCFunction(memset, MachineType::Pointer(),
                 std::make_pair(MachineType::Pointer(), backing_store),
                 std::make_pair(MachineType::IntPtr(), IntPtrConstant(0)),
@@ -5230,16 +5211,11 @@ void CodeStubAssembler::FillFixedDoubleArrayWithZero(
   // Call out to memset to perform initialization.
   TNode<ExternalReference> memset =
       ExternalConstant(ExternalReference::libc_memset_function());
-#if defined(__CHERI_PURE_CAPABILITY__)
-  // TODO(gcjenkinson): Code Stub Assembler uses IntPtr for integer values,
-  // hence the check as to whether the size matches that of size_t. Longer
-  // term this must be change on CHERI as using a capability carrying type
-  // for an integer value is wasteful and confusing as it makes it unclear
-  // where a capability speciifc load/store/add should be generated.
+#if V8_TARGET_CHERI
   static_assert(kSizetSize == kSystemPointerAddrSize);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   static_assert(kSizetSize == kIntptrSize);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   CallCFunction(memset, MachineType::Pointer(),
                 std::make_pair(MachineType::Pointer(), backing_store),
                 std::make_pair(MachineType::IntPtr(), IntPtrConstant(0)),
@@ -5656,9 +5632,8 @@ void CodeStubAssembler::CopyPropertyArrayValues(TNode<HeapObject> from_array,
         }
 
         if (needs_write_barrier) {
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-          DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+          DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                         value.IsCapability());
           Store(to_array, offset, value);
         } else {
           StoreNoWriteBarrier(MachineRepresentation::kTagged, to_array, offset,
@@ -7324,7 +7299,7 @@ void CodeStubAssembler::GotoIfLargeBigInt(TNode<BigInt> bigint,
       DecodeWord32<BigIntBase::LengthBits>(LoadBigIntBitfield(bigint));
   GotoIf(Word32Equal(length, Uint32Constant(0)), &false_label);
   GotoIfNot(Word32Equal(length, Uint32Constant(1)), true_label);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Branch(WordEqual(UintPtrConstant(0),
                    WordAnd(LoadBigIntDigit(bigint, 0),
                            UintPtrConstant(static_cast<uintptr_t>(
@@ -7571,15 +7546,15 @@ TNode<IntPtrT> CodeStubAssembler::LoadBasicMemoryChunkFlags(
     TNode<HeapObject> object) {
   TNode<IntPtrT> object_word = BitcastTaggedToWord(object);
   TNode<IntPtrT> page = PageFromAddress(object_word);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   return UncheckedCast<IntPtrT>(
       Load(MachineType::IntPtr(), page,
            IntPtrConstant(BasicMemoryChunk::kFlagsOffset)));
-#else // !__CHERI_PURE_CAPABILITY__
+#else
   return UncheckedCast<IntPtrT>(
       Load(MachineType::Pointer(), page,
            IntPtrConstant(BasicMemoryChunk::kFlagsOffset)));
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 }
 
 template <typename TIndex>
@@ -8507,19 +8482,19 @@ TNode<Uint32T> CodeStubAssembler::DecodeWord32(TNode<Word32T> word32,
 }
 
 TNode<UintPtrT> CodeStubAssembler::DecodeWord(TNode<WordT> word, uint32_t shift,
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
                                               uint64_t mask) {
-#else  // !__CHERI_PURE_CAPABILITY__
+#else
                                               uintptr_t mask) {
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
   DCHECK_EQ((mask >> shift) << shift, mask);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   if ((std::numeric_limits<uint64_t>::max() >> shift) ==
       ((std::numeric_limits<uint64_t>::max() & mask) >> shift)) {
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   if ((std::numeric_limits<uintptr_t>::max() >> shift) ==
       ((std::numeric_limits<uintptr_t>::max() & mask) >> shift)) {
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     return Unsigned(WordShr(word, static_cast<int>(shift)));
   } else {
     return Unsigned(WordAnd(WordShr(word, static_cast<int>(shift)),
@@ -8547,11 +8522,11 @@ TNode<Word32T> CodeStubAssembler::UpdateWord32(TNode<Word32T> word,
 
 TNode<WordT> CodeStubAssembler::UpdateWord(TNode<WordT> word,
                                            TNode<UintPtrT> value,
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
                                            uint32_t shift, uint64_t mask,
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
                                            uint32_t shift, uintptr_t mask,
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
                                            bool starts_as_zero) {
   DCHECK_EQ((mask >> shift) << shift, mask);
   // Ensure the {value} fits fully in the mask.
@@ -9140,11 +9115,11 @@ void CodeStubAssembler::NameDictionaryLookup(
                     std::is_same<Dictionary, NameToIndexHashTable>::value,
                 "Unexpected NameDictionary");
   DCHECK_IMPLIES(var_name_index != nullptr,
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
                  MachineRepresentation::kWord64 == var_name_index->rep());
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
                  MachineType::PointerRepresentation() == var_name_index->rep());
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   DCHECK_IMPLIES(mode == kFindInsertionIndex, if_found == nullptr);
   Comment("NameDictionaryLookup");
   CSA_DCHECK(this, IsUniqueName(unique_name));
@@ -9285,11 +9260,11 @@ void CodeStubAssembler::NumberDictionaryLookup(
     TNode<NumberDictionary> dictionary, TNode<IntPtrT> intptr_index,
     Label* if_found, TVariable<IntPtrT>* var_entry, Label* if_not_found) {
   CSA_DCHECK(this, IsNumberDictionary(dictionary));
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   DCHECK_EQ(MachineRepresentation::kWord64, var_entry->rep());
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   DCHECK_EQ(MachineType::PointerRepresentation(), var_entry->rep());
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   Comment("NumberDictionaryLookup");
 
   TNode<IntPtrT> capacity =
@@ -10274,12 +10249,14 @@ void CodeStubAssembler::LoadPropertyFromFastObject(
     TNode<Uint32T> details, TVariable<Object>* var_value) {
   Comment("[ LoadPropertyFromFastObject");
 
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  DCHECK(object.IsCapability());
-  DCHECK(map.IsCapability());
-  DCHECK(descriptors.IsCapability());
-  DCHECK(var_value->IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 object.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 map.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 descriptors.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 var_value->IsCapability());
   TNode<Uint32T> location =
       DecodeWord32<PropertyDetails::LocationField>(details);
 
@@ -10300,10 +10277,8 @@ void CodeStubAssembler::LoadPropertyFromFastObject(
     field_index =
         IntPtrAdd(field_index, LoadMapInobjectPropertiesStartInWords(map));
     TNode<IntPtrT> instance_size_in_words = LoadMapInstanceSizeInWords(map);
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(!field_index.IsCapability());
     DCHECK(!instance_size_in_words.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 
     Label if_inobject(this), if_backing_store(this);
     TVARIABLE(Float64T, var_double_value);
@@ -10337,10 +10312,9 @@ void CodeStubAssembler::LoadPropertyFromFastObject(
       Comment("if_backing_store");
       TNode<HeapObject> properties = LoadFastProperties(CAST(object));
       field_index = Signed(IntPtrSub(field_index, instance_size_in_words));
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-      DCHECK(properties.IsCapability());
+      DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                     properties.IsCapability());
       DCHECK(!field_index.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
       TNode<Object> value =
           LoadPropertyArrayElement(CAST(properties), field_index);
 
@@ -10626,9 +10600,7 @@ void CodeStubAssembler::TryGetOwnProperty(
   BIND(&if_found_fast);
   {
     TNode<DescriptorArray> descriptors = CAST(var_meta_storage.value());
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
     DCHECK(!var_entry.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
     TNode<IntPtrT> name_index = var_entry.value();
 
     LoadPropertyFromFastObject(object, map, descriptors, name_index,
@@ -11613,12 +11585,12 @@ void CodeStubAssembler::StoreElementTypedArrayBigInt(TNode<RawPtrT> elements,
   TVARIABLE(UintPtrT, var_high);
   BigIntToRawBytes(value, &var_low, &var_high);
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   MachineRepresentation rep =
       Is64() ? MachineRepresentation::kWord64 : MachineRepresentation::kWord32;
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   MachineRepresentation rep = WordT::kMachineRepresentation;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 #if defined(V8_TARGET_BIG_ENDIAN)
     if (!Is64()) {
       StoreNoWriteBarrier(rep, elements, offset, var_high.value());
@@ -12490,9 +12462,7 @@ void CodeStubAssembler::TrapAllocationMemento(TNode<JSObject> object,
 
 TNode<IntPtrT> CodeStubAssembler::PageFromAddress(TNode<IntPtrT> address) {
   DCHECK(!V8_ENABLE_THIRD_PARTY_HEAP_BOOL);
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(address.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, address.IsCapability());
   return WordAnd(address, IntPtrConstant(~kPageAlignmentMask)).MarkAsCapability();
 }
 
@@ -12991,10 +12961,10 @@ TNode<Oddball> CodeStubAssembler::RelationalComparison(
   // conversions.
   TVARIABLE(Object, var_left, left);
   TVARIABLE(Object, var_right, right);
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  DCHECK(var_left.IsCapability());
-  DCHECK(var_right.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 var_left.IsCapability());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                 var_right.IsCapability());
   VariableList loop_variable_list({&var_left, &var_right}, zone());
   if (var_type_feedback != nullptr) {
     // Initialize the type feedback to None. The current feedback is combined
@@ -13008,10 +12978,10 @@ TNode<Oddball> CodeStubAssembler::RelationalComparison(
   {
     left = var_left.value();
     right = var_right.value();
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(left.IsCapability());
-    DCHECK(right.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   left.IsCapability());
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && !COMPRESS_POINTERS_BOOL,
+                   right.IsCapability());
 
     Label if_left_smi(this), if_left_not_smi(this);
     Branch(TaggedIsSmi(left), &if_left_smi, &if_left_not_smi);

@@ -1244,11 +1244,11 @@ struct TryChangeOp : FixedArityOperationT<1, TryChangeOp> {
       case WordRepresentation::Word64():
         return RepVector<RegisterRepresentation::Word64(),
                          RegisterRepresentation::Word32()>();
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case WordRepresentation::Capability64():
         return RepVector<RegisterRepresentation::Capability64(),
                          RegisterRepresentation::Capability64()>();
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     }
   }
 
@@ -1422,9 +1422,9 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
   enum class Kind : uint8_t {
     kWord32,
     kWord64,
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     kCapability64,
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     kFloat32,
     kFloat64,
     kNumber,  // TODO(tebbi): See if we can avoid number constants.
@@ -1442,17 +1442,19 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
     uint64_t integral;
     float float32;
     double float64;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     uintptr_t intptr;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     ExternalReference external;
     Handle<HeapObject> handle;
 
     Storage(uint64_t integral = 0) : integral(integral) {}
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
+    // This is only expected to be enabled with a sizeof(void*) > 8, so these
+    // constructors should not conflict with a uint64_t constructor.
     Storage(uintptr_t intptr = 0) : intptr(intptr) {}
     Storage(intptr_t intptr = 0) : intptr(static_cast<uintptr_t>(intptr)) {}
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     Storage(double constant) : float64(constant) {}
     Storage(float constant) : float32(constant) {}
     Storage(ExternalReference constant) : external(constant) {}
@@ -1478,9 +1480,9 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
       case Kind::kTaggedIndex:
       case Kind::kRelocatableWasmCall:
       case Kind::kRelocatableWasmStubCall:
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case Kind::kCapability64:
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
         return RegisterRepresentation::PointerSized();
       case Kind::kHeapObject:
       case Kind::kNumber:
@@ -1527,12 +1529,12 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
     return static_cast<uint64_t>(storage.integral);
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   uintptr_t capability64() const {
     DCHECK_EQ(kind, Kind::kCapability64);
     return storage.intptr;
   }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   double number() const {
     DCHECK_EQ(kind, Kind::kNumber);
@@ -1570,10 +1572,10 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
       case Kind::kWord64:
       case Kind::kTaggedIndex:
         return storage.integral == 0;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case Kind::kCapability64:
         return storage.intptr == 0;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       case Kind::kFloat32:
         return storage.float32 == 0;
       case Kind::kFloat64:
@@ -1594,10 +1596,10 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
       case Kind::kWord64:
       case Kind::kTaggedIndex:
         return storage.integral == 1;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case Kind::kCapability64:
         return storage.intptr == 1;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       case Kind::kFloat32:
         return storage.float32 == 1;
       case Kind::kFloat64:
@@ -1623,7 +1625,7 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
     }
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   bool IsCapability64(uintptr_t value) const {
     switch (kind) {
       case Kind::kCapability64:
@@ -1632,7 +1634,7 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
         UNREACHABLE();
     }
   }
-#endif // __CHERI_PURE_CAPABILITY__
+#endif
 
   auto options() const { return std::tuple{kind, storage}; }
 
@@ -1645,10 +1647,10 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
       case Kind::kRelocatableWasmCall:
       case Kind::kRelocatableWasmStubCall:
         return fast_hash_combine(opcode, kind, storage.integral);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case Kind::kCapability64:
         return fast_hash_combine(opcode, kind, storage.intptr);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       case Kind::kFloat32:
         return fast_hash_combine(opcode, kind, storage.float32);
       case Kind::kFloat64:
@@ -1670,10 +1672,10 @@ struct ConstantOp : FixedArityOperationT<0, ConstantOp> {
       case Kind::kRelocatableWasmCall:
       case Kind::kRelocatableWasmStubCall:
         return storage.integral == other.storage.integral;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case Kind::kCapability64:
         return storage.intptr == other.storage.intptr;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       case Kind::kFloat32:
         // Using a bit_cast to uint32_t in order to return false when comparing
         // +0 and -0.

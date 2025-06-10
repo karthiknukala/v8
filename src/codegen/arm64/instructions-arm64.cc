@@ -34,7 +34,7 @@ bool Instruction::IsLoad() const {
       default:
         return false;
     }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   } else if (Mask(LoadStoreCapAnyFMask) == LoadStoreCapAnyFixed) {
     LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreCapMask));
     switch (op) {
@@ -45,7 +45,7 @@ bool Instruction::IsLoad() const {
     }
   } else if (Mask(LoadStorePairCapAnyFMask) == LoadStorePairCapAnyFixed) {
     return Mask(LoadStorePairCapLBit) != 0;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     return false;
   }
@@ -70,7 +70,7 @@ bool Instruction::IsStore() const {
     }
   } else if (Mask(LoadStorePairAnyFMask) == LoadStorePairAnyFixed) {
     return Mask(LoadStorePairLBit) == 0;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
   } else if (Mask(LoadStoreCapAnyFMask) == LoadStoreCapAnyFixed) {
     LoadStoreOp op = static_cast<LoadStoreOp>(Mask(LoadStoreCapMask));
     switch (op) {
@@ -81,7 +81,7 @@ bool Instruction::IsStore() const {
     }
   } else if (Mask(LoadStorePairCapAnyFMask) == LoadStorePairCapAnyFixed) {
     return Mask(LoadStorePairCapLBit) == 0;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   } else {
     return false;
   }
@@ -176,11 +176,11 @@ double Instruction::ImmNEONFP64() const {
 unsigned CalcLSDataSize(LoadStoreOp op, bool is_cap) {
   DCHECK_EQ(static_cast<unsigned>(LSSize_offset + LSSize_width),
             kInstrSize * 8);
-#ifdef __CHERI_PURE_CAPABILITY_
+#if V8_TARGET_CHERI
   if (is_cap && (op == STR_c || op == LDR_c)) {
     return kCRegSizeLog2;
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   unsigned size = static_cast<Instr>(op) >> LSSize_offset;
   if ((op & LSVector_mask) != 0) {
     // Vector register memory operations encode the access size in the "size"
@@ -204,12 +204,12 @@ unsigned CalcLSPairDataSize(LoadStorePairOp op) {
     case STP_d:
     case LDP_d:
       return kXRegSizeLog2;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case STP_c:
       [[fallthrough]];
     case LDP_c:
       return kCRegSizeLog2;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     default:
       return kWRegSizeLog2;
   }
@@ -227,7 +227,7 @@ unsigned CalcLSPairDataSize(LoadStorePairOp op, const CPURegister& rt) {
     case STP_d:
     case LDP_d:
       return kXRegSizeLog2;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     case STP_c:
       [[fallthrough]];
     case LDP_c:
@@ -239,7 +239,7 @@ unsigned CalcLSPairDataSize(LoadStorePairOp op, const CPURegister& rt) {
         return kWRegSizeLog2;
       else
         UNREACHABLE();
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     default:
       return kWRegSizeLog2;
   }
@@ -263,14 +263,14 @@ int64_t Instruction::ImmPCOffset(Address pc) {
     // The offset is always shifted by 2 bits, even for loads to 64-bits
     // registers unless we are using a capability register. In that case, it's
     // shifted by 4 bits.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     if (IsCapLdrLiteral()) {
       DCHECK_NE(pc, 0);
       const size_t pc_remainder =
           V8_CHERI_ADDR_GET(pc) & (kSystemPointerSize - 1);
       offset = CImmLLiteral() * kLoadCapLiteralScale - pc_remainder;
     } else
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       offset = ImmLLiteral() * kInstrSize;
   }
   return offset;
@@ -372,7 +372,7 @@ void Instruction::SetUnresolvedInternalReferenceImmTarget(
 void Instruction::SetImmLLiteral(Instruction* source) {
   DCHECK(IsLdrLiteral());
   DCHECK(IsAligned(DistanceTo(source), kInstrSize));
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   // It makes no sense to check if we can encode it because we are forcefully
   // encoding it and relying on the instruction itself aligning the address down
   // to the multiple of pointer size.
@@ -380,12 +380,12 @@ void Instruction::SetImmLLiteral(Instruction* source) {
       static_cast<int>(RoundUp(DistanceTo(source), kLoadCapLiteralScale) >>
                        kLoadCapLiteralScaleLog2));
   Instr mask = CImmLLiteral_mask;
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   DCHECK(Assembler::IsImmLLiteral(DistanceTo(source)));
   Instr imm = Assembler::ImmLLiteral(
       static_cast<int>(DistanceTo(source) >> kLoadLiteralScaleLog2));
   Instr mask = ImmLLiteral_mask;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   SetInstructionBits(Mask(~mask) | imm);
 }

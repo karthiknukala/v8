@@ -211,14 +211,9 @@ void RegExpMacroAssemblerARM64::Backtrack() {
     __ bind(&next);
   }
   Pop(w10);
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Add(c10, code_pointer(), Operand(w10, UXTW));
   __ PrepareC64Jump(c10);
   __ Br(c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Add(x10, code_pointer(), Operand(w10, UXTW));
-  __ Br(x10);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 
@@ -270,11 +265,7 @@ void RegExpMacroAssemblerARM64::CheckCharacters(
     CheckPosition(cp_offset + str.length() - 1, on_failure);
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
   Register characters_address = c11;
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register characters_address = x11;
-#endif  // __CHERI_PURE_CAPABILITY__
 
   __ Add(characters_address,
          input_end(),
@@ -304,21 +295,13 @@ void RegExpMacroAssemblerARM64::CheckGreedyLoop(Label* on_equal) {
 }
 
 void RegExpMacroAssemblerARM64::PushCachedRegisters() {
-#ifdef __CHERI_PURE_CAPABILITY__
   CPURegList cached_registers(CPURegister::kRegister, kCRegSizeInBits, 0, 7);
-#else   // !__CHERI_PURE_CAPABILITY__
-  CPURegList cached_registers(CPURegister::kRegister, kXRegSizeInBits, 0, 7);
-#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(kNumCachedRegisters, cached_registers.Count() * 2);
   __ PushCPURegList(cached_registers);
 }
 
 void RegExpMacroAssemblerARM64::PopCachedRegisters() {
-#ifdef __CHERI_PURE_CAPABILITY__
   CPURegList cached_registers(CPURegister::kRegister, kCRegSizeInBits, 0, 7);
-#else   // !__CHERI_PURE_CAPABILITY__
-  CPURegList cached_registers(CPURegister::kRegister, kXRegSizeInBits, 0, 7);
-#endif  // __CHERI_PURE_CAPABILITY__
   DCHECK_EQ(kNumCachedRegisters, cached_registers.Count() * 2);
   __ PopCPURegList(cached_registers);
 }
@@ -363,15 +346,9 @@ void RegExpMacroAssemblerARM64::CheckNotBackReferenceIgnoreCase(
     Label fail;
     Label loop_check;
 
-#ifdef __CHERI_PURE_CAPABILITY__
     Register capture_start_address = c12;
     Register capture_end_addresss = c13;
     Register current_position_address = c14;
-#else   // !__CHERI_PURE_CAPABILITY__
-    Register capture_start_address = x12;
-    Register capture_end_addresss = x13;
-    Register current_position_address = x14;
-#endif  // __CHERI_PURE_CAPABILITY__
 
     __ Add(capture_start_address,
            input_end(),
@@ -445,32 +422,16 @@ void RegExpMacroAssemblerARM64::CheckNotBackReferenceIgnoreCase(
     //   x3: Isolate* isolate.
 
     // Address of start of capture.
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Add(c0, input_end(), Operand(capture_start_offset, SXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Add(x0, input_end(), Operand(capture_start_offset, SXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
     // Length of capture.
     __ Mov(w2, capture_length);
     // Address of current input position.
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Add(c1, input_end(), Operand(current_input_offset(), SXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Add(x1, input_end(), Operand(current_input_offset(), SXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
     if (read_backward) {
-#ifdef __CHERI_PURE_CAPABILITY__
       __ Sub(c1, c1, Operand(capture_length, SXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-      __ Sub(x1, x1, Operand(capture_length, SXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
     }
     // Isolate.
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Mov(c3, ExternalReference::isolate_address(isolate()));
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Mov(x3, ExternalReference::isolate_address(isolate()));
-#endif  // __CHERI_PURE_CAPABILITY__
 
     {
       AllowExternalCallThatCantCauseGC scope(masm_.get());
@@ -504,15 +465,9 @@ void RegExpMacroAssemblerARM64::CheckNotBackReference(int start_reg,
                                                       Label* on_no_match) {
   Label fallthrough;
 
-#ifdef __CHERI_PURE_CAPABILITY__
   Register capture_start_address = c12;
   Register capture_end_address = c13;
   Register current_position_address = c14;
-#else   // !__CHERI_PURE_CAPABILITY__
-  Register capture_start_address = x12;
-  Register capture_end_address = x13;
-  Register current_position_address = x14;
-#endif  // __CHERI_PURE_CAPABILITY__
   Register capture_length = w15;
 
   // Find length of back-referenced capture.
@@ -634,13 +589,8 @@ void RegExpMacroAssemblerARM64::CallIsCharacterInRangeArray(
     const ZoneList<CharacterRange>* ranges) {
   static const int kNumArguments = 3;
   __ Mov(w0, current_character());
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c1, GetOrAddRangeArray(ranges));
   __ Mov(c2, ExternalReference::isolate_address(isolate()));
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(x1, GetOrAddRangeArray(ranges));
-  __ Mov(x2, ExternalReference::isolate_address(isolate()));
-#endif  // __CHERI_PURE_CAPABILITY__
 
   {
     // We have a frame (set up in GetCode), but the assembler doesn't know.
@@ -681,22 +631,14 @@ bool RegExpMacroAssemblerARM64::CheckCharacterNotInRangeArray(
 void RegExpMacroAssemblerARM64::CheckBitInTable(
     Handle<ByteArray> table,
     Label* on_bit_set) {
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c11, Operand(table));
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(x11, Operand(table));
-#endif  // __CHERI_PURE_CAPABILITY__
   if ((mode_ != LATIN1) || (kTableMask != String::kMaxOneByteCharCode)) {
     __ And(w10, current_character(), kTableMask);
     __ Add(w10, w10, ByteArray::kHeaderSize - kHeapObjectTag);
   } else {
     __ Add(w10, current_character(), ByteArray::kHeaderSize - kHeapObjectTag);
   }
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Ldrb(w11, MemOperand(c11, w10, UXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Ldrb(w11, MemOperand(x11, w10, UXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
   CompareAndBranchOrBacktrack(w11, 0, ne, on_bit_set);
 }
 
@@ -776,13 +718,8 @@ bool RegExpMacroAssemblerARM64::CheckSpecialClassRanges(
         CompareAndBranchOrBacktrack(current_character(), 'z', hi, on_no_match);
       }
       ExternalReference map = ExternalReference::re_word_character_map();
-#ifdef __CHERI_PURE_CAPABILITY__
       __ Mov(c10, map);
       __ Ldrb(w10, MemOperand(c10, current_character(), UXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-      __ Mov(x10, map);
-      __ Ldrb(w10, MemOperand(x10, current_character(), UXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
       CompareAndBranchOrBacktrack(w10, 0, eq, on_no_match);
       return true;
     }
@@ -794,13 +731,8 @@ bool RegExpMacroAssemblerARM64::CheckSpecialClassRanges(
         __ B(hi, &done);
       }
       ExternalReference map = ExternalReference::re_word_character_map();
-#ifdef __CHERI_PURE_CAPABILITY__
       __ Mov(c10, map);
       __ Ldrb(w10, MemOperand(c10, current_character(), UXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-      __ Mov(x10, map);
-      __ Ldrb(w10, MemOperand(x10, current_character(), UXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
       CompareAndBranchOrBacktrack(w10, 0, ne, on_no_match);
       __ Bind(&done);
       return true;
@@ -849,7 +781,7 @@ void RegExpMacroAssemblerARM64::PopRegExpBasePointer(Register stack_pointer_out,
          MemOperand(frame_pointer(), kRegExpStackBasePointerOffset));
   __ Mov(scratch, ref);
   __ Ldr(scratch, MemOperand(scratch));
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   Label scratch_tagged, done;
   {
     UseScratchRegisterScope temps(masm_.get());
@@ -870,9 +802,9 @@ void RegExpMacroAssemblerARM64::PopRegExpBasePointer(Register stack_pointer_out,
   __ Bind(&scratch_tagged);
   __ Add(stack_pointer_out, scratch, stack_pointer_out);
   __ Bind(&done);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   __ Add(stack_pointer_out, stack_pointer_out, scratch);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   StoreRegExpStackPointerToMemory(stack_pointer_out, scratch);
 }
 
@@ -915,23 +847,13 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
                 kDirectCallOffset - kSystemPointerSize);
   static_assert(kInputStringOffset ==
                 kNumOutputRegistersOffset - kSystemPointerSize);
-#ifdef __CHERI_PURE_CAPABILITY__
   __ PushCPURegList(CPURegList{c0, c5, c6, c7});
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ PushCPURegList(CPURegList{x0, x5, x6, x7});
-#endif  // __CHERI_PURE_CAPABILITY__
 
   // Initialize callee-saved registers.
   __ Mov(start_offset(), w1);
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(input_start(), c2);
   __ Mov(input_end(), c3);
   __ Mov(output_array(), c4);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(input_start(), x2);
-  __ Mov(input_end(), x3);
-  __ Mov(output_array(), x4);
-#endif  // __CHERI_PURE_CAPABILITY__
 
   // Make sure the stack alignment will be respected.
   const int alignment = masm_->ActivationFrameAlignment();
@@ -939,34 +861,26 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
   const int align_mask = (alignment / kWRegSize) - 1;
 
   // Make room for stack locals.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   static constexpr int kWRegPerCReg = kCRegSize / kWRegSize;
   DCHECK_EQ(kNumberOfStackLocals * kWRegPerCReg,
             ((kNumberOfStackLocals * kWRegPerCReg) + align_mask) & ~align_mask);
   __ Claim(kNumberOfStackLocals * kWRegPerCReg);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   static constexpr int kWRegPerXReg = kXRegSize / kWRegSize;
   DCHECK_EQ(kNumberOfStackLocals * kWRegPerXReg,
             ((kNumberOfStackLocals * kWRegPerXReg) + align_mask) & ~align_mask);
   __ Claim(kNumberOfStackLocals * kWRegPerXReg);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Initialize backtrack stack pointer. It must not be clobbered from here on.
   // Note the backtrack_stackpointer is callee-saved.
-#ifdef __CHERI_PURE_CAPABILITY__
   static_assert(backtrack_stackpointer() == c23);
-#else   // !__CHERI_PURE_CAPABILITY__
-  static_assert(backtrack_stackpointer() == x23);
-#endif  // __CHERI_PURE_CAPABILITY__
   LoadRegExpStackPointerFromMemory(backtrack_stackpointer());
 
   // Store the regexp base pointer - we'll later restore it / write it to
   // memory when returning from this irregexp code object.
-#ifdef __CHERI_PURE_CAPABILITY__
   PushRegExpBasePointer(backtrack_stackpointer(), c11);
-#else   // !__CHERI_PURE_CAPABILITY__
-  PushRegExpBasePointer(backtrack_stackpointer(), x11);
-#endif  // __CHERI_PURE_CAPABILITY__
 
   // Set the number of registers we will need to allocate, that is:
   //   - (num_registers_ - kNumCachedRegisters) (W registers)
@@ -981,13 +895,8 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
 
     ExternalReference stack_limit =
         ExternalReference::address_of_jslimit(isolate());
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Mov(c10, stack_limit);
     __ Ldr(c10, MemOperand(c10));
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Mov(x10, stack_limit);
-    __ Ldr(x10, MemOperand(x10));
-#endif  // __CHERI_PURE_CAPABILITY__
     __ Subs(x10, sp, x10);
 
     // Handle it if the stack pointer is already below the stack limit.
@@ -1004,11 +913,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
     __ B(&return_w0);
 
     __ Bind(&stack_limit_hit);
-#ifdef __CHERI_PURE_CAPABILITY__
     CallCheckStackGuardState(c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-    CallCheckStackGuardState(x10);
-#endif  // __CHERI_PURE_CAPABILITY__
     // If returned value is non-zero, we exit with the returned value as result.
     __ Cbnz(w0, &return_w0);
 
@@ -1131,11 +1036,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
       int num_registers_left_on_stack =
           num_saved_registers_ - kNumCachedRegisters;
       if (num_registers_left_on_stack > 0) {
-#ifdef __CHERI_PURE_CAPABILITY__
         Register base = c10;
-#else   // !__CHERI_PURE_CAPABILITY__
-        Register base = x10;
-#endif  // __CHERI_PURE_CAPABILITY__
         // There are always an even number of capture registers. A couple of
         // registers determine one match with two offsets.
         DCHECK_EQ(0, num_registers_left_on_stack % 2);
@@ -1227,11 +1128,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
 
       // Restore the original regexp stack pointer value (effectively, pop the
       // stored base pointer).
-#ifdef __CHERI_PURE_CAPABILITY__
       PopRegExpBasePointer(backtrack_stackpointer(), c11);
-#else   // !__CHERI_PURE_CAPABILITY__
-      PopRegExpBasePointer(backtrack_stackpointer(), x11);
-#endif  // __CHERI_PURE_CAPABILITY__
 
       if (global_with_zero_length_check()) {
         // Special case for zero-length matches.
@@ -1265,11 +1162,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
   __ Bind(&return_w0);
   // Restore the original regexp stack pointer value (effectively, pop the
   // stored base pointer).
-#ifdef __CHERI_PURE_CAPABILITY__
   PopRegExpBasePointer(backtrack_stackpointer(), c11);
-#else   // !__CHERI_PURE_CAPABILITY__
-  PopRegExpBasePointer(backtrack_stackpointer(), x11);
-#endif  // __CHERI_PURE_CAPABILITY__
 
   __ LeaveFrame(StackFrame::IRREGEXP);
   __ PopCPURegList(registers_to_retain);
@@ -1279,19 +1172,11 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
   if (check_preempt_label_.is_linked()) {
     __ Bind(&check_preempt_label_);
 
-#ifdef __CHERI_PURE_CAPABILITY__
     StoreRegExpStackPointerToMemory(backtrack_stackpointer(), c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-    StoreRegExpStackPointerToMemory(backtrack_stackpointer(), x10);
-#endif  // __CHERI_PURE_CAPABILITY__
 
     SaveLinkRegister();
     PushCachedRegisters();
-#ifdef __CHERI_PURE_CAPABILITY__
     CallCheckStackGuardState(c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-    CallCheckStackGuardState(x10);
-#endif  // __CHERI_PURE_CAPABILITY__
     // Returning from the regexp code restores the stack (sp <- fp)
     // so we don't need to drop the link register from it before exiting.
     __ Cbnz(w0, &return_w0);
@@ -1307,21 +1192,13 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
   if (stack_overflow_label_.is_linked()) {
     __ Bind(&stack_overflow_label_);
 
-#ifdef __CHERI_PURE_CAPABILITY__
     StoreRegExpStackPointerToMemory(backtrack_stackpointer(), c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-    StoreRegExpStackPointerToMemory(backtrack_stackpointer(), x10);
-#endif  // __CHERI_PURE_CAPABILITY__
 
     SaveLinkRegister();
     PushCachedRegisters();
     // Call GrowStack(isolate).
     static constexpr int kNumArguments = 1;
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Mov(c0, ExternalReference::isolate_address(isolate()));
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Mov(x0, ExternalReference::isolate_address(isolate()));
-#endif  // __CHERI_PURE_CAPABILITY__
     CallCFunctionFromIrregexpCode(ExternalReference::re_grow_stack(),
                                   kNumArguments);
     // If return nullptr, we have failed to grow the stack, and must exit with
@@ -1330,11 +1207,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
     // before exiting.
     __ Cbz(w0, &exit_with_exception);
     // Otherwise use return value as new stack pointer.
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Mov(backtrack_stackpointer(), c0);
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Mov(backtrack_stackpointer(), x0);
-#endif  // __CHERI_PURE_CAPABILITY__
     PopCachedRegisters();
     RestoreLinkRegister();
     __ Ret();
@@ -1414,11 +1287,7 @@ void RegExpMacroAssemblerARM64::PushBacktrack(Label* label) {
     __ Mov(w10, target + InstructionStream::kHeaderSize - kHeapObjectTag);
   } else {
     __ Adr(x10, label, MacroAssembler::kAdrFar);
-#ifdef __CHERI_PURE_CAPABILITY__
     __ Sub(x10, x10, code_pointer().X());
-#else   // !__CHERI_PURE_CAPABILITY__
-    __ Sub(x10, x10, code_pointer());
-#endif  // __CHERI_PURE_CAPABILITY__
     if (v8_flags.debug_code) {
       __ Cmp(x10, kWRegMask);
       // The code offset has to fit in a W register.
@@ -1464,15 +1333,9 @@ void RegExpMacroAssemblerARM64::ReadCurrentPositionFromRegister(int reg) {
 void RegExpMacroAssemblerARM64::WriteStackPointerToRegister(int reg) {
   ExternalReference ref =
       ExternalReference::address_of_regexp_stack_memory_top_address(isolate());
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c10, ref);
   __ Ldr(x10, MemOperand(c10));
   __ Sub(x10, backtrack_stackpointer().X(), x10);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(x10, ref);
-  __ Ldr(x10, MemOperand(x10));
-  __ Sub(x10, backtrack_stackpointer(), x10);
-#endif  // __CHERI_PURE_CAPABILITY__
   if (v8_flags.debug_code) {
     __ Cmp(x10, Operand(w10, SXTW));
     // The stack offset needs to fit in a W register.
@@ -1485,15 +1348,9 @@ void RegExpMacroAssemblerARM64::ReadStackPointerFromRegister(int reg) {
   ExternalReference ref =
       ExternalReference::address_of_regexp_stack_memory_top_address(isolate());
   Register read_from = GetRegister(reg, w10);
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c11, ref);
   __ Ldr(c11, MemOperand(c11));
   __ Add(backtrack_stackpointer(), c11, Operand(read_from, SXTW));
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(x11, ref);
-  __ Ldr(x11, MemOperand(x11));
-  __ Add(backtrack_stackpointer(), x11, Operand(read_from, SXTW));
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 void RegExpMacroAssemblerARM64::SetCurrentPositionFromEnd(int by) {
@@ -1577,11 +1434,7 @@ void RegExpMacroAssemblerARM64::ClearRegisters(int reg_from, int reg_to) {
     int base_offset =
         kFirstRegisterOnStackOffset - kWRegSize - (kWRegSize * reg_from);
     if (num_registers > kNumRegistersToUnroll) {
-#ifdef __CHERI_PURE_CAPABILITY__
       Register base = c10;
-#else   // !__CHERI_PURE_CAPABILITY__
-      Register base = x10;
-#endif  // __CHERI_PURE_CAPABILITY__
       __ Add(base, frame_pointer(), base_offset);
 
       Label loop;
@@ -1651,31 +1504,18 @@ void RegExpMacroAssemblerARM64::CallCheckStackGuardState(Register scratch) {
   // AAPCS64 requires the stack to be 16 byte aligned.
   int alignment = masm_->ActivationFrameAlignment();
   DCHECK_EQ(alignment % 16, 0);
-#ifdef __CHERI_PURE_CAPABILITY__
   int align_mask = (alignment / kCRegSize) - 1;
-#else   // !__CHERI_PURE_CAPABILITY__
-  int align_mask = (alignment / kXRegSize) - 1;
-#endif  // __CHERI_PURE_CAPABILITY__
   int xreg_to_claim = (3 + align_mask) & ~align_mask;
 
   __ Claim(xreg_to_claim);
 
   // CheckStackGuardState needs the end and start addresses of the input string.
   __ Poke(input_end(), 2 * kSystemPointerSize);
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Add(c5, csp, 2 * kSystemPointerSize);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Add(x5, sp, 2 * kSystemPointerSize);
-#endif  // __CHERI_PURE_CAPABILITY__
   __ Poke(input_start(), kSystemPointerSize);
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Add(c4, csp, kSystemPointerSize);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Add(x4, sp, kSystemPointerSize);
-#endif  // __CHERI_PURE_CAPABILITY__
 
   __ Mov(w3, start_offset());
-#ifdef __CHERI_PURE_CAPABILITY__
   // RegExp code frame pointer.
   __ Mov(c2, frame_pointer());
   // InstructionStream of self.
@@ -1687,19 +1527,6 @@ void RegExpMacroAssemblerARM64::CallCheckStackGuardState(Register scratch) {
   __ Mov(c0, csp);
 
   DCHECK_EQ(scratch, c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-  // RegExp code frame pointer.
-  __ Mov(x2, frame_pointer());
-  // InstructionStream of self.
-  __ Mov(x1, Operand(masm_->CodeObject()));
-
-  // We need to pass a pointer to the return address as first argument.
-  // DirectCEntry will place the return address on the stack before calling so
-  // the stack pointer will point to it.
-  __ Mov(x0, sp);
-
-  DCHECK_EQ(scratch, x10);
-#endif  // __CHERI_PURE_CAPABILITY__
   ExternalReference check_stack_guard_state =
       ExternalReference::re_check_stack_guard_state();
   __ Mov(scratch, check_stack_guard_state);
@@ -1771,15 +1598,9 @@ void RegExpMacroAssemblerARM64::CheckPreemption() {
   // Check for preemption.
   ExternalReference stack_limit =
       ExternalReference::address_of_jslimit(isolate());
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c10, stack_limit);
   __ Ldr(c10, MemOperand(c10));
   __ Cmp(csp, c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(x10, stack_limit);
-  __ Ldr(x10, MemOperand(x10));
-  __ Cmp(sp, x10);
-#endif  // __CHERI_PURE_CAPABILITY__
   CallIf(&check_preempt_label_, ls);
 }
 
@@ -1787,15 +1608,9 @@ void RegExpMacroAssemblerARM64::CheckPreemption() {
 void RegExpMacroAssemblerARM64::CheckStackLimit() {
   ExternalReference stack_limit =
       ExternalReference::address_of_regexp_stack_limit_address(isolate());
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Mov(c10, stack_limit);
   __ Ldr(c10, MemOperand(c10));
   __ Cmp(backtrack_stackpointer(), c10);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Mov(x10, stack_limit);
-  __ Ldr(x10, MemOperand(x10));
-  __ Cmp(backtrack_stackpointer(), x10);
-#endif  // __CHERI_PURE_CAPABILITY__
   CallIf(&stack_overflow_label_, ls);
 }
 
@@ -1896,13 +1711,9 @@ void RegExpMacroAssemblerARM64::CallIf(Label* to, Condition condition) {
 void RegExpMacroAssemblerARM64::RestoreLinkRegister() {
   // TODO(v8:10026): Remove when we stop compacting for code objects that are
   // active on the call stack.
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Pop<MacroAssembler::kAuthLR>(padregc, lr);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Pop<MacroAssembler::kAuthLR>(padreg, lr);
-#endif  // __CHERI_PURE_CAPABILITY__
   __ Add(lr, lr, Operand(masm_->CodeObject()));
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   {
     Label done;
     UseScratchRegisterScope temps(masm_.get());
@@ -1915,17 +1726,13 @@ void RegExpMacroAssemblerARM64::RestoreLinkRegister() {
     __ Scvalue(lr, temp, lr.X());
     __ Bind(&done);
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 }
 
 
 void RegExpMacroAssemblerARM64::SaveLinkRegister() {
   __ Sub(lr, lr, Operand(masm_->CodeObject()));
-#ifdef __CHERI_PURE_CAPABILITY__
   __ Push<MacroAssembler::kSignLR>(lr, padregc);
-#else   // !__CHERI_PURE_CAPABILITY__
-  __ Push<MacroAssembler::kSignLR>(lr, padreg);
-#endif  // __CHERI_PURE_CAPABILITY__
 }
 
 

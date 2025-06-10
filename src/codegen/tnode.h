@@ -284,7 +284,7 @@ struct is_machine_vector {
       std::is_same<I16x8T, T>::value || std::is_same<I32x2T, T>::value;
 };
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 template <class T>
 struct is_capability {
   static const bool value =
@@ -298,13 +298,13 @@ struct is_capability {
       is_capability<T>::value || std::is_same<IntPtrT, T>::value ||
       std::is_same<UintPtrT, T>::value || std::is_same<WordT, T>::value;
 };
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
 template <class T>
 struct is_capability {
   static const bool value = false;
   static const bool maybe_tagged = false;
 };
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 template <class T1, class T2>
 struct is_capability<PairT<T1, T2>> {
   static const bool value =
@@ -434,10 +434,10 @@ class TNode {
     }
   }
   TNode(const TNode& other) V8_NOEXCEPT : node_(other)
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       ,
                                           is_capability_(other.is_capability_)
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   {
     LazyTemplateChecks();
   }
@@ -446,9 +446,9 @@ class TNode {
   TNode operator=(TNode other) {
     DCHECK_NOT_NULL(other.node_);
     node_ = other.node_;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     is_capability_ = other.is_capability_;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
     return *this;
   }
 
@@ -456,7 +456,7 @@ class TNode {
 
   static TNode UncheckedCast(compiler::Node* node) { return TNode(node); }
 
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   TNode& MarkAsCapability() {
     is_capability_ = true;
     return *this;
@@ -466,11 +466,11 @@ class TNode {
     return *this;
   }
   bool IsCapability() const { return is_capability_; }
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
   TNode& MarkAsCapability() { return *this; }
   TNode& MarkAsInteger() { return *this; }
   bool IsCapability() const { return false; }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
  protected:
   explicit TNode(compiler::Node* node) : node_(node) {
@@ -485,9 +485,9 @@ class TNode {
   }
 
   compiler::Node* node_;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   bool is_capability_ = false;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 };
 
 // SloppyTNode<T> is a variant of TNode<T> and allows implicit casts from

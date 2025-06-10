@@ -535,11 +535,11 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   void MarkAsCompressed(Node* node) {
     MarkAsRepresentation(MachineRepresentation::kCompressed, node);
   }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
   void MarkAsCapability(Node* node) {
     MarkAsRepresentation(MachineRepresentation::kCapability64, node);
   }
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
   // Inform the register allocation of the representation of the unallocated
   // operand {op}.

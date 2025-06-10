@@ -6669,11 +6669,11 @@ Node* EffectControlLinearizer::AdaptFastCallTypedArrayArgument(
                 "Size mismatch between different specializations of "
                 "FastApiTypedArray");
   static_assert(
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
       kSize == sizeof(uintptr_t) + RoundUp<kUIntptrSize>(sizeof(size_t)),
-#else   // !__CHERI_PURE_CAPABILITY__)
+#else
       kSize == sizeof(uintptr_t) + sizeof(size_t),
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
       "The size of "
       "FastApiTypedArray isn't equal to the sum of its expected members.");
   Node* stack_slot = __ StackSlot(kSize, kAlign);
@@ -6684,11 +6684,11 @@ Node* EffectControlLinearizer::AdaptFastCallTypedArrayArgument(
   __ Store(StoreRepresentation(MachineType::PointerRepresentation(),
                                kNoWriteBarrier),
            stack_slot, sizeof(uintptr_t), data_ptr);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
   static_assert(sizeof(ptraddr_t) == sizeof(size_t),
-#else   // !__CHERI_PURE_CAPABILITY__)
+#else
   static_assert(sizeof(uintptr_t) == sizeof(size_t),
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
                 "The buffer length can't "
                 "fit the PointerRepresentation used to store it.");
 
@@ -6890,26 +6890,26 @@ Node* EffectControlLinearizer::AdaptFastCallArgument(
 
             Node* length_in_bytes =
                 __ LoadField(AccessBuilder::ForStringLength(), node);
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
             Node* data_ptr =
                 __ CapAdd(__ BitcastTaggedToWord(node),
                           __ IntPtrConstant(SeqOneByteString::kHeaderSize -
                                             kHeapObjectTag));
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
             Node* data_ptr =
                 __ IntPtrAdd(__ BitcastTaggedToWord(node),
                              __ IntPtrConstant(SeqOneByteString::kHeaderSize -
                                                kHeapObjectTag));
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
 
             constexpr int kAlign = alignof(FastOneByteString);
             constexpr int kSize = sizeof(FastOneByteString);
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
             static_assert(kSize == sizeof(uintptr_t) +
                           RoundUp<kUIntptrSize>(sizeof(size_t)),
-#else   // !__CHERI_PURE_CAPABILITY__)
+#else
             static_assert(kSize == sizeof(uintptr_t) + sizeof(size_t),
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
                           "The size of "
                           "FastOneByteString isn't equal to the sum of its "
                           "expected members.");
@@ -6922,11 +6922,11 @@ Node* EffectControlLinearizer::AdaptFastCallArgument(
                                          kNoWriteBarrier),
                      stack_slot, sizeof(uintptr_t), length_in_bytes);
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
             static_assert(sizeof(ptraddr_t) == sizeof(size_t),
-#else   // !__CHERI_PURE_CAPABILITY__)
+#else
             static_assert(sizeof(uintptr_t) == sizeof(size_t),
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
                           "The string length can't "
                           "fit the PointerRepresentation used to store it.");
 
@@ -7454,7 +7454,7 @@ Node* EffectControlLinearizer::BuildTypedArrayDataPointer(Node* base,
       // details.
       base = ChangeUint32ToUintPtr(base);
     }
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
     auto end = __ MakeLabel(MachineRepresentation::kCapability64);
     auto base_is_tagged = __ MakeLabel();
 
@@ -7466,9 +7466,9 @@ Node* EffectControlLinearizer::BuildTypedArrayDataPointer(Node* base,
 
     __ Bind(&end);
     return end.PhiAt(0);
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     return __ IntPtrAdd(base, external);
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   }
 }
 

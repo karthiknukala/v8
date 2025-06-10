@@ -1308,7 +1308,7 @@ void CodeGenerator::AddTranslationForOperand(Instruction* instr,
           literal = DeoptimizationLiteral(static_cast<double>(smi.value()));
         }
         break;
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
       case Constant::kIntPtr:
         DCHECK((8 == kSystemPointerSize) || (16 == kSystemPointerSize));
         DCHECK(
@@ -1320,7 +1320,7 @@ void CodeGenerator::AddTranslationForOperand(Instruction* instr,
         literal =
             DeoptimizationLiteral(static_cast<intptr_t>(constant.ToIntPtr()));
         break;
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
       case Constant::kFloat32:
         DCHECK(type.representation() == MachineRepresentation::kFloat32 ||
                type.representation() == MachineRepresentation::kTagged);
