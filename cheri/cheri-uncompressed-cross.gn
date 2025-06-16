@@ -1,0 +1,39 @@
+custom_toolchain = "//tools/toolchain:morello-buildroot"
+is_cheri = true
+clang_use_chrome_plugins = false
+is_clang = true
+is_component_build = false
+use_aura = true
+use_lld = true
+use_custom_libcxx = false
+
+is_debug = true
+v8_optimized_debug = true
+
+v8_enable_webassembly = false
+
+v8_enable_slow_dchecks = true
+
+# We hit a lot of errors since we're compiling for ~unsupported platforms
+treat_warnings_as_errors = false
+
+v8_use_external_startup_data = false
+
+# Uncompressed build
+v8_enable_pointer_compression = false
+v8_enable_external_code_space = false
+v8_enable_sandbox = false
+
+arm_control_flow_integrity = "none"
+#v8_enable_control_flow_integrity = false
+target_cpu = "arm64"
+v8_target_cpu = "arm64"
+
+chrome_pgo_phase = 0
+use_thin_lto = false
+target_os = "freebsd"
+
+target_sysroot = "/path/to/rootfs-morello-purecap"
+clang_base_path = "/path/to/morello-sdk"
+
+#cc_wrapper = "env CCACHE_PREFIX=distcc CCACHE_SLOPPINESS=time_macros ccache" # Uncomment for distcc and ccache
