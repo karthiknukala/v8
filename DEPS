@@ -223,7 +223,7 @@ deps = {
     'condition': 'checkout_android',
   },
   'third_party/depot_tools':
-    Var('ctsrd_cheri_url') + '/depot_tools.git' + '@' + '3f56b6cd5ec3f38232ab81a8cab2e3794d7d2149',
+    Var('chromium_cheri_url') + '/depot_tools.git' + '@' + 'd832775e4e5fba0b911906f23686ad869935f642',
   'third_party/fuchsia-sdk/sdk': {
     'packages': [
         {
