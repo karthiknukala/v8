@@ -1213,6 +1213,9 @@ config("toolchain") {
       # Mark assembly code as BTI-compatible.
       asmflags = [ "-mmark-bti-property" ]
     }
+    if (is_cheri) {
+      defines += [ "V8_TARGET_CHERI" ]
+    }
   }
 
   # Mips64el simulators.

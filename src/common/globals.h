@@ -77,6 +77,12 @@ namespace internal {
 #define V8_EMBEDDED_CONSTANT_POOL_BOOL false
 #endif
 
+#if V8_TARGET_CHERI
+#define V8_TARGET_CHERI_BOOL true
+#else
+#define V8_TARGET_CHERI_BOOL false
+#endif
+
 #ifdef DEBUG
 #define DEBUG_BOOL true
 #else
