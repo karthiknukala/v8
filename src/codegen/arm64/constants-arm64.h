@@ -58,12 +58,17 @@ constexpr int kXRegSizeInBits = 64;
 constexpr int kXRegSizeInBitsLog2 = 6;
 constexpr int kXRegSize = kXRegSizeInBits >> 3;
 constexpr int kXRegSizeLog2 = kXRegSizeInBitsLog2 - 3;
-#if defined(__CHERI_PURE_CAPABILITY__)
+#if V8_TARGET_CHERI
 constexpr int kCRegSizeInBits = 128;
 constexpr int kCRegSizeInBitsLog2 = 7;
 constexpr int kCRegSize = kCRegSizeInBits >> 3;
 constexpr int kCRegSizeLog2 = kCRegSizeInBitsLog2 - 3;
-#endif // __CHERI_PURE_CAPABILITY__
+#else
+constexpr int kCRegSizeInBits = kXRegSizeInBits;
+constexpr int kCRegSizeInBitsLog2 = kXRegSizeInBitsLog2;
+constexpr int kCRegSize = kXRegSize;
+constexpr int kCRegSizeLog2 = kXRegSizeLog2;
+#endif
 constexpr int kSRegSizeInBits = 32;
 constexpr int kSRegSizeInBitsLog2 = 5;
 constexpr int kSRegSize = kSRegSizeInBits >> 3;
