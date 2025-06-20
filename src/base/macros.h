@@ -56,6 +56,7 @@
 #else  // !__CHERI_PURE_CAPABILITY__
 #define CheriDiagnosticOff(...)
 #define CheriDiagnosticPop
+#define V8_CHERI_ADDR_GET(cap) (cap)
 #endif  // __CHERI_PURE_CAPABILITY__
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
