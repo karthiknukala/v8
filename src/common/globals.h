@@ -292,11 +292,11 @@ const size_t kShortBuiltinCallsOldSpaceSizeThreshold = size_t{2} * GB;
 // Determine whether tagged pointers are 8 bytes (used in Torque layouts for
 // choosing where to insert padding).
 #if V8_TARGET_ARCH_64_BIT && !defined(V8_COMPRESS_POINTERS)
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 #define TAGGED_SIZE_8_BYTES false
-#else
+#else  // !__CHERI_PURE_CAPABILITY__
 #define TAGGED_SIZE_8_BYTES true
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 #else
 #define TAGGED_SIZE_8_BYTES false
 #endif
@@ -311,11 +311,11 @@ const size_t kShortBuiltinCallsOldSpaceSizeThreshold = size_t{2} * GB;
 #if V8_SFI_HAS_UNIQUE_ID && TAGGED_SIZE_8_BYTES
 #define V8_SFI_NEEDS_PADDING true
 #else
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+#if (__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
 #define V8_SFI_NEEDS_PADDING true
-#else
+#else  // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
 #define V8_SFI_NEEDS_PADDING false
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 #endif
 
 #if defined(V8_OS_WIN) && defined(V8_TARGET_ARCH_X64)
@@ -438,11 +438,11 @@ constexpr uint32_t kDefaultMaxWasmCodeSpaceSizeMb = 1024;
 #endif
 
 #if V8_HOST_ARCH_64_BIT
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 constexpr int kSystemPointerSizeLog2 = 4;
-#else // !__CHERI_PURE_CAPABILITY__
+#else   // !__CHERI_PURE_CAPABILITY__
 constexpr int kSystemPointerSizeLog2 = 3;
-#endif // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
 constexpr int kPtrAddrSizeLog2 = 3;
 constexpr int kSystemPointerAddrSizeLog2 = 3;
 constexpr intptr_t kIntptrSignBit =
@@ -511,11 +511,11 @@ static constexpr bool kCompressGraphZone = COMPRESS_ZONES_BOOL;
 
 #ifdef V8_COMPRESS_POINTERS
 static_assert(
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
     kSystemPointerAddrSize == kInt64Size,
-#else    // !__CHERI_PURE_CAPABILITY__
+#else   // !__CHERI_PURE_CAPABILITY__
     kSystemPointerSize == kInt64Size,
-#endif   // __CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
     "Pointer compression can be enabled only for 64-bit architectures");
 
 constexpr int kTaggedSize = kInt32Size;
@@ -594,10 +594,9 @@ constexpr int kBitsPerByteLog2 = 3;
 constexpr int kBitsPerSystemPointer = kSystemPointerSize * kBitsPerByte;
 constexpr int kBitsPerSystemPointerLog2 =
     kSystemPointerSizeLog2 + kBitsPerByteLog2;
-#if defined(__CHERI_PURE_CAPABILITY__)
 constexpr int kBitsPerSystemPointerAddr = kSystemPointerAddrSize * kBitsPerByte;
-constexpr int kBitsPerSystemPointerAddrLog2 = kSystemPointerAddrSizeLog2 + kBitsPerByteLog2;
-#endif   // __CHERI_PURE_CAPABILITY__
+constexpr int kBitsPerSystemPointerAddrLog2 =
+    kSystemPointerAddrSizeLog2 + kBitsPerByteLog2;
 constexpr int kBitsPerInt = kIntSize * kBitsPerByte;
 
 // IEEE 754 single precision floating point number bit layout.
@@ -807,22 +806,12 @@ constexpr intptr_t kSmiSignMask = static_cast<intptr_t>(
 
 // Desired alignment for tagged pointers.
 constexpr int kObjectAlignmentBits = kTaggedSizeLog2;
-#if defined(__CHERI_PURE_CAPABILITY__)
 constexpr size_t kObjectAlignment = 1 << kObjectAlignmentBits;
 constexpr size_t kObjectAlignmentMask = kObjectAlignment - 1;
-#else   // !__CHERI_PURE_CAPABILITY__
-constexpr intptr_t kObjectAlignment = 1 << kObjectAlignmentBits;
-constexpr intptr_t kObjectAlignmentMask = kObjectAlignment - 1;
-#endif   // __CHERI_PURE_CAPABILITY__
 
 // Object alignment for 8GB pointer compressed heap.
-#if defined(__CHERI_PURE_CAPABILITY__)
 constexpr size_t kObjectAlignment8GbHeap = 8;
 constexpr size_t kObjectAlignment8GbHeapMask = kObjectAlignment8GbHeap - 1;
-#else   // !__CHERI_PURE_CAPABILITY__
-constexpr intptr_t kObjectAlignment8GbHeap = 8;
-constexpr intptr_t kObjectAlignment8GbHeapMask = kObjectAlignment8GbHeap - 1;
-#endif   // __CHERI_PURE_CAPABILITY__
 
 #ifdef V8_COMPRESS_POINTERS_8GB
 static_assert(
@@ -832,22 +821,12 @@ static_assert(
 #endif
 
 // Desired alignment for system pointers.
-#if defined(__CHERI_PURE_CAPABILITY__)
 constexpr size_t kPointerAlignment = (1 << kSystemPointerSizeLog2);
 constexpr size_t kPointerAlignmentMask = kPointerAlignment - 1;
-#else   // !__CHERI_PURE_CAPABILITY__
-constexpr intptr_t kPointerAlignment = (1 << kSystemPointerSizeLog2);
-constexpr intptr_t kPointerAlignmentMask = kPointerAlignment - 1;
-#endif   // __CHERI_PURE_CAPABILITY__
 
 // Desired alignment for double values.
-#if defined(__CHERI_PURE_CAPABILITY__)
 constexpr size_t kDoubleAlignment = 8;
 constexpr size_t kDoubleAlignmentMask = kDoubleAlignment - 1;
-#else   // !__CHERI_PURE_CAPABILITY__
-constexpr intptr_t kDoubleAlignment = 8;
-constexpr intptr_t kDoubleAlignmentMask = kDoubleAlignment - 1;
-#endif   // __CHERI_PURE_CAPABILITY__
 
 // Desired alignment for generated code is 64 bytes on x64 (to allow 64-bytes
 // loop header alignment) and 32 bytes (to improve cache line utilization) on
@@ -865,15 +844,10 @@ constexpr int kCodeAlignmentBits = 6;
 #else
 constexpr int kCodeAlignmentBits = 5;
 #endif
-#if defined(__CHERI_PURE_CAPABILITY__)
 constexpr size_t kCodeAlignment = 1 << kCodeAlignmentBits;
 constexpr size_t kCodeAlignmentMask = kCodeAlignment - 1;
-#else   // !__CHERI_PURE_CAPABILITY__
-constexpr intptr_t kCodeAlignment = 1 << kCodeAlignmentBits;
-constexpr intptr_t kCodeAlignmentMask = kCodeAlignment - 1;
-#endif   // __CHERI_PURE_CAPABILITY__
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 const ptraddr_t kWeakHeapObjectMask = 1 << 1;
 #else   // !__CHERI_PURE_CAPABILITY__
 const Address kWeakHeapObjectMask = 1 << 1;
@@ -919,8 +893,8 @@ constexpr int kCodeZapValue = 0xbadc0de;
 constexpr uint32_t kPhantomReferenceZap = 0xca11bac;
 
 // Page constants.
-#if defined(__CHERI_PURE_CAPABILITY__)
-static const ptraddr_t kPageAlignmentMask = (intptr_t{1} << kPageSizeBits) - 1;
+#ifdef __CHERI_PURE_CAPABILITY__
+static const ptraddr_t kPageAlignmentMask = (ptraddr_t{1} << kPageSizeBits) - 1;
 #else   // !__CHERI_PURE_CAPABILITY__
 static const intptr_t kPageAlignmentMask = (intptr_t{1} << kPageSizeBits) - 1;
 #endif  // __CHERI_PURE_CAPABILITY__
@@ -1391,7 +1365,7 @@ constexpr int kIeeeDoubleExponentWordOffset = 0;
 
 // Testers for test.
 
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 // Create special CHERI-specific macros that include a static_cast<size_t> to
 // the RHS operand of the & operator to avoid a compile-time provenance warning.
 #define HAS_SMI_TAG(value)            \
@@ -1407,7 +1381,7 @@ constexpr int kIeeeDoubleExponentWordOffset = 0;
 #define OBJECT_POINTER_ALIGN(value)                \
   (((value) + (size_t)::i::kObjectAlignmentMask) & \
    (size_t) ~::i::kObjectAlignmentMask)
-#else
+#else  // !__CHERI_PURE_CAPABILITY__
 #define HAS_SMI_TAG(value) \
   ((static_cast<i::Tagged_t>(value) & ::i::kSmiTagMask) == ::i::kSmiTag)
 #define HAS_STRONG_HEAP_OBJECT_TAG(value)                          \
@@ -1419,7 +1393,7 @@ constexpr int kIeeeDoubleExponentWordOffset = 0;
 // OBJECT_POINTER_ALIGN returns the value aligned as a HeapObject pointer
 #define OBJECT_POINTER_ALIGN(value) \
   (((value) + ::i::kObjectAlignmentMask) & ~::i::kObjectAlignmentMask)
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // OBJECT_POINTER_ALIGN is used to statically align object sizes to
 // kObjectAlignment (which is kTaggedSize). ALIGN_TO_ALLOCATION_ALIGNMENT is
@@ -1432,7 +1406,6 @@ constexpr int kIeeeDoubleExponentWordOffset = 0;
    ~::i::kObjectAlignment8GbHeapMask)
 #else
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-// XXX(cheri): Is this what we want in all cases?
 #define ALIGN_TO_ALLOCATION_ALIGNMENT(value) \
   (((value) + ::i::kPointerAlignmentMask) & ~::i::kPointerAlignmentMask)
 #else  // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
@@ -1445,14 +1418,14 @@ constexpr int kIeeeDoubleExponentWordOffset = 0;
 #define OBJECT_POINTER_PADDING(value) (OBJECT_POINTER_ALIGN(value) - (value))
 
 // POINTER_SIZE_ALIGN returns the value aligned as a system pointer.
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
 #define POINTER_SIZE_ALIGN(value)           \
   (((value) + ::i::kPointerAlignmentMask) & \
    ~static_cast<size_t>(::i::kPointerAlignmentMask))
-#else
+#else  // !__CHERI_PURE_CAPABILITY__
 #define POINTER_SIZE_ALIGN(value) \
   (((value) + ::i::kPointerAlignmentMask) & ~::i::kPointerAlignmentMask)
-#endif
+#endif  // __CHERI_PURE_CAPABILITY__
 
 // POINTER_SIZE_PADDING returns the padding size required to align value
 // as a system pointer.
