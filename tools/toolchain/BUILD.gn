@@ -67,7 +67,6 @@ gcc_toolchain("morello-buildroot") {
     current_cpu = "arm64"
     current_os = "freebsd"
     is_clang = true
-    is_cheri = true
   }
 }
 
