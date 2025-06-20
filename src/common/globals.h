@@ -397,6 +397,15 @@ constexpr int kSystemPointerAddrSize = sizeof(void*);
 constexpr int kPCOnStackSize = kSystemPointerSize;
 constexpr int kFPOnStackSize = kSystemPointerSize;
 
+#if V8_TARGET_CHERI
+#ifdef V8_ENABLE_CONTROL_FLOW_INTEGRITY
+#error "V8 control flow integrity not supported with CHERI"
+#endif
+
+static_assert(kSystemPointerSize == 16,
+              "Expected pointer size to be 16 bytes when compiling for CHERI");
+#endif
+
 #if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_IA32
 constexpr int kElidedFrameSlots = kPCOnStackSize / kSystemPointerSize;
 #else
