@@ -502,8 +502,6 @@ void TypeVisitor::VisitClassFieldsAndMethods(
       }
     }
     base::Optional<ClassFieldIndexInfo> array_length = field_expression.index;
-    bool is_indexed =
-        field_expression.index && !field_expression.index->optional;
     if (GlobalContext::cheri_abi() && field_type->IsCapability()) {
       ResidueClass adjusted_offset = class_offset;
       uint8_t needed_padding = AlignToCapabilitySize(adjusted_offset);
