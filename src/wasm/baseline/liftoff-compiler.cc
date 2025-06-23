@@ -6783,8 +6783,14 @@ class LiftoffCompiler {
     FREEZE_STATE(frozen);
 
     if (null_succeeds && check.obj_type.is_nullable()) {
+#if V8_TARGET_CHERI && V8_TARGET_ARCH_ARM64
+      // FIXME(ds815): Make more generic.
       __ emit_cond_jump(kEqual, &match, kRefNull, check.obj_reg.X(),
                         check.null_reg(), frozen);
+#else
+      __ emit_cond_jump(kEqual, &match, kRefNull, check.obj_reg,
+                        check.null_reg(), frozen);
+#endif
     }
 
     (this->*type_checker)(check, frozen);
@@ -7853,7 +7859,12 @@ class LiftoffCompiler {
     }
     {
       CODE_COMMENT("Check index is in-bounds");
+#if V8_TARGET_CHERI && V8_TARGET_ARCH_ARM64
+      // FIXME(ds815): Make more generic.
       Register table_size = tmp1.X();
+#else
+      Register table_size = tmp1;
+#endif
       if (imm.table_imm.index == 0) {
         LOAD_INSTANCE_FIELD(table_size, IndirectFunctionTableSize, kUInt32Size,
                             pinned);
@@ -8443,9 +8454,11 @@ class LiftoffCompiler {
   V8_INLINE Register LoadInstanceIntoRegister(LiftoffRegList pinned,
                                               Register fallback) {
     Register instance = __ cache_state()->cached_instance;
+#if V8_TARGET_CHERI
     if (instance.IsRegister()) {
       instance = instance.C();
     }
+#endif
     if (V8_UNLIKELY(instance == no_reg)) {
       instance = LoadInstanceIntoRegister_Slow(pinned, fallback);
     }

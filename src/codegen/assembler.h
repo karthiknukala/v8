@@ -325,6 +325,7 @@ class V8_EXPORT_PRIVATE AssemblerBase : public Malloced {
   static void QuietNaN(HeapObject nan) {}
 
   int pc_offset() const { return static_cast<int>(pc_ - buffer_start_); }
+  Address pc() const { return reinterpret_cast<Address>(pc_); }
 
   int pc_offset_for_safepoint() {
 #if defined(V8_TARGET_ARCH_MIPS64) || defined(V8_TARGET_ARCH_LOONG64)

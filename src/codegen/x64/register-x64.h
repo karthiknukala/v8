@@ -68,6 +68,14 @@ class Register : public RegisterBase<Register, kRegAfterLast> {
   // in modR/M, SIB, and opcode bytes.
   constexpr int low_bits() const { return code() & 0x7; }
 
+#if V8_TARGET_CHERI
+  constexpr bool IsC() const { UNREACHABLE(); }
+  Register C() const { UNREACHABLE(); }
+#else
+  constexpr bool IsC() const { return false; }
+  Register C() const { return *this; }
+#endif
+
  private:
   friend class RegisterBase<Register, kRegAfterLast>;
   explicit constexpr Register(int code) : RegisterBase(code) {}

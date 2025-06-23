@@ -38,6 +38,14 @@ class RegisterBase {
     return SubType{code};
   }
 
+#if !V8_TARGET_CHERI
+  // If this is a CHERI build, the implementation should be provided in a
+  // subclass.
+  static constexpr SubType cap_from_code(int8_t code) {
+    return from_code(code);
+  }
+#endif
+
   constexpr bool is_valid() const { return reg_code_ != kCode_no_reg; }
 
   constexpr int8_t code() const {

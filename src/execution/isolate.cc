@@ -3462,6 +3462,10 @@ Isolate::Isolate(std::unique_ptr<i::IsolateAllocator> isolate_allocator)
           SourceTextModule::kFirstAsyncEvaluatingOrdinal),
       cancelable_task_manager_(new CancelableTaskManager()) {
   TRACE_ISOLATE(constructor);
+#if V8_TARGET_CHERI
+  CHECK_EQ(kSystemPointerSize, 16);
+#endif
+
 #ifdef __CHERI_PURE_CAPABILITY__
   DCHECK(V8_CHERI_TAG_GET(isolate_allocator_.get()));
 #endif  // __CHERI_PURE_CAPABILITY__

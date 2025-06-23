@@ -993,6 +993,8 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
 #error "CHERI is not supported with tagged size of 8 bytes"
 #endif  // __CHERI_PURE_CAPABILITY__
 
+#define ATOMIC_TAGGED_TYPE_LIST(V)
+
 #define ATOMIC64_TAGGED_TYPE_LIST(V) \
   V(TaggedSigned)                    \
   V(TaggedPointer)                   \

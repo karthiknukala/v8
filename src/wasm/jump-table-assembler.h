@@ -234,24 +234,28 @@ class V8_EXPORT_PRIVATE JumpTableAssembler : public MacroAssembler {
   static constexpr int kJumpTableSlotSize = 5;
   static constexpr int kFarJumpTableSlotSize = 16;
   static constexpr int kLazyCompileTableSlotSize = 10;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_IA32
   static constexpr int kJumpTableLineSize = 64;
   static constexpr int kJumpTableSlotSize = 5;
   static constexpr int kFarJumpTableSlotSize = 5;
   static constexpr int kLazyCompileTableSlotSize = 10;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_ARM
   static constexpr int kJumpTableLineSize = 3 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 3 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 2 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 5 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_ARM64 && V8_ENABLE_CONTROL_FLOW_INTEGRITY
-#ifdef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
 #error "V8_ENABLE_CONTROL_FLOW_INTEGRITY is unsupported on CHERI currently.
-#endif  // __CHERI_PURE_CAPABILITY__
+#endif
   static constexpr int kJumpTableLineSize = 2 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 2 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 6 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 4 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_ARM64 && !V8_ENABLE_CONTROL_FLOW_INTEGRITY
   static constexpr int kJumpTableLineSize = 1 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 1 * kInstrSize;
@@ -268,31 +272,37 @@ class V8_EXPORT_PRIVATE JumpTableAssembler : public MacroAssembler {
   static constexpr int kJumpTableSlotSize = 8;
   static constexpr int kFarJumpTableSlotSize = 16;
   static constexpr int kLazyCompileTableSlotSize = 20;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_PPC64
   static constexpr int kJumpTableLineSize = 64;
   static constexpr int kJumpTableSlotSize = 1 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 12 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 12 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_MIPS
   static constexpr int kJumpTableLineSize = 8 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 8 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 4 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 6 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_MIPS64
   static constexpr int kJumpTableLineSize = 8 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 8 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 6 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 8 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_RISCV32 || V8_TARGET_ARCH_RISCV64
   static constexpr int kJumpTableLineSize = 6 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 6 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 6 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 10 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #elif V8_TARGET_ARCH_LOONG64
   static constexpr int kJumpTableLineSize = 1 * kInstrSize;
   static constexpr int kJumpTableSlotSize = 1 * kInstrSize;
   static constexpr int kFarJumpTableSlotSize = 6 * kInstrSize;
   static constexpr int kLazyCompileTableSlotSize = 3 * kInstrSize;
+  static constexpr int kFarJumpTablePaddingSize = 0;
 #else
 #error Unknown architecture.
 #endif

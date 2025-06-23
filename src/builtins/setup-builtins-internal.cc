@@ -87,7 +87,12 @@ Handle<Code> BuildPlaceholder(Isolate* isolate, Builtin builtin) {
     FrameScope frame_scope(&masm, StackFrame::NO_FRAME_TYPE);
     // The contents of placeholder don't matter, as long as they don't create
     // embedded constants or external references.
+#if V8_TARGET_CHERI && V8_TARGET_ARCH_ARM64
+    // FIXME(ds815): Make this more generic for CHERI, rather than just Morello.
     masm.Move(kJavaScriptCallCodeStartRegister.X(), Smi::zero());
+#else
+    masm.Move(kJavaScriptCallCodeStartRegister, Smi::zero());
+#endif
     masm.Call(kJavaScriptCallCodeStartRegister);
   }
   CodeDesc desc;

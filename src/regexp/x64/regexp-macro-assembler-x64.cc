@@ -1173,6 +1173,7 @@ void RegExpMacroAssemblerX64::PopRegister(int register_index) {
   __ movq(register_location(register_index), rax);
 }
 
+void RegExpMacroAssemblerX64::Break() { __ DebugBreak(); }
 
 void RegExpMacroAssemblerX64::PushBacktrack(Label* label) {
   Push(label);

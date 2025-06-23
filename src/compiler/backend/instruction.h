@@ -1321,6 +1321,11 @@ class V8_EXPORT_PRIVATE Constant final {
     DCHECK_EQ(kIntPtr, type());
     return value_;
   }
+#else
+  intptr_t ToIntPtr() const {
+    DCHECK_EQ(kInt64, type());
+    return value_;
+  }
 #endif
 
   float ToFloat32() const {
