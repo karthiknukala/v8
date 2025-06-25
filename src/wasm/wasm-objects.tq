@@ -122,6 +122,12 @@ extern class WasmSuspenderObject extends JSObject {
   wasm_to_js_counter: uint32;
   @if(TAGGED_SIZE_8_BYTES) optional_padding: uint32;
   @ifnot(TAGGED_SIZE_8_BYTES) optional_padding: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_one: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_one: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_two: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_two: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_three: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_three: void;
 }
 
 extern class WasmExceptionTag extends Struct {
@@ -224,6 +230,12 @@ extern class WasmArray extends WasmObject {
 
   @if(TAGGED_SIZE_8_BYTES) optional_padding: uint32;
   @ifnot(TAGGED_SIZE_8_BYTES) optional_padding: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_one: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_one: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_two: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_two: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_three: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_three: void;
 }
 
 class WasmStringViewIter extends HeapObject {
@@ -232,6 +244,12 @@ class WasmStringViewIter extends HeapObject {
 
   @if(TAGGED_SIZE_8_BYTES) optional_padding: uint32;
   @ifnot(TAGGED_SIZE_8_BYTES) optional_padding: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_one: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_one: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_two: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_two: void;
+  @if(CHERI_PURECAP_UNCOMPRESSED) optional_padding_three: uint32;
+  @ifnot(CHERI_PURECAP_UNCOMPRESSED) optional_padding_three: void;
 }
 
 extern class WasmNull extends HeapObject {}
