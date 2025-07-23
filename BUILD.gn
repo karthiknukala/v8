@@ -6475,6 +6475,11 @@ if (v8_monolithic) {
 
     configs = [ ":internal_config" ]
   }
+  # XXX(ds815): Not yet.
+  if (false && is_cheri) {
+    compartments_file = rebase_path("src/Compartments.json", root_build_dir)
+    ldflags += [ "-Wl,--compartment-policy=$compartments_file" ]
+  }
 }
 
 if (v8_enable_webassembly) {
@@ -6852,6 +6857,11 @@ if (is_component_build) {
 
     configs = []
     public_configs = [ ":external_config" ]
+    # XXX(ds815): Not yet.
+    if (false && is_cheri) {
+      compartments_file = rebase_path("src/Compartments.json", root_build_dir)
+      ldflags = [ "-Wl,--compartment-policy=$compartments_file" ]
+    }
   }
 
   if (cppgc_is_standalone) {
