@@ -12,6 +12,9 @@ namespace base {
 
 using Address = uintptr_t;
 using byte = uint8_t;
+#ifndef __CHERI_PURE_CAPABILITY__
+using ptraddr_t = uintptr_t;
+#endif
 
 // Memory provides an interface to 'raw' memory. It encapsulates the casts
 // that typically are needed when incompatible pointer types are used.
