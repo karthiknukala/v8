@@ -17,6 +17,32 @@
 
 namespace v8 {
 namespace base {
+#ifdef __CHERI_PURE_CAPABILITY__
+#error "This file has not been ported to CHERI."
+#endif
+struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {};
+OS::C18n::TrustedFrameState::TrustedFrameState() {}
+void* OS::C18n::TrustedFrameState::GetTrustedStack(void* pc
+                                                   [[maybe_unused]]) const {
+  return nullptr;
+}
+TrustedFrameState OS::C18n::GetNextTrustedFrame(
+    const TrustedFrameState& trusted_frame_state, void* trusted_frame) const {
+  return {};
+}
+size_t OS::C18n::TrustedFrameState::NumRegisters() const { return 0; }
+const void* const* OS::C18n::TrustedFrameState::Registers() const {
+  return nullptr;
+}
+const void* OS::C18n::TrustedFrameState::StackStart() const { return nullptr; }
+const void* OS::C18n::TrustedFrameState::StackTop() const { return nullptr; }
+bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
+  return true;
+}
+bool OS::C18n::Enabled() { return false; }
+ptraddr_t OS::C18n::Reflect(uintptr_t ptr) { return ptr; }
+ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
+bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
 
 namespace {
 

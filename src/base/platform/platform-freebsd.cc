@@ -31,13 +31,105 @@
 
 #undef MAP_TYPE
 
+#include <link.h>
+
 #include "src/base/macros.h"
 #include "src/base/platform/platform-posix-time.h"
 #include "src/base/platform/platform-posix.h"
 #include "src/base/platform/platform.h"
 
+#ifdef __CHERI_PURE_CAPABILITY__
+V8_WEAK extern "C" ptraddr_t _rtld_tramp_reflect(const void* ptr);
+#endif
+
 namespace v8 {
 namespace base {
+
+#ifdef __CHERI_PURE_CAPABILITY__
+struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {
+  TrustedFrameStateImpl() = default;
+  ~TrustedFrameStateImpl() = default;
+
+  TrustedFrameStateImpl(const TrustedFrameStateImpl& other) = default;
+  TrustedFrameStateImpl& operator=(const TrustedFrameStateImpl& other) =
+      default;
+
+  TrustedFrameStateImpl(TrustedFrameStateImpl&& other) noexcept = default;
+  TrustedFrameStateImpl& operator=(TrustedFrameStateImpl&& other) noexcept =
+      default;
+
+  dl_c18n_compart_state state{};
+};
+
+OS::C18n::TrustedFrameState::TrustedFrameState()
+    : impl_(new TrustedFrameStateImpl{}) {}
+
+OS::C18n::TrustedFrameState::~TrustedFrameState() = default;
+
+void* OS::C18n::GetTrustedStack(void* pc) {
+  return dl_c18n_get_trusted_stack(reinterpret_cast<uintptr_t>(pc));
+}
+
+void* OS::C18n::GetNextTrustedFrame(TrustedFrameState& trusted_frame_state,
+                                    void* trusted_frame) {
+  trusted_frame = dl_c18n_pop_trusted_stack(&trusted_frame_state.impl_->state,
+                                            trusted_frame);
+  return trusted_frame;
+}
+
+size_t OS::C18n::TrustedFrameState::NumRegisters() const {
+  return nitems(impl_->state.regs);
+}
+const void* const* OS::C18n::TrustedFrameState::Registers() const {
+  return reinterpret_cast<const void* const*>(impl_->state.regs);
+}
+const void* OS::C18n::TrustedFrameState::StackStart() const {
+  return impl_->state.osp;
+}
+const void* OS::C18n::TrustedFrameState::StackTop() const {
+  return impl_->state.sp;
+}
+bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
+  DCHECK(V8_CHERI_TAG_GET(top));
+  DCHECK(V8_CHERI_TAG_GET(start));
+  ptrdiff_t stack_size =
+      reinterpret_cast<ptraddr_t>(start) - reinterpret_cast<ptraddr_t>(top);
+  DCHECK_GE(stack_size, 0);
+  return stack_size >= sizeof(void*);
+}
+bool OS::C18n::Enabled() { return dl_c18n_get_trusted_stack(0) != nullptr; }
+ptraddr_t OS::C18n::Reflect(uintptr_t ptr) {
+  if (!_rtld_tramp_reflect) __builtin_trap();
+  return _rtld_tramp_reflect(reinterpret_cast<const void*>(ptr));
+}
+ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
+bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
+#else   // !__CHERI_PURE_CAPABILITY__
+// Shims
+struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {};
+OS::C18n::TrustedFrameState::TrustedFrameState() {}
+void* OS::C18n::TrustedFrameState::GetTrustedStack(void* pc
+                                                   [[maybe_unused]]) const {
+  return nullptr;
+}
+TrustedFrameState OS::C18n::GetNextTrustedFrame(
+    const TrustedFrameState& trusted_frame_state, void* trusted_frame) const {
+  return {};
+}
+size_t OS::C18n::TrustedFrameState::NumRegisters() const { return 0; }
+const void* const* OS::C18n::TrustedFrameState::Registers() const {
+  return nullptr;
+}
+const void* OS::C18n::TrustedFrameState::StackStart() const { return nullptr; }
+const void* OS::C18n::TrustedFrameState::StackTop() const { return nullptr; }
+bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
+  return true;
+}
+bool OS::C18n::Enabled() { return false; }
+ptraddr_t OS::C18n::Reflect(uintptr_t ptr) { return ptr; }
+ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
+bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
+#endif  // __CHERI_PURE_CAPABILITY__
 
 TimezoneCache* OS::CreateTimezoneCache() {
   return new PosixDefaultTimezoneCache();

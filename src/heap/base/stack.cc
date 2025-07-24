@@ -127,18 +127,61 @@ DISABLE_ASAN
 // other thread may use a lock to synchronize the access.
 DISABLE_TSAN
 void IteratePointersInStack(StackVisitor* visitor, const void* top,
-                            const void* start, const void* asan_fake_stack) {
-  for (const void* const* current = reinterpret_cast<const void* const*>(top);
-       current < start; ++current) {
-    // MSAN: Instead of unpoisoning the whole stack, the slot's value is copied
-    // into a local which is unpoisoned.
-    const void* address = *current;
-    MSAN_MEMORY_IS_INITIALIZED(&address, sizeof(address));
-    if (address == nullptr) continue;
-    visitor->VisitPointer(address);
-    IterateAsanFakeFrameIfNecessary(visitor, asan_fake_stack, start, top,
-                                    address);
+                            const void* start, const void* asan_fake_stack,
+                            bool whole_stack = false) {
+  using namespace v8::base;
+  // Obtain the first trusted frame.
+  void* trusted_frame = nullptr;
+  OS::C18n::TrustedFrameState trusted_frame_state;
+  // We don't care about this unless we are iterating the entire stack.
+  if (whole_stack && OS::C18n::Enabled()) {
+    trusted_frame = OS::C18n::GetTrustedStack(nullptr);
+    trusted_frame =
+        OS::C18n::GetNextTrustedFrame(trusted_frame_state, trusted_frame);
+    start = trusted_frame_state.StackStart();
+    top = trusted_frame_state.StackTop();
   }
+
+  do {
+    if (OS::C18n::ShouldIterateStack(top, start)) {
+      for (const void* const* current =
+               reinterpret_cast<const void* const*>(top);
+           current < start; ++current) {
+        // MSAN: Instead of unpoisoning the whole stack, the slot's value is
+        // copied into a local which is unpoisoned.
+        const void* address = *current;
+        MSAN_MEMORY_IS_INITIALIZED(&address, sizeof(address));
+        if (address == nullptr) continue;
+        visitor->VisitPointer(address);
+        IterateAsanFakeFrameIfNecessary(visitor, asan_fake_stack, start, top,
+                                        address);
+      }
+    }
+
+    // Only unwind over trusted stacks if we're not working with inactive stack
+    // segments.
+    if (whole_stack) {
+      // Fetch the next trusted frame and iterate over it.
+      trusted_frame =
+          OS::C18n::GetNextTrustedFrame(trusted_frame_state, trusted_frame);
+      // Iterate over the callee-saved registers as if it were a stack, since we
+      // don't necessarily want to be pushing anything onto another
+      // compartment's stack.
+      {
+        const void* const* current = trusted_frame_state.Registers();
+        for (size_t i = 0; i < trusted_frame_state.NumRegisters() && current;
+             ++i, ++current) {
+          const void* address = *current;
+          if (address == nullptr) continue;
+          visitor->VisitPointer(address);
+        }
+      }
+
+      // Populate the start and top for the next iteration.
+      start = trusted_frame_state.StackStart();
+      top = trusted_frame_state.StackTop();
+    }
+  } while (trusted_frame != nullptr && start != nullptr);
 }
 
 }  // namespace
@@ -160,7 +203,7 @@ void Stack::IteratePointersImpl(const Stack* stack, StackVisitor* visitor,
            reinterpret_cast<uintptr_t>(stack_end) & (kMinStackAlignment - 1));
   IteratePointersInStack(visitor,
                          reinterpret_cast<const void* const*>(stack_end),
-                         stack->stack_start_, asan_fake_stack);
+                         stack->stack_start_, asan_fake_stack, true);
 
   for (const auto& segment : stack->inactive_stacks_) {
     IteratePointersInStack(visitor, segment.top, segment.start,
@@ -171,7 +214,8 @@ void Stack::IteratePointersImpl(const Stack* stack, StackVisitor* visitor,
 }
 
 void Stack::IteratePointers(StackVisitor* visitor) const {
-  DCHECK(IsOnCurrentStack(stack_start_));
+  using namespace v8::base;
+  DCHECK_IMPLIES(!OS::C18n::Enabled(), IsOnCurrentStack(stack_start_));
   PushAllRegistersAndIterateStack(this, visitor, &IteratePointersImpl);
   // No need to deal with callee-saved registers as they will be kept alive by
   // the regular conservative stack iteration.

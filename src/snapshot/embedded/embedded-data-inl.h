@@ -26,15 +26,22 @@ Address EmbeddedData::InstructionStartOf(Builtin builtin) const {
   uintptr_t sentry = reinterpret_cast<uintptr_t>(RawCode());
   uintptr_t result_cap = sentry + desc.instruction_offset;
   if (V8_CHERI_SEALED(sentry)) {
-    const ptraddr_t base_addr = V8_CHERI_BASE_GET(sentry);
-    const ptraddr_t sentry_addr = V8_CHERI_ADDR_GET(sentry);
-    const ptraddr_t instruction_start = sentry_addr + desc.instruction_offset;
-    const void* pcc = V8_CHERI_PCC;
-    result_cap = reinterpret_cast<uintptr_t>(V8_CHERI_ADDR_SET(pcc, base_addr));
-    result_cap =
-        V8_CHERI_SET_BOUNDS_EXACT(result_cap, V8_CHERI_LENGTH_GET(sentry));
-    result_cap = V8_CHERI_ADDR_SET(result_cap, instruction_start);
-    result_cap = V8_CHERI_TO_SENTRY(result_cap | 1);
+    using namespace base;
+    ptraddr_t reflected = OS::C18n::InvalidReflectedAddress();
+    if (OS::C18n::Enabled()) {
+      // Attempt to reflect the trampoline pointer to the real address.
+      reflected = OS::C18n::Reflect(sentry);
+    }
+    const ptraddr_t sentry_addr = OS::C18n::IsValidReflectedAddress(reflected)
+                                      ? reflected
+                                      : V8_CHERI_ADDR_GET(sentry);
+    ptraddr_t instruction_start = sentry_addr + desc.instruction_offset;
+#ifdef __aarch64__
+    instruction_start |= 1;  // C64 LSB
+#endif
+    result_cap = reinterpret_cast<uintptr_t>(V8_CHERI_ADDR_SET(
+        reinterpret_cast<uintptr_t>(V8_CHERI_PCC), instruction_start));
+    result_cap = V8_CHERI_TO_SENTRY(result_cap);
     DCHECK_NE(reinterpret_cast<void*>(result_cap), nullptr);
   }
   const uint8_t* result = reinterpret_cast<const uint8_t*>(result_cap);

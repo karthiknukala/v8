@@ -152,6 +152,45 @@ class V8_BASE_EXPORT OS {
   static void EnsureWin32MemoryAPILoaded();
 #endif
 
+  // On CHERI, some operating systems may support c18n via their runtime
+  // linkers.
+  struct V8_BASE_EXPORT C18n {
+    class V8_BASE_EXPORT TrustedFrameState {
+     public:
+      explicit TrustedFrameState();
+      ~TrustedFrameState();
+
+      TrustedFrameState(const TrustedFrameState& other) = delete;
+      TrustedFrameState& operator=(const TrustedFrameState& other) = delete;
+
+      TrustedFrameState(TrustedFrameState&& other) noexcept = default;
+      TrustedFrameState& operator=(TrustedFrameState&& other) noexcept =
+          default;
+
+      V8_WARN_UNUSED_RESULT size_t NumRegisters() const;
+      V8_WARN_UNUSED_RESULT const void* const* Registers() const;
+      V8_WARN_UNUSED_RESULT const void* StackStart() const;
+      V8_WARN_UNUSED_RESULT const void* StackTop() const;
+
+     private:
+      friend struct C18n;
+
+      struct TrustedFrameStateImpl;
+      std::unique_ptr<TrustedFrameStateImpl> impl_;
+    };
+
+    V8_WARN_UNUSED_RESULT static void* GetTrustedStack(void* pc
+                                                       [[maybe_unused]]);
+    V8_WARN_UNUSED_RESULT static void* GetNextTrustedFrame(
+        TrustedFrameState& trusted_frame_state, void* trusted_frame);
+    V8_WARN_UNUSED_RESULT static bool ShouldIterateStack(const void* top,
+                                                         const void* start);
+    V8_WARN_UNUSED_RESULT static bool Enabled();
+    V8_WARN_UNUSED_RESULT static ptraddr_t Reflect(uintptr_t ptr);
+    V8_WARN_UNUSED_RESULT static ptraddr_t InvalidReflectedAddress();
+    V8_WARN_UNUSED_RESULT static bool IsValidReflectedAddress(ptraddr_t addr);
+  };
+
   // Returns the accumulated user time for thread. This routine
   // can be used for profiling. The implementation should
   // strive for high-precision timer resolution, preferable

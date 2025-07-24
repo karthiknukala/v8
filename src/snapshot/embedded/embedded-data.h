@@ -57,6 +57,28 @@ class EmbeddedData final {
   // Create the embedded blob from the given Isolate's heap state.
   static EmbeddedData NewFromIsolate(Isolate* isolate);
 
+#ifdef __CHERI_PURE_CAPABILITY__
+  static const uint8_t* UnwrapTrampoline(const uint8_t* blob) {
+    uint8_t* code_blob = const_cast<uint8_t*>(blob);
+    if (base::OS::C18n::Enabled()) {
+      uint8_t* maybe_code_blob = reinterpret_cast<uint8_t*>(V8_CHERI_ADDR_SET(
+          V8_CHERI_PCC,
+          base::OS::C18n::Reflect(reinterpret_cast<uintptr_t>(code_blob))));
+      if (maybe_code_blob != nullptr) {
+#ifdef __aarch64__
+        code_blob = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(maybe_code_blob) | size_t{1});
+#else
+        code_blob = maybe_code_blob;
+#endif
+      }
+    }
+    DCHECK_NE(code_blob, nullptr);
+    return const_cast<const uint8_t*>(code_blob);
+  }
+#else
+  static const uint8_t* UnwrapTrampoline(const uint8_t* blob) { return blob; }
+#endif
   // Returns the global embedded blob (usually physically located in .text and
   // .rodata).
   static EmbeddedData FromBlob() {
@@ -77,6 +99,8 @@ class EmbeddedData final {
   // Returns a potentially remapped embedded blob (see also
   // MaybeRemapEmbeddedBuiltinsIntoCodeRange).
   static EmbeddedData FromBlob(CodeRange* code_range) {
+    DCHECK_EQ(UnwrapTrampoline(code_range->embedded_blob_code_copy()),
+              code_range->embedded_blob_code_copy());
     return EmbeddedData(code_range->embedded_blob_code_copy(),
                         Isolate::CurrentEmbeddedBlobCodeSize(),
                         Isolate::CurrentEmbeddedBlobData(),
@@ -259,7 +283,10 @@ class EmbeddedData final {
  private:
   EmbeddedData(const uint8_t* code, uint32_t code_size, const uint8_t* data,
                uint32_t data_size)
-      : code_(code), code_size_(code_size), data_(data), data_size_(data_size) {
+      : code_(UnwrapTrampoline(code)),
+        code_size_(code_size),
+        data_(data),
+        data_size_(data_size) {
     DCHECK_NOT_NULL(code);
     DCHECK_LT(0, code_size);
     DCHECK_NOT_NULL(data);
