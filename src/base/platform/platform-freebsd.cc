@@ -70,8 +70,8 @@ void* OS::C18n::GetTrustedStack(void* pc) {
   return dl_c18n_get_trusted_stack(reinterpret_cast<uintptr_t>(pc));
 }
 
-void* OS::C18n::GetNextTrustedFrame(TrustedFrameState& trusted_frame_state,
-                                    void* trusted_frame) {
+void* OS::C18n::GetNextTrustedFrame(
+    OS::C18n::TrustedFrameState& trusted_frame_state, void* trusted_frame) {
   trusted_frame = dl_c18n_pop_trusted_stack(&trusted_frame_state.impl_->state,
                                             trusted_frame);
   return trusted_frame;
@@ -108,13 +108,10 @@ bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
 // Shims
 struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {};
 OS::C18n::TrustedFrameState::TrustedFrameState() {}
-void* OS::C18n::TrustedFrameState::GetTrustedStack(void* pc
-                                                   [[maybe_unused]]) const {
+void* OS::C18n::GetTrustedStack(void* pc) { return nullptr; }
+void* OS::C18n::GetNextTrustedFrame(
+    OS::C18n::TrustedFrameState& trusted_frame_state, void* trusted_frame) {
   return nullptr;
-}
-TrustedFrameState OS::C18n::GetNextTrustedFrame(
-    const TrustedFrameState& trusted_frame_state, void* trusted_frame) const {
-  return {};
 }
 size_t OS::C18n::TrustedFrameState::NumRegisters() const { return 0; }
 const void* const* OS::C18n::TrustedFrameState::Registers() const {

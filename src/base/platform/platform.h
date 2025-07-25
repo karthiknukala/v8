@@ -179,8 +179,7 @@ class V8_BASE_EXPORT OS {
       std::unique_ptr<TrustedFrameStateImpl> impl_;
     };
 
-    V8_WARN_UNUSED_RESULT static void* GetTrustedStack(void* pc
-                                                       [[maybe_unused]]);
+    V8_WARN_UNUSED_RESULT static void* GetTrustedStack(void* pc);
     V8_WARN_UNUSED_RESULT static void* GetNextTrustedFrame(
         TrustedFrameState& trusted_frame_state, void* trusted_frame);
     V8_WARN_UNUSED_RESULT static bool ShouldIterateStack(const void* top,

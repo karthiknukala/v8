@@ -39,13 +39,10 @@ namespace base {
 #endif
 struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {};
 OS::C18n::TrustedFrameState::TrustedFrameState() {}
-void* OS::C18n::TrustedFrameState::GetTrustedStack(void* pc
-                                                   [[maybe_unused]]) const {
+void* OS::C18n::GetTrustedStack(void* pc) { return nullptr; }
+void* OS::C18n::GetNextTrustedFrame(
+    OS::C18n::TrustedFrameState& trusted_frame_state, void* trusted_frame) {
   return nullptr;
-}
-TrustedFrameState OS::C18n::GetNextTrustedFrame(
-    const TrustedFrameState& trusted_frame_state, void* trusted_frame) const {
-  return {};
 }
 size_t OS::C18n::TrustedFrameState::NumRegisters() const { return 0; }
 const void* const* OS::C18n::TrustedFrameState::Registers() const {
