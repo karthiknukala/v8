@@ -39,6 +39,7 @@ namespace base {
 #endif
 struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {};
 OS::C18n::TrustedFrameState::TrustedFrameState() {}
+OS::C18n::TrustedFrameState::~TrustedFrameState() = default;
 void* OS::C18n::GetTrustedStack(void* pc) { return nullptr; }
 void* OS::C18n::GetNextTrustedFrame(
     OS::C18n::TrustedFrameState& trusted_frame_state, void* trusted_frame) {
