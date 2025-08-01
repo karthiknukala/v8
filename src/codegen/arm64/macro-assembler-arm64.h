@@ -1919,6 +1919,13 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   inline void PopCRegList(RegList regs) {
     PopSizeRegList(regs, kCRegSizeInBits);
   }
+#else
+  inline void PushCRegList(RegList regs) {
+    PushXRegList(regs);
+  }
+  inline void PopCRegList(RegList regs) {
+    PopXRegList(regs);
+  }
 #endif
   inline void PushWRegList(RegList regs) {
     PushSizeRegList(regs, kWRegSizeInBits);
