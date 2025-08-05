@@ -38,10 +38,6 @@
 #include "src/base/platform/platform-posix.h"
 #include "src/base/platform/platform.h"
 
-#ifdef __CHERI_PURE_CAPABILITY__
-V8_WEAK extern "C" ptraddr_t _rtld_tramp_reflect(const void* ptr);
-#endif
-
 namespace v8 {
 namespace base {
 
@@ -99,8 +95,7 @@ bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
 }
 bool OS::C18n::Enabled() { return dl_c18n_get_trusted_stack(0) != nullptr; }
 ptraddr_t OS::C18n::Reflect(uintptr_t ptr) {
-  if (!_rtld_tramp_reflect) __builtin_trap();
-  return _rtld_tramp_reflect(reinterpret_cast<const void*>(ptr));
+  return dl_c18n_reflect_trampoline(reinterpret_cast<const void*>(ptr));
 }
 ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
 bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
