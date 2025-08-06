@@ -176,7 +176,7 @@ uint32_t GetWasmCalleeTag(RelocInfo* rinfo) {
   return ReadUnalignedValue<uint32_t>(rinfo->target_address_address());
 #elif V8_TARGET_ARCH_ARM64
   Instruction* instr = reinterpret_cast<Instruction*>(rinfo->pc());
-  if (instr->IsLdrLiteralX()) {
+  if (instr->IsLdrLiteralX() || instr->IsLdrLiteralC()) {
     return ReadUnalignedValue<uint32_t>(rinfo->constant_pool_entry_address());
   } else {
     DCHECK(instr->IsBranchAndLink() || instr->IsUnconditionalBranch());
