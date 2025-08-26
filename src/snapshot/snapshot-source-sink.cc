@@ -54,6 +54,9 @@ void SnapshotByteSink::PutRaw(const uint8_t* data, int number_of_bytes,
 }
 
 void SnapshotByteSink::Append(const SnapshotByteSink& other) {
+  if (v8_flags.trace_serializer_bytes) {
+    PrintF("Append other sink: %d\n", other.Position());
+  }
   data_.insert(data_.end(), other.data_.begin(), other.data_.end());
 }
 
