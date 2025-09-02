@@ -50,6 +50,11 @@ void PlatformEmbeddedFileWriterMac::DeclareSymbolGlobal(const char* name) {
   fprintf(fp_, ".private_extern _%s\n", name);
 }
 
+void PlatformEmbeddedFileWriterMac::DeclareCodePtr(const char* codeptr,
+                                                   const char* name) {}
+void PlatformEmbeddedFileWriterMac::DeclareSymbolSize(const char* name,
+                                                      uint32_t value) {}
+
 void PlatformEmbeddedFileWriterMac::AlignToCodeAlignment() {
 #if V8_TARGET_ARCH_X64
   // On x64 use 64-bytes code alignment to allow 64-bytes loop header alignment.

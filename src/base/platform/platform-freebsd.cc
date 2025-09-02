@@ -94,11 +94,6 @@ bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
   return stack_size >= sizeof(void*);
 }
 bool OS::C18n::Enabled() { return dl_c18n_get_trusted_stack(0) != nullptr; }
-ptraddr_t OS::C18n::Reflect(uintptr_t ptr) {
-  return dl_c18n_reflect_trampoline(reinterpret_cast<const void*>(ptr));
-}
-ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
-bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
 #else   // !__CHERI_PURE_CAPABILITY__
 // Shims
 struct OS::C18n::TrustedFrameState::TrustedFrameStateImpl {};
@@ -119,9 +114,6 @@ bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
   return true;
 }
 bool OS::C18n::Enabled() { return false; }
-ptraddr_t OS::C18n::Reflect(uintptr_t ptr) { return ptr; }
-ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
-bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
 #endif  // __CHERI_PURE_CAPABILITY__
 
 TimezoneCache* OS::CreateTimezoneCache() {

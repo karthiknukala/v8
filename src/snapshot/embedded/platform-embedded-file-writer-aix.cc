@@ -52,6 +52,11 @@ void PlatformEmbeddedFileWriterAIX::DeclareSymbolGlobal(const char* name) {
   fprintf(fp_, ".globl %s, hidden\n", name);
 }
 
+void PlatformEmbeddedFileWriterAIX::DeclareCodePtr(const char* codeptr,
+                                                   const char* name) {}
+void PlatformEmbeddedFileWriterAIX::DeclareSymbolSize(const char* name,
+                                                      uint32_t value) {}
+
 void PlatformEmbeddedFileWriterAIX::AlignToCodeAlignment() {
 #if V8_TARGET_ARCH_X64
   // On x64 use 64-bytes code alignment to allow 64-bytes loop header alignment.

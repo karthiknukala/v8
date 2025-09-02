@@ -60,6 +60,26 @@ void PlatformEmbeddedFileWriterGeneric::DeclareSymbolGlobal(const char* name) {
   fprintf(fp_, ".hidden %s\n", name);
 }
 
+#if V8_TARGET_CHERI
+void PlatformEmbeddedFileWriterGeneric::DeclareCodePtr(const char* codeptr,
+                                                       const char* name) {
+  fprintf(fp_, ".global %s\n", codeptr);
+  fprintf(fp_, ".section .data\n");
+  fprintf(fp_, "%s:\n", codeptr);
+  fprintf(fp_, ".type %s, %%object\n", codeptr);
+  fprintf(fp_, ".size %s, 16\n", codeptr);
+  fprintf(fp_, ".chericap %s%s@code\n", SYMBOL_PREFIX, name);
+}
+
+#else
+void PlatformEmbeddedFileWriterGeneric::DeclareCodePtr(const char* codeptr,
+                                                       const char* name) {}
+#endif
+void PlatformEmbeddedFileWriterGeneric::DeclareSymbolSize(const char* name,
+                                                          uint32_t value) {
+  fprintf(fp_, ".size %s%s, %u\n", SYMBOL_PREFIX, name, value);
+}
+
 void PlatformEmbeddedFileWriterGeneric::AlignToCodeAlignment() {
 #if (V8_OS_ANDROID || V8_OS_LINUX) && \
     (V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64)
@@ -75,7 +95,7 @@ void PlatformEmbeddedFileWriterGeneric::AlignToCodeAlignment() {
   // don't cross 64-byte boundaries.
   static_assert(64 >= kCodeAlignment);
   fprintf(fp_, ".balign 64\n");
-#elif defined(__CHERI_PURE_CAPABILITY__)
+#elif V8_TARGET_CHERI
   // 64 byte alignment is needed on CHERI because HeapObject header size is 64
   // bytes.
   static_assert(64 >= kCodeAlignment);

@@ -33,9 +33,6 @@ bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
   return true;
 }
 bool OS::C18n::Enabled() { return false; }
-ptraddr_t OS::C18n::Reflect(uintptr_t ptr) { return ptr; }
-ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
-bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
 
 #if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && defined(V8_OS_IOS)
 V8_BASE_EXPORT void SetJitWriteProtected(int enable) {

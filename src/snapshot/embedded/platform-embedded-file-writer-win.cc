@@ -455,6 +455,9 @@ void PlatformEmbeddedFileWriterWin::DeclareSymbolGlobal(const char* name) {
   }
 }
 
+void PlatformEmbeddedFileWriterWin::DeclareCodePtr(const char* codeptr,
+                                                   const char* name) {}
+
 void PlatformEmbeddedFileWriterWin::AlignToCodeAlignment() {
   if (target_arch_ == EmbeddedTargetArch::kArm64) {
     fprintf(fp_, "  ALIGN %d\n", ARM64_CODE_ALIGNMENT);
@@ -611,6 +614,11 @@ void PlatformEmbeddedFileWriterWin::DeclareRvaToSymbol(const char* name,
 void PlatformEmbeddedFileWriterWin::DeclareSymbolGlobal(const char* name) {
   fprintf(fp_, ".global %s%s\n", SYMBOL_PREFIX, name);
 }
+
+void PlatformEmbeddedFileWriterWin::DeclareCodePtr(const char* codeptr,
+                                                   const char* name) {}
+void PlatformEmbeddedFileWriterWin::DeclareSymbolSize(const char* name,
+                                                      uint32_t value) {}
 
 void PlatformEmbeddedFileWriterWin::AlignToCodeAlignment() {
 #if V8_TARGET_ARCH_X64

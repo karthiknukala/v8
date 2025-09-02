@@ -133,6 +133,10 @@ class EmbeddedFileWriter : public EmbeddedFileWriterInterface {
     return std::string{embedded_blob_code_symbol.begin()};
   }
 
+  std::string EmbeddedBlobCodeSymbolCodePtr() const {
+    return EmbeddedBlobCodeSymbol() + "codeptr_";
+  }
+
   std::string EmbeddedBlobDataSymbol() const {
     base::EmbeddedVector<char, kTemporaryStringLength>
         embedded_blob_data_symbol;

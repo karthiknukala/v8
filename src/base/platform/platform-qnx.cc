@@ -58,9 +58,6 @@ bool OS::C18n::ShouldIterateStack(const void* top, const void* start) {
   return true;
 }
 bool OS::C18n::Enabled() { return false; }
-ptraddr_t OS::C18n::Reflect(uintptr_t ptr) { return ptr; }
-ptraddr_t OS::C18n::InvalidReflectedAddress() { return 0; }
-bool OS::C18n::IsValidReflectedAddress(ptraddr_t addr) { return addr != 0; }
 
 // 0 is never a valid thread id on Qnx since tids and pids share a
 // name space and pid 0 is reserved (see man 2 kill).

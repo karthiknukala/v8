@@ -150,6 +150,7 @@
 #include "src/execution/simulator-base.h"
 #endif
 
+extern "C" const uint8_t *v8_Default_embedded_blob_code_codeptr_;
 extern "C" const uint8_t v8_Default_embedded_blob_code_[];
 extern "C" uint32_t v8_Default_embedded_blob_code_size_;
 extern "C" const uint8_t v8_Default_embedded_blob_data_[];
@@ -171,7 +172,11 @@ namespace internal {
 #endif
 
 const uint8_t* DefaultEmbeddedBlobCode() {
+#ifdef __CHERI_PURE_CAPABILITY__
+  return v8_Default_embedded_blob_code_codeptr_;
+#else
   return v8_Default_embedded_blob_code_;
+#endif
 }
 uint32_t DefaultEmbeddedBlobCodeSize() {
   return v8_Default_embedded_blob_code_size_;

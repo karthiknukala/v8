@@ -186,9 +186,6 @@ class V8_BASE_EXPORT OS {
     V8_WARN_UNUSED_RESULT static bool ShouldIterateStack(const void* top,
                                                          const void* start);
     V8_WARN_UNUSED_RESULT static bool Enabled();
-    V8_WARN_UNUSED_RESULT static ptraddr_t Reflect(uintptr_t ptr);
-    V8_WARN_UNUSED_RESULT static ptraddr_t InvalidReflectedAddress();
-    V8_WARN_UNUSED_RESULT static bool IsValidReflectedAddress(ptraddr_t addr);
   };
 
   // Returns the accumulated user time for thread. This routine

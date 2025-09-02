@@ -18,24 +18,12 @@ Address EmbeddedData::InstructionStartOf(Builtin builtin) const {
   // sentries on CHERI when we deserialize the heap, but regular RX capabilities
   // in mksnapshot. If we are manipulating sentries, re-derive an unsealed RX
   // capability from the PCC and compute the new sentry.
-  //
-  // FIXME(ds815): LLVM 15 changes this behaviour and it would be better to just
-  // have the capability as read-only and generate our own sentries as opposed
-  // to doing this. For now we just work around the issue in order to maintain
-  // backwards compatbility with LLVM 14 until Chromium can make the switch.
   uintptr_t sentry = reinterpret_cast<uintptr_t>(RawCode());
   uintptr_t result_cap = sentry + desc.instruction_offset;
   if (V8_CHERI_SEALED(sentry)) {
     using namespace base;
-    ptraddr_t reflected = OS::C18n::InvalidReflectedAddress();
-    if (OS::C18n::Enabled()) {
-      // Attempt to reflect the trampoline pointer to the real address.
-      reflected = OS::C18n::Reflect(sentry);
-    }
-    const ptraddr_t sentry_addr = OS::C18n::IsValidReflectedAddress(reflected)
-                                      ? reflected
-                                      : V8_CHERI_ADDR_GET(sentry);
-    ptraddr_t instruction_start = sentry_addr + desc.instruction_offset;
+    ptraddr_t instruction_start =
+        V8_CHERI_ADDR_GET(sentry) + desc.instruction_offset;
 #ifdef __aarch64__
     instruction_start |= 1;  // C64 LSB
 #endif
@@ -45,6 +33,7 @@ Address EmbeddedData::InstructionStartOf(Builtin builtin) const {
     DCHECK_NE(reinterpret_cast<void*>(result_cap), nullptr);
   }
   const uint8_t* result = reinterpret_cast<const uint8_t*>(result_cap);
+  DCHECK(V8_CHERI_TAG_GET(result));
 #else
   const uint8_t* result = RawCode() + desc.instruction_offset;
 #endif

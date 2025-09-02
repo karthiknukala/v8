@@ -60,7 +60,9 @@ class PlatformEmbeddedFileWriterBase {
 
   virtual void DeclareUint32(const char* name, uint32_t value) = 0;
 
+  virtual void DeclareCodePtr(const char* codeptr, const char* name) = 0;
   virtual void DeclareSymbolGlobal(const char* name) = 0;
+  virtual void DeclareSymbolSize(const char* nam, uint32_t value) = 0;
   virtual void DeclareLabel(const char* name) = 0;
   virtual void DeclareType(const char* name, const char* which) = 0;
 
