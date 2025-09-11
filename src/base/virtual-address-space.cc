@@ -90,7 +90,7 @@ Address VirtualAddressSpace::AllocatePages(Address hint, size_t size,
                    static_cast<OS::MemoryPermission>(permissions),
                    static_cast<OS::MemoryPermission>(max_permissions)));
 #else
-                   static_cast<OS::MemoryPermission>(permissions)));
+      static_cast<OS::MemoryPermission>(permissions)));
 #endif // __CHERI_PURE_CAPABILITY__
 }
 
