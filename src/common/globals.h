@@ -77,10 +77,18 @@ namespace internal {
 #define V8_EMBEDDED_CONSTANT_POOL_BOOL false
 #endif
 
+// Determine if the compiler should target CHERI.
 #if V8_TARGET_CHERI
 #define V8_TARGET_CHERI_BOOL true
 #else
 #define V8_TARGET_CHERI_BOOL false
+#endif
+
+// Determine if we are currently being compiled as a purecap binary.
+#ifdef __CHERI_PURE_CAPABILITY__
+#define V8_CHERI_PURECAP_BOOL true
+#else
+#define V8_CHERI_PURECAP_BOOL false
 #endif
 
 #ifdef DEBUG
