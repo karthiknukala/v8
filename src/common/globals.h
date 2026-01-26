@@ -319,11 +319,7 @@ const size_t kShortBuiltinCallsOldSpaceSizeThreshold = size_t{2} * GB;
 #if V8_SFI_HAS_UNIQUE_ID && TAGGED_SIZE_8_BYTES
 #define V8_SFI_NEEDS_PADDING true
 #else
-#if (__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-#define V8_SFI_NEEDS_PADDING true
-#else  // !(__CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS)
 #define V8_SFI_NEEDS_PADDING false
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
 #endif
 
 #if defined(V8_OS_WIN) && defined(V8_TARGET_ARCH_X64)
