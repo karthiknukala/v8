@@ -89,6 +89,10 @@ class Arm64OperandGenerator final : public OperandGenerator {
     return OpParameter<double>(node->op());
   }
 
+  MachineRepresentation GetRepresentation(Node* node) {
+    return sequence()->GetRepresentation(selector()->GetVirtualRegister(node));
+  }
+
   bool CanBeImmediate(Node* node, ImmediateMode mode) {
     if (node->opcode() == IrOpcode::kCompressedHeapConstant) {
       if (!COMPRESS_POINTERS_BOOL) return false;
@@ -167,6 +171,26 @@ class Arm64OperandGenerator final : public OperandGenerator {
 };
 
 namespace {
+
+bool LooksLikeFieldOffsetExpression(Arm64OperandGenerator* g, Node* node) {
+  if (g->IsIntegerConstant(node)) return true;
+
+  switch (node->opcode()) {
+    case IrOpcode::kInt32Add:
+    case IrOpcode::kInt32Sub:
+    case IrOpcode::kInt32Mul:
+    case IrOpcode::kInt64Add:
+    case IrOpcode::kInt64Sub:
+    case IrOpcode::kInt64Mul:
+    case IrOpcode::kWord32Shl:
+    case IrOpcode::kWord64Shl:
+    case IrOpcode::kChangeInt32ToInt64:
+    case IrOpcode::kChangeUint32ToUint64:
+      return true;
+    default:
+      return false;
+  }
+}
 
 void VisitRR(InstructionSelector* selector, ArchOpcode opcode, Node* node) {
   Arm64OperandGenerator g(selector);
@@ -954,6 +978,30 @@ void InstructionSelector::VisitStore(Node* node) {
     CHECK(!kStorePair);
     DCHECK(CanBeTaggedOrCompressedPointer(
         StoreRepresentationOf(node->op()).representation()));
+    if (g.IsIntegerConstant(base) && !g.IsIntegerConstant(index)) {
+      // The write barrier needs the heap object as operand 0. Some CSA stores
+      // present tagged-field addresses as (offset, object), since address
+      // addition is commutative; normalize constants into the index.
+      Node* tmp = base;
+      base = index;
+      index = tmp;
+    }
+    if (LooksLikeFieldOffsetExpression(&g, base) &&
+        !LooksLikeFieldOffsetExpression(&g, index)) {
+      // Dynamic fixed-array element offsets can also arrive as operand 0 after
+      // address commuting. Keep the heap object in input 0 for CheckPageFlag.
+      Node* tmp = base;
+      base = index;
+      index = tmp;
+    }
+#if !V8_TARGET_CHERI
+    if (!CanBeTaggedOrCompressedPointer(g.GetRepresentation(base)) &&
+        CanBeTaggedOrCompressedPointer(g.GetRepresentation(index))) {
+      Node* tmp = base;
+      base = index;
+      index = tmp;
+    }
+#endif
     AddressingMode addressing_mode;
     InstructionOperand inputs[3];
     size_t input_count = 0;
