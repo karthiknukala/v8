@@ -1982,8 +1982,7 @@ Object Isolate::UnwindAndFindHandler() {
           V8_CHERI_PCC,
           V8_CHERI_ADDR_GET(reinterpret_cast<void*>(instruction_start))));
       instruction_start = reinterpret_cast<Address>(V8_CHERI_ADDR_SET(
-          V8_CHERI_PCC,
-          V8_CHERI_ADDR_GET(reinterpret_cast<void*>(instruction_start))));
+          V8_CHERI_PCC, static_cast<ptraddr_t>(instruction_start)));
       thread_local_top()->pending_handler_entrypoint_ =
           V8_CHERI_TO_SENTRY((instruction_start + handler_offset) | 1);
     } else {
@@ -2100,8 +2099,14 @@ Object Isolate::UnwindAndFindHandler() {
 
         // Jump directly to the optimized frames return, to immediately fall
         // into the deoptimizer.
+#ifdef __CHERI_PURE_CAPABILITY__
+        const int offset =
+            static_cast<int>((frame->pc() & ~1) - code.instruction_start());
+        DCHECK(IsAligned(offset, kInt32Size));
+#else
         const int offset =
             static_cast<int>(frame->pc() - code.instruction_start());
+#endif
 
         // Compute the stack pointer from the frame pointer. This ensures that
         // argument slots on the stack are dropped as returning would.
@@ -2308,7 +2313,10 @@ Object Isolate::UnwindAndFindHandler() {
         if (frame->is_baseline()) {
           BaselineFrame* sp_frame = BaselineFrame::cast(js_frame);
           Code code = sp_frame->LookupCode();
-          intptr_t pc_offset = sp_frame->GetPCForBytecodeOffset(offset);
+          ScaledInt pc_offset = sp_frame->GetPCForBytecodeOffset(offset);
+#ifdef __CHERI_PURE_CAPABILITY__
+          DCHECK(IsAligned(pc_offset, kInt32Size));
+#endif
           // Patch the context register directly on the frame, so that we don't
           // need to have a context read + write in the baseline code.
           sp_frame->PatchContext(context);

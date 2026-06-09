@@ -143,7 +143,10 @@ Address Code::metadata_start() const {
     if (V8_CHERI_SEALED(start)) {
       Address pcc = reinterpret_cast<Address>(V8_CHERI_PCC);
       Address rval = V8_CHERI_ADDR_SET(
-          pcc, (V8_CHERI_ADDR_GET(start) | 1) + instruction_size());
+          pcc, (V8_CHERI_ADDR_GET(start)) + instruction_size());
+#ifdef __aarch64__
+      rval |= 1;
+#endif
       return V8_CHERI_TO_SENTRY(rval);
     }
 #endif  // __CHERI_PURE_CAPABILITY__
@@ -272,7 +275,12 @@ int Code::GetBytecodeOffsetForBaselinePC(Address baseline_pc,
   CHECK_EQ(kind(), CodeKind::BASELINE);
   baseline::BytecodeOffsetIterator offset_iterator(
       ByteArray::cast(bytecode_offset_table()), bytecodes);
-  Address pc = baseline_pc - instruction_start();
+  Address start = instruction_start();
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+  baseline_pc &= ~1;
+  start &= ~1;
+#endif
+  Address pc = baseline_pc - start;
   offset_iterator.AdvanceToPCOffset(pc);
   return offset_iterator.current_bytecode_offset();
 }

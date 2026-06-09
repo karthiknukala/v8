@@ -1675,6 +1675,11 @@ int StubFrame::LookupExceptionHandlerInTable() {
   DCHECK_EQ(code.kind(), CodeKind::BUILTIN);
   HandlerTable table(code);
   int pc_offset = code.GetOffsetFromInstructionStart(isolate(), pc());
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+  // FIXME(ds815): Hack for Morello's C64 bit.
+  if (!IsAligned(pc_offset, kInt32Size)) ++pc_offset;
+  DCHECK(IsAligned(pc_offset, kInt32Size));
+#endif
   return table.LookupReturn(pc_offset);
 }
 
@@ -2381,6 +2386,11 @@ int OptimizedFrame::LookupExceptionHandlerInTable(
   if (table.NumberOfReturnEntries() == 0) return -1;
 
   int pc_offset = code.GetOffsetFromInstructionStart(isolate(), pc());
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+  // FIXME(ds815): Hack for Morello's C64 bit.
+  if (!IsAligned(pc_offset, kInt32Size)) ++pc_offset;
+  DCHECK(IsAligned(pc_offset, kInt32Size));
+#endif
   DCHECK_NULL(data);  // Data is not used and will not return a value.
 
   // When the return pc has been replaced by a trampoline there won't be
@@ -2763,6 +2773,7 @@ int WasmFrame::LookupExceptionHandlerInTable() {
     // The resulting capability could be invalid but it won't be
     // used as a pointer anyways.
     int pc_offset = static_cast<int>((pc() & ~1) - code->instruction_start());
+    DCHECK(IsAligned(pc_offset, kInt32Size));
 #else
     int pc_offset = static_cast<int>(pc() - code->instruction_start());
 #endif
