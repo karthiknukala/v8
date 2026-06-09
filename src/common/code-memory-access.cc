@@ -11,7 +11,15 @@ namespace internal {
 thread_local int RwxMemoryWriteScope::code_space_write_nesting_level_ = 0;
 #endif  // V8_HAS_PTHREAD_JIT_WRITE_PROTECT || V8_HAS_PKU_JIT_WRITE_PROTECT
 
-#if V8_HAS_PKU_JIT_WRITE_PROTECT
+#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT
+
+void RwxMemoryWriteScope::SetDefaultPermissionsForNewThread() {
+  if (!v8_flags.jitless && code_space_write_nesting_level_ == 0) {
+    base::SetJitWriteProtected(1);
+  }
+}
+
+#elif V8_HAS_PKU_JIT_WRITE_PROTECT
 int RwxMemoryWriteScope::memory_protection_key_ =
     base::MemoryProtectionKey::kNoMemoryProtectionKey;
 
@@ -64,7 +72,7 @@ void RwxMemoryWriteScope::SetDefaultPermissionsForSignalHandler() {
   base::MemoryProtectionKey::SetPermissionsForKey(
       memory_protection_key_, base::MemoryProtectionKey::kDisableWrite);
 }
-#else  // !V8_HAS_PKU_JIT_WRITE_PROTECT
+#else  // !V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !V8_HAS_PKU_JIT_WRITE_PROTECT
 
 void RwxMemoryWriteScope::SetDefaultPermissionsForNewThread() {}
 
@@ -73,7 +81,7 @@ bool RwxMemoryWriteScope::is_key_permissions_initialized_for_current_thread() {
   return true;
 }
 #endif  // DEBUG
-#endif  // V8_HAS_PKU_JIT_WRITE_PROTECT
+#endif  // V8_HAS_PTHREAD_JIT_WRITE_PROTECT
 
 RwxMemoryWriteScopeForTesting::RwxMemoryWriteScopeForTesting()
     : RwxMemoryWriteScope("For Testing") {}
