@@ -364,7 +364,9 @@ void MacroAssembler::PrepareC64Jump(const Register& cd) {
 }
 #else   // !V8_TARGET_CHERI
 void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
-                                    const Operand& operand) {}
+                                    const Operand& operand) {
+  Add(cd, cn, operand);
+}
 void MacroAssembler::PrepareC64Jump(const Register& cd) {}
 #endif  // V8_TARGET_CHERI
 
