@@ -25,24 +25,26 @@ class TypedOptimizationsReducer
 #endif
 
  public:
-  TURBOSHAFT_REDUCER_BOILERPLATE()
+  TURBOSHAFT_REDUCER_BOILERPLATE(TypedOptimizations)
 
   using Adapter = UniformReducerAdapter<TypedOptimizationsReducer, Next>;
 
   OpIndex ReduceInputGraphBranch(OpIndex ig_index, const BranchOp& operation) {
-    Type condition_type = GetType(operation.condition());
-    if (!condition_type.IsInvalid()) {
-      if (condition_type.IsNone()) {
-        Asm().Unreachable();
-        return OpIndex::Invalid();
-      }
-      condition_type =
-          Typer::TruncateWord32Input(condition_type, true, Asm().graph_zone());
-      DCHECK(condition_type.IsWord32());
-      if (auto c = condition_type.AsWord32().try_get_constant()) {
-        Block* goto_target = *c == 0 ? operation.if_false : operation.if_true;
-        Asm().Goto(goto_target->MapToNextGraph());
-        return OpIndex::Invalid();
+    if (!ShouldSkipOptimizationStep()) {
+      Type condition_type = GetType(operation.condition());
+      if (!condition_type.IsInvalid()) {
+        if (condition_type.IsNone()) {
+          Asm().Unreachable();
+          return OpIndex::Invalid();
+        }
+        condition_type = Typer::TruncateWord32Input(condition_type, true,
+                                                    Asm().graph_zone());
+        DCHECK(condition_type.IsWord32());
+        if (auto c = condition_type.AsWord32().try_get_constant()) {
+          Block* goto_target = *c == 0 ? operation.if_false : operation.if_true;
+          Asm().Goto(Asm().MapToNewGraph(goto_target));
+          return OpIndex::Invalid();
+        }
       }
     }
     return Adapter::ReduceInputGraphBranch(ig_index, operation);
@@ -50,16 +52,19 @@ class TypedOptimizationsReducer
 
   template <typename Op, typename Continuation>
   OpIndex ReduceInputGraphOperation(OpIndex ig_index, const Op& operation) {
-    Type type = GetType(ig_index);
-    if (type.IsNone()) {
-      // This operation is dead. Remove it.
-      DCHECK(CanBeTyped(operation));
-      return OpIndex::Invalid();
-    } else if (!type.IsInvalid()) {
-      // See if we can replace the operation by a constant.
-      if (OpIndex constant = TryAssembleConstantForType(type);
-          constant.valid()) {
-        return constant;
+    if (!ShouldSkipOptimizationStep()) {
+      Type type = GetType(ig_index);
+      if (type.IsNone()) {
+        // This operation is dead. Remove it.
+        DCHECK(CanBeTyped(operation));
+        Asm().Unreachable();
+        return OpIndex::Invalid();
+      } else if (!type.IsInvalid()) {
+        // See if we can replace the operation by a constant.
+        if (OpIndex constant = TryAssembleConstantForType(type);
+            constant.valid()) {
+          return constant;
+        }
       }
     }
 
@@ -89,8 +94,10 @@ class TypedOptimizationsReducer
       }
       case Type::Kind::kFloat32: {
         auto f32 = type.AsFloat32();
-        if (f32.is_only_nan()) {
-          return Asm().Float32Constant(nan_v<32>);
+        if (f32.has_nan()) {
+          // In the presence of hole and undefined nans, we cannot replace this
+          // without knowing the bit pattern.
+          break;
         } else if (f32.is_only_minus_zero()) {
           return Asm().Float32Constant(-0.0f);
         } else if (auto c = f32.try_get_constant()) {
@@ -100,8 +107,10 @@ class TypedOptimizationsReducer
       }
       case Type::Kind::kFloat64: {
         auto f64 = type.AsFloat64();
-        if (f64.is_only_nan()) {
-          return Asm().Float64Constant(nan_v<64>);
+        if (f64.has_nan()) {
+          // In the presence of hole and undefined nans, we cannot replace this
+          // without knowing the bit pattern.
+          break;
         } else if (f64.is_only_minus_zero()) {
           return Asm().Float64Constant(-0.0);
         } else if (auto c = f64.try_get_constant()) {

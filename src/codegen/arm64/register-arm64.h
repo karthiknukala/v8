@@ -45,9 +45,6 @@ namespace internal {
   ALWAYS_ALLOCATABLE_GENERAL_REGISTERS(V) \
   MAYBE_ALLOCATABLE_GENERAL_REGISTERS(V)
 
-#define MAGLEV_SCRATCH_GENERAL_REGISTERS(R)               \
-  R(x16) R(x17)
-
 #if V8_TARGET_CHERI
 #define CAPABILITY_REGISTER_CODE_LIST(R)          \
   R(0)  R(1)  R(2)  R(3)  R(4)  R(5)  R(6)  R(7)  \
@@ -96,6 +93,11 @@ namespace internal {
 
 #define MAGLEV_SCRATCH_DOUBLE_REGISTERS(R)                \
   R(d30) R(d31)
+
+#define C_CALL_CALLEE_SAVE_REGISTERS \
+  c19, c20, c21, c22, c23, c24, c25, c26, c27, c28
+
+#define C_CALL_CALLEE_SAVE_FP_REGISTERS d8, d9, d10, d11, d12, d13, d14, d15
 
 // clang-format on
 
@@ -319,9 +321,10 @@ static_assert(sizeof(Register) <= sizeof(int),
               "Register can efficiently be passed by value");
 
 // Assign |source| value to |no_reg| and return the |source|'s previous value.
-inline Register ReassignRegister(Register& source) {
-  Register result = source;
-  source = Register::no_reg();
+template <typename RegT>
+inline RegT ReassignRegister(RegT& source) {
+  RegT result = source;
+  source = RegT::no_reg();
   return result;
 }
 
@@ -364,7 +367,9 @@ enum VectorFormat {
   kFormatB = NEON_B | NEONScalar,
   kFormatH = NEON_H | NEONScalar,
   kFormatS = NEON_S | NEONScalar,
-  kFormatD = NEON_D | NEONScalar
+  kFormatD = NEON_D | NEONScalar,
+
+  kFormat1Q = 0xfffffffd
 };
 
 VectorFormat VectorFormatHalfWidth(VectorFormat vform);
@@ -375,6 +380,8 @@ VectorFormat ScalarFormatFromLaneSize(int lanesize);
 VectorFormat VectorFormatHalfWidthDoubleLanes(VectorFormat vform);
 VectorFormat VectorFormatFillQ(int laneSize);
 VectorFormat VectorFormatFillQ(VectorFormat vform);
+VectorFormat VectorFormatFillHalfQ(int laneSize);
+VectorFormat VectorFormatFillHalfQ(VectorFormat vform);
 VectorFormat ScalarFormatFromFormat(VectorFormat vform);
 V8_EXPORT_PRIVATE unsigned RegisterSizeInBitsFromFormat(VectorFormat vform);
 unsigned RegisterSizeInBytesFromFormat(VectorFormat vform);
@@ -437,6 +444,9 @@ class VRegister : public CPURegister {
   VRegister V1D() const {
     return VRegister::Create(code(), kDRegSizeInBits, 1);
   }
+  VRegister V1Q() const {
+    return VRegister::Create(code(), kQRegSizeInBits, 1);
+  }
 
   VRegister Format(VectorFormat f) const {
     return VRegister::Create(code(), f);
@@ -450,6 +460,7 @@ class VRegister : public CPURegister {
   bool Is4S() const { return (Is128Bits() && (lane_count_ == 4)); }
   bool Is1D() const { return (Is64Bits() && (lane_count_ == 1)); }
   bool Is2D() const { return (Is128Bits() && (lane_count_ == 2)); }
+  bool Is1Q() const { return (Is128Bits() && (lane_count_ == 1)); }
 
   // For consistency, we assert the number of lanes of these scalar registers,
   // even though there are no vectors of equivalent total size with which they
@@ -586,6 +597,7 @@ GENERAL_REGISTER_CODE_LIST(DEFINE_VREGISTERS)
 // Registers aliases.
 ALIAS_REGISTER(Register, cfp, c29);
 ALIAS_REGISTER(Register, czr, c31);
+ALIAS_REGISTER(Register, kStackPointerRegister, sp);
 ALIAS_REGISTER(VRegister, v8_, v8);  // Avoid conflicts with namespace v8.
 ALIAS_REGISTER(Register, ip0, c16);
 ALIAS_REGISTER(Register, ip1, c17);
@@ -627,14 +639,9 @@ ALIAS_REGISTER(VRegister, fp_scratch2, d31);
 #undef ALIAS_REGISTER
 
 // Arm64 calling convention
-constexpr Register carg_reg_1 = c0;
-constexpr Register carg_reg_2 = c1;
-constexpr Register carg_reg_3 = c2;
-constexpr Register carg_reg_4 = c3;
-constexpr Register arg_reg_1 = x0;
-constexpr Register arg_reg_2 = x1;
-constexpr Register arg_reg_3 = x2;
-constexpr Register arg_reg_4 = x3;
+constexpr Register kCArgRegs[] = {c0, c1, c2, c3, c4, c5, c6, c7};
+constexpr int kRegisterPassedArguments = arraysize(kCArgRegs);
+constexpr int kFPRegisterPassedArguments = 8;
 
 // AreAliased returns true if any of the named registers overlap. Arguments set
 // to NoReg are ignored. The system stack pointer may be specified.
@@ -703,13 +710,15 @@ constexpr Register kJavaScriptCallCodeStartRegister = c2;
 constexpr Register kJavaScriptCallTargetRegister = kJSFunctionRegister;
 constexpr Register kJavaScriptCallNewTargetRegister = c3;
 constexpr Register kJavaScriptCallExtraArg1Register = c2;
+constexpr Register kJavaScriptCallDispatchHandleRegister = c4;
 
-constexpr Register kOffHeapTrampolineRegister = ip0;
 constexpr Register kRuntimeCallFunctionRegister = c1;
 constexpr Register kRuntimeCallArgCountRegister = c0;
 constexpr Register kRuntimeCallArgvRegister = c11;
-constexpr Register kWasmInstanceRegister = c7;
-constexpr Register kWasmCompileLazyFuncIndexRegister = c8;
+constexpr Register kWasmImplicitArgRegister = c7;
+constexpr Register kWasmCompileLazyFuncIndexRegister = x8;
+constexpr Register kWasmTrapHandlerFaultAddressRegister = c16;
+constexpr Register kSimulatorHltArgument = c16;
 
 constexpr DoubleRegister kFPReturnRegister0 = d0;
 

@@ -43,13 +43,13 @@ void* PageAllocator::GetRandomMmapAddr() {
 }
 
 void* PageAllocator::AllocatePages(void* hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY
                                    PageAllocator::Permission access,
                                    PageAllocator::Permission max_access) {
 #else
                                    PageAllocator::Permission access) {
-#endif // !__CHERI_PURE_CAPABILITY
-#if !V8_HAS_PTHREAD_JIT_WRITE_PROTECT
+#endif
+#if !V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !V8_HAS_BECORE_JIT_WRITE_PROTECT
   // kNoAccessWillJitLater is only used on Apple Silicon. Map it to regular
   // kNoAccess on other platforms, so code doesn't have to handle both enum
   // values.
@@ -172,6 +172,10 @@ bool PageAllocator::DiscardSystemPages(void* address, size_t size) {
 
 bool PageAllocator::DecommitPages(void* address, size_t size) {
   return base::OS::DecommitPages(address, size);
+}
+
+bool PageAllocator::SealPages(void* address, size_t size) {
+  return base::OS::SealPages(address, size);
 }
 
 }  // namespace base

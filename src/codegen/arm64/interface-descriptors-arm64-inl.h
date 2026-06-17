@@ -14,9 +14,28 @@
 namespace v8 {
 namespace internal {
 
+// TODO(cheri): Go through all of these and verify that we have the right
+// register types.
 constexpr auto CallInterfaceDescriptor::DefaultRegisterArray() {
   auto registers = RegisterArray(c0, c1, c2, c3, c4);
   static_assert(registers.size() == kMaxBuiltinRegisterParams);
+  return registers;
+}
+
+constexpr auto CallInterfaceDescriptor::DefaultDoubleRegisterArray() {
+  auto registers = DoubleRegisterArray(d0, d1, d2, d3, d4, d5, d6);
+  return registers;
+}
+
+constexpr auto CallInterfaceDescriptor::DefaultReturnRegisterArray() {
+  auto registers =
+      RegisterArray(kReturnRegister0, kReturnRegister1, kReturnRegister2);
+  return registers;
+}
+
+constexpr auto CallInterfaceDescriptor::DefaultReturnDoubleRegisterArray() {
+  // Padding to have as many double return registers as GP return registers.
+  auto registers = DoubleRegisterArray(kFPReturnRegister0, no_dreg, no_dreg);
   return registers;
 }
 
@@ -73,6 +92,21 @@ constexpr Register KeyedLoadWithVectorDescriptor::VectorRegister() {
 }
 
 // static
+constexpr Register EnumeratedKeyedLoadBaselineDescriptor::EnumIndexRegister() {
+  return x4;
+}
+
+// static
+constexpr Register EnumeratedKeyedLoadBaselineDescriptor::CacheTypeRegister() {
+  return x5;
+}
+
+// static
+constexpr Register EnumeratedKeyedLoadBaselineDescriptor::SlotRegister() {
+  return x2;
+}
+
+// static
 constexpr Register KeyedHasICBaselineDescriptor::ReceiverRegister() {
   return kInterpreterAccumulatorRegister;
 }
@@ -111,8 +145,6 @@ constexpr Register DefineKeyedOwnDescriptor::FlagsRegister() { return x5; }
 constexpr Register StoreTransitionDescriptor::MapRegister() { return c5; }
 
 // static
-constexpr Register ApiGetterDescriptor::HolderRegister() { return c0; }
-// static
 constexpr Register ApiGetterDescriptor::CallbackRegister() { return c3; }
 
 // static
@@ -137,9 +169,23 @@ constexpr Register TypeConversionDescriptor::ArgumentRegister() {
 }
 
 // static
-constexpr auto TypeofDescriptor::registers() {
-  return RegisterArray(c0); // kObject (MachineType::AnyTagged)
+constexpr Register
+MaglevOptimizeCodeOrTailCallOptimizedCodeSlotDescriptor::FlagsRegister() {
+  return x8;
 }
+// static
+constexpr Register MaglevOptimizeCodeOrTailCallOptimizedCodeSlotDescriptor::
+    FeedbackVectorRegister() {
+  return c9;
+}
+// static
+constexpr Register
+MaglevOptimizeCodeOrTailCallOptimizedCodeSlotDescriptor::TemporaryRegister() {
+  return x5;
+}
+
+// static
+constexpr auto TypeofDescriptor::registers() { return RegisterArray(c0); }
 
 // static
 constexpr auto CallTrampolineDescriptor::registers() {
@@ -184,6 +230,14 @@ constexpr auto CallFunctionTemplateDescriptor::registers() {
   // x1 : function template info
   // x2 : number of arguments (on the stack)
   return RegisterArray(c1, x2);
+}
+
+// static
+constexpr auto CallFunctionTemplateGenericDescriptor::registers() {
+  // x1 : function template info
+  // x2 : number of arguments (on the stack)
+  // x3 : topmost script-having context
+  return RegisterArray(x1, x2, x3);
 }
 
 // static
@@ -265,6 +319,24 @@ constexpr auto Compare_BaselineDescriptor::registers() {
   return RegisterArray(c1, c0, c2);
 }
 
+#ifdef V8_ENABLE_SPARKPLUG_PLUS
+constexpr auto CompareAndTryPatchCodeDescriptor::registers() {
+  // x1: left operand
+  // x0: right operand
+  // x2: current feedback value
+  // x3: feedback offset
+  return RegisterArray(x1, x0, x2, x3);
+}
+#endif  // V8_ENABLE_SPARKPLUG_PLUS
+
+// static
+constexpr auto Compare_WithEmbeddedFeedbackOffsetDescriptor::registers() {
+  // x1: left operand
+  // x0: right operand
+  // x2: feedback offset
+  return RegisterArray(x1, x0, x2);
+}
+
 // static
 constexpr auto BinaryOpDescriptor::registers() {
   // x1: left operand
@@ -289,11 +361,35 @@ constexpr auto BinarySmiOp_BaselineDescriptor::registers() {
 }
 
 // static
-constexpr auto ApiCallbackDescriptor::registers() {
-  return RegisterArray(c1,   // kApiFunctionAddress (MachineType::Pointer)
-                       x2,   // kArgc (MachineType::IntPtr)
-                       c3,   // kCallData (MachineType::AnyTagged)
-                       c0);  // kHolder (MachineType::AnyTagged)
+constexpr Register
+CallApiCallbackOptimizedDescriptor::ApiFunctionAddressRegister() {
+  return c1;
+}
+// static
+constexpr Register
+CallApiCallbackOptimizedDescriptor::ActualArgumentsCountRegister() {
+  return x2;
+}
+// static
+constexpr Register
+CallApiCallbackOptimizedDescriptor::FunctionTemplateInfoRegister() {
+  return c3;
+}
+
+// static
+constexpr Register
+CallApiCallbackGenericDescriptor::ActualArgumentsCountRegister() {
+  return x2;
+}
+// static
+constexpr Register
+CallApiCallbackGenericDescriptor::TopmostScriptHavingContextRegister() {
+  return c1;
+}
+// static
+constexpr Register
+CallApiCallbackGenericDescriptor::FunctionTemplateInfoRegister() {
+  return c3;
 }
 
 // static
@@ -323,6 +419,12 @@ constexpr auto InterpreterPushArgsThenConstructDescriptor::registers() {
 }
 
 // static
+constexpr auto ConstructForwardAllArgsDescriptor::registers() {
+  return RegisterArray(x1,   // constructor to call
+                       x3);  // new target
+}
+
+// static
 constexpr auto ResumeGeneratorDescriptor::registers() {
   return RegisterArray(c0,   // the value to pass to the generator
                        c1);  // the JSGeneratorObject to resume
@@ -331,6 +433,11 @@ constexpr auto ResumeGeneratorDescriptor::registers() {
 // static
 constexpr auto RunMicrotasksEntryDescriptor::registers() {
   return RegisterArray(c0, c1);
+}
+
+constexpr auto WasmJSToWasmWrapperDescriptor::registers() {
+  // Arbitrarily picked register.
+  return RegisterArray(x8);
 }
 
 }  // namespace internal

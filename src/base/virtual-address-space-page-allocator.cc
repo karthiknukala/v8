@@ -83,5 +83,9 @@ bool VirtualAddressSpacePageAllocator::DecommitPages(void* address,
   return vas_->DecommitPages(reinterpret_cast<Address>(address), size);
 }
 
+bool VirtualAddressSpacePageAllocator::SealPages(void* address, size_t size) {
+  return false;
+}
+
 }  // namespace base
 }  // namespace v8

@@ -14,7 +14,7 @@ constexpr size_t KB = 1024;
 constexpr size_t MB = KB * 1024;
 
 void TestRandomPageAddressGeneration(v8::VirtualAddressSpace* space) {
-  space->SetRandomSeed(::testing::FLAGS_gtest_random_seed);
+  space->SetRandomSeed(GTEST_FLAG_GET(random_seed));
   for (int i = 0; i < 10; i++) {
     Address addr = space->RandomPageAddress();
     EXPECT_GE(addr, space->base());
@@ -91,7 +91,7 @@ void TestPageAllocationAlignment(v8::VirtualAddressSpace* space) {
 
 void TestParentSpaceCannotAllocateInChildSpace(v8::VirtualAddressSpace* parent,
                                                v8::VirtualAddressSpace* child) {
-  child->SetRandomSeed(::testing::FLAGS_gtest_random_seed);
+  child->SetRandomSeed(GTEST_FLAG_GET(random_seed));
 
   size_t chunksize = parent->allocation_granularity();
   size_t alignment = chunksize;
@@ -117,17 +117,17 @@ void TestParentSpaceCannotAllocateInChildSpace(v8::VirtualAddressSpace* parent,
 void TestSharedPageAllocation(v8::VirtualAddressSpace* space) {
   const size_t size = 2 * space->allocation_granularity();
 
-  PlatformSharedMemoryHandle handle =
+  std::optional<SharedMemoryHandle> handle =
       OS::CreateSharedMemoryHandleForTesting(size);
-  if (handle == kInvalidSharedMemoryHandle) return;
+  if (!handle.has_value()) return;
 
   Address mapping1 =
       space->AllocateSharedPages(VirtualAddressSpace::kNoHint, size,
-                                 PagePermissions::kReadWrite, handle, 0);
+                                 PagePermissions::kReadWrite, *handle, 0);
   ASSERT_NE(kNullAddress, mapping1);
   Address mapping2 =
       space->AllocateSharedPages(VirtualAddressSpace::kNoHint, size,
-                                 PagePermissions::kReadWrite, handle, 0);
+                                 PagePermissions::kReadWrite, *handle, 0);
   ASSERT_NE(kNullAddress, mapping2);
   ASSERT_NE(mapping1, mapping2);
 
@@ -139,7 +139,7 @@ void TestSharedPageAllocation(v8::VirtualAddressSpace* space) {
   space->FreeSharedPages(mapping1, size);
   space->FreeSharedPages(mapping2, size);
 
-  OS::DestroySharedMemoryHandle(handle);
+  OS::DestroySharedMemoryHandle(*handle);
 }
 
 TEST(VirtualAddressSpaceTest, TestPagePermissionSubsets) {
@@ -193,7 +193,8 @@ TEST(VirtualAddressSpaceTest, TestSubspace) {
   constexpr size_t kSubspaceSize = 32 * MB;
   constexpr size_t kSubSubspaceSize = 16 * MB;
 
-  VirtualAddressSpace rootspace;
+  VirtualAddressSpace rootspace_impl;
+  v8::VirtualAddressSpace& rootspace = rootspace_impl;
 
   if (!rootspace.CanAllocateSubspaces()) return;
   size_t subspace_alignment = rootspace.allocation_granularity();
@@ -235,7 +236,8 @@ TEST(VirtualAddressSpaceTest, TestEmulatedSubspace) {
   // and the unmapped region.
   constexpr size_t kSubspaceMappedSize = 1 * MB;
 
-  VirtualAddressSpace rootspace;
+  VirtualAddressSpace rootspace_impl;
+  v8::VirtualAddressSpace& rootspace = rootspace_impl;
 
   size_t subspace_alignment = rootspace.allocation_granularity();
   ASSERT_TRUE(

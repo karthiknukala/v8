@@ -500,10 +500,6 @@ void PlatformEmbeddedFileWriterWin::SourceInfo(int fileid, const char* filename,
 // TODO(mmarchini): investigate emitting size annotations for Windows
 void PlatformEmbeddedFileWriterWin::DeclareFunctionBegin(const char* name,
                                                          uint32_t size) {
-  if (ENABLE_CONTROL_FLOW_INTEGRITY_BOOL) {
-    DeclareSymbolGlobal(name);
-  }
-
   if (target_arch_ == EmbeddedTargetArch::kArm64) {
     fprintf(fp_, "%s%s FUNCTION\n", SYMBOL_PREFIX, name);
 
@@ -621,24 +617,7 @@ void PlatformEmbeddedFileWriterWin::DeclareSymbolSize(const char* name,
                                                       uint32_t value) {}
 
 void PlatformEmbeddedFileWriterWin::AlignToCodeAlignment() {
-#if V8_TARGET_ARCH_X64
-  // On x64 use 64-bytes code alignment to allow 64-bytes loop header alignment.
-  static_assert(64 >= kCodeAlignment);
-  fprintf(fp_, ".balign 64\n");
-#elif V8_TARGET_ARCH_PPC64
-  // 64 byte alignment is needed on ppc64 to make sure p10 prefixed instructions
-  // don't cross 64-byte boundaries.
-  static_assert(64 >= kCodeAlignment);
-  fprintf(fp_, ".balign 64\n");
-#elif defined(__CHERI_PURE_CAPABILITY__)
-  // 64 byte alignment is needed on CHERI because HeapObject header size is 64
-  // bytes.
-  static_assert(64 >= kCodeAlignment);
-  fprintf(fp_, ".balign 64\n");
-#else
-  static_assert(32 >= kCodeAlignment);
-  fprintf(fp_, ".balign 32\n");
-#endif
+  fprintf(fp_, ".balign %d\n", static_cast<int>(kCodeAlignment));
 }
 
 void PlatformEmbeddedFileWriterWin::AlignToDataAlignment() {
@@ -673,7 +652,11 @@ void PlatformEmbeddedFileWriterWin::DeclareFunctionBegin(const char* name,
                                                          uint32_t size) {
   DeclareLabel(name);
 
-  if (target_arch_ == EmbeddedTargetArch::kArm64) {
+  if (target_arch_ == EmbeddedTargetArch::kArm64
+#if V8_ENABLE_DRUMBRAKE
+      || IsDrumBrakeInstructionHandler(name)
+#endif  // V8_ENABLE_DRUMBRAKE
+  ) {
     // Windows ARM64 assembly is in GAS syntax, but ".type" is invalid directive
     // in PE/COFF for Windows.
     DeclareSymbolGlobal(name);

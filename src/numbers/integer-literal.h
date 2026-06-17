@@ -5,7 +5,8 @@
 #ifndef V8_NUMBERS_INTEGER_LITERAL_H_
 #define V8_NUMBERS_INTEGER_LITERAL_H_
 
-#include "src/base/optional.h"
+#include <optional>
+
 #include "src/common/globals.h"
 
 namespace v8 {
@@ -26,22 +27,22 @@ class IntegerLiteral {
 
   template <typename T>
   bool IsRepresentableAs() const {
-    static_assert(std::is_integral<T>::value, "Integral type required");
-#if defined(__CHERI_PURE_CAPABILITY__)
+    static_assert(std::is_integral_v<T>, "Integral type required");
+#ifdef __CHERI_PURE_CAPABILITY__
     static_assert(sizeof(T) <= sizeof(uintptr_t),
                   "Until torque is heavily reworked conversions of "
 		  "IntegerLiterals to u/intptr_t must be supported");
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
     static_assert(sizeof(T) <= sizeof(uint64_t),
                   "Types with more than 64 bits are not supported");
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
     return Compare(IntegerLiteral(std::numeric_limits<T>::min(), false)) >= 0 &&
            Compare(IntegerLiteral(std::numeric_limits<T>::max(), false)) <= 0;
   }
 
   template <typename T>
   T To() const {
-    static_assert(std::is_integral<T>::value, "Integral type required");
+    static_assert(std::is_integral_v<T>, "Integral type required");
     DCHECK(IsRepresentableAs<T>());
     uint64_t v = absolute_value_;
     if (negative_) v = ~v + 1;
@@ -49,9 +50,9 @@ class IntegerLiteral {
   }
 
   template <typename T>
-  base::Optional<T> TryTo() const {
-    static_assert(std::is_integral<T>::value, "Integral type required");
-    if (!IsRepresentableAs<T>()) return base::nullopt;
+  std::optional<T> TryTo() const {
+    static_assert(std::is_integral_v<T>, "Integral type required");
+    if (!IsRepresentableAs<T>()) return std::nullopt;
     return To<T>();
   }
 
@@ -71,7 +72,7 @@ class IntegerLiteral {
  private:
   template <typename T>
   explicit IntegerLiteral(T value, bool perform_dcheck) : negative_(false) {
-    static_assert(std::is_integral<T>::value, "Integral type required");
+    static_assert(std::is_integral_v<T>, "Integral type required");
     absolute_value_ = static_cast<uint64_t>(value);
     if (value < T(0)) {
       negative_ = true;

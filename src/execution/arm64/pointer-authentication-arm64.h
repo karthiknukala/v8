@@ -16,13 +16,28 @@ namespace internal {
 // The following functions execute on the host and therefore need a different
 // path based on whether we are simulating arm64 or not.
 
-// Authenticate the address stored in {pc_address}. {offset_from_sp} is the
-// offset between {pc_address} and the pointer used as a context for signing.
-V8_INLINE Address PointerAuthentication::AuthenticatePC(
-    Address* pc_address, unsigned offset_from_sp) {
-#ifndef __CHERI_PURE_CAPABILITY__
-  uint64_t sp = reinterpret_cast<uint64_t>(pc_address) + offset_from_sp;
-  uint64_t pc = static_cast<uint64_t>(*pc_address);
+namespace impl {
+V8_INLINE Address SignPC(Address pc, Address sp) {
+#if V8_TARGET_CHERI
+  return pc;
+#endif
+#ifdef USE_SIMULATOR
+  pc = Simulator::AddPAC(pc, sp, Simulator::kPACKeyIB,
+                         Simulator::kInstructionPointer);
+#else
+  asm volatile(
+      "  mov x17, %[pc]\n"
+      "  mov x16, %[sp]\n"
+      "  pacib1716\n"
+      "  mov %[pc], x17\n"
+      : [pc] "+r"(pc)
+      : [sp] "r"(sp)
+      : "x16", "x17");
+#endif
+  return pc;
+}
+
+V8_INLINE Address AuthPAC(Address pc, Address sp) {
 #ifdef USE_SIMULATOR
   pc = Simulator::AuthPAC(pc, sp, Simulator::kPACKeyIB,
                           Simulator::kInstructionPointer);
@@ -38,24 +53,36 @@ V8_INLINE Address PointerAuthentication::AuthenticatePC(
       "  mov x30, x17\n"
       "  xpaclri\n"
       "  cmp x30, x17\n"
-      // Restore LR.
+      // Restore LR, to help with unwinding in case `brk #0` is hit below.
       "  mov x30, x16\n"
       "  b.eq 1f\n"
       "  brk #0\n"
       "1:\n"
       : [pc] "+r"(pc)
       : [stack_ptr] "r"(sp)
-      : "x16", "x17", "x30");
+      : "x16", "x17", "x30", "cc");
 #endif
   return pc;
 #else  // __CHERI_PURE_CAPABILITY__
   return *pc_address;
 #endif // !__CHERI_PURE_CAPABILITY__
 }
+}  // namespace impl
+
+// Authenticate the address stored in {pc_address}. {offset_from_sp} is the
+// offset between {pc_address} and the pointer used as a context for signing.
+V8_INLINE Address PointerAuthentication::AuthenticatePC(
+    Address* pc_address, unsigned offset_from_sp) {
+  uint64_t sp = reinterpret_cast<uint64_t>(pc_address) + offset_from_sp;
+  uint64_t pc = static_cast<uint64_t>(*pc_address);
+  return impl::AuthPAC(pc, sp);
+}
 
 // Strip Pointer Authentication Code (PAC) from {pc} and return the raw value.
 V8_INLINE Address PointerAuthentication::StripPAC(Address pc) {
-#ifndef __CHERI_PURE_CAPABILITY__
+#if V8_TARGET_CHERI
+  return pc;
+#endif
 #ifdef USE_SIMULATOR
   return Simulator::StripPAC(pc, Simulator::kInstructionPointer);
 #else
@@ -72,7 +99,6 @@ V8_INLINE Address PointerAuthentication::StripPAC(Address pc) {
       : "x16", "x30");
   return pc;
 #endif
-#endif // !__CHERI_PURE_CAPABILITY__
   return pc;
 }
 
@@ -81,8 +107,10 @@ V8_INLINE Address PointerAuthentication::StripPAC(Address pc) {
 // {pc_address} and the pointer used as a context for signing.
 V8_INLINE void PointerAuthentication::ReplacePC(Address* pc_address,
                                                 Address new_pc,
-                                                int offset_from_sp) {
-#ifndef __CHERI_PURE_CAPABILITY__
+                                                int offset_from_sp, int) {
+#if V8_TARGET_CHERI
+  *pc_address = new_pc;
+#endif
   uint64_t sp = reinterpret_cast<uint64_t>(pc_address) + offset_from_sp;
   uint64_t old_pc = static_cast<uint64_t>(*pc_address);
 #ifdef USE_SIMULATOR
@@ -110,42 +138,42 @@ V8_INLINE void PointerAuthentication::ReplacePC(Address* pc_address,
       "  mov x30, x17\n"
       "  xpaclri\n"
       "  cmp x30, x17\n"
-      // Restore LR.
+      // Restore LR, to help with unwinding in case `brk #0` is hit below.
       "  mov x30, x16\n"
       "  b.eq 1f\n"
       "  brk #0\n"
       "1:\n"
       : [new_pc] "+&r"(new_pc)
       : [sp] "r"(sp), [old_pc] "r"(old_pc)
-      : "x16", "x17", "x30");
+      : "x16", "x17", "x30", "cc");
 #endif
 #endif // !__CHERI_PURE_CAPABILITY__
   *pc_address = new_pc;
 }
 
-
 // Sign {pc} using {sp}.
 V8_INLINE Address PointerAuthentication::SignAndCheckPC(Isolate* isolate,
                                                         Address pc,
                                                         Address sp) {
-#ifndef __CHERI_PURE_CAPABILITY__
-#ifdef USE_SIMULATOR
-  pc = Simulator::AddPAC(pc, sp, Simulator::kPACKeyIB,
-                         Simulator::kInstructionPointer);
-#else
-  asm volatile(
-      "  mov x17, %[pc]\n"
-      "  mov x16, %[sp]\n"
-      "  pacib1716\n"
-      "  mov %[pc], x17\n"
-      : [pc] "+r"(pc)
-      : [sp] "r"(sp)
-      : "x16", "x17");
-#endif
-  CHECK(Deoptimizer::IsValidReturnAddress(PointerAuthentication::StripPAC(pc),
-                                          isolate));
-#endif // !__CHERI_PURE_CAPABILITY__
+  pc = impl::SignPC(pc, sp);
+  Deoptimizer::EnsureValidReturnAddress(isolate,
+                                        PointerAuthentication::StripPAC(pc));
   return pc;
+}
+
+// Sign {pc} using {new_sp}.
+V8_INLINE Address PointerAuthentication::MoveSignedPC(Isolate* isolate,
+                                                      Address pc,
+                                                      Address new_sp,
+                                                      Address old_sp) {
+#if V8_ENABLE_WEBASSEMBLY
+  // Only used by wasm deoptimizations and growable stacks.
+  CHECK(v8_flags.wasm_deopt || v8_flags.experimental_wasm_growable_stacks);
+  // Verify the old pc and sign it for the new sp.
+  return impl::SignPC(impl::AuthPAC(pc, old_sp), new_sp);
+#else
+  UNREACHABLE();
+#endif
 }
 
 }  // namespace internal

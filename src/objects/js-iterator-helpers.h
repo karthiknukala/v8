@@ -13,6 +13,8 @@
 namespace v8 {
 namespace internal {
 
+class Boolean;
+
 #include "torque-generated/src/objects/js-iterator-helpers-tq.inc"
 
 // Iterator helpers are iterators that transform an underlying iterator in some
@@ -61,7 +63,6 @@ class JSIteratorMapHelper
     : public TorqueGeneratedJSIteratorMapHelper<JSIteratorMapHelper,
                                                 JSIteratorHelper> {
  public:
-  DECL_CAST(JSIteratorMapHelper)
   DECL_PRINTER(JSIteratorMapHelper)
   DECL_VERIFIER(JSIteratorMapHelper)
 
@@ -73,7 +74,6 @@ class JSIteratorFilterHelper
     : public TorqueGeneratedJSIteratorFilterHelper<JSIteratorFilterHelper,
                                                    JSIteratorHelper> {
  public:
-  DECL_CAST(JSIteratorFilterHelper)
   DECL_PRINTER(JSIteratorFilterHelper)
   DECL_VERIFIER(JSIteratorFilterHelper)
 
@@ -85,7 +85,6 @@ class JSIteratorTakeHelper
     : public TorqueGeneratedJSIteratorTakeHelper<JSIteratorTakeHelper,
                                                  JSIteratorHelper> {
  public:
-  DECL_CAST(JSIteratorTakeHelper)
   DECL_PRINTER(JSIteratorTakeHelper)
   DECL_VERIFIER(JSIteratorTakeHelper)
 
@@ -97,7 +96,6 @@ class JSIteratorDropHelper
     : public TorqueGeneratedJSIteratorDropHelper<JSIteratorDropHelper,
                                                  JSIteratorHelper> {
  public:
-  DECL_CAST(JSIteratorDropHelper)
   DECL_PRINTER(JSIteratorDropHelper)
   DECL_VERIFIER(JSIteratorDropHelper)
 
@@ -109,11 +107,21 @@ class JSIteratorFlatMapHelper
     : public TorqueGeneratedJSIteratorFlatMapHelper<JSIteratorFlatMapHelper,
                                                     JSIteratorHelper> {
  public:
-  DECL_CAST(JSIteratorFlatMapHelper)
   DECL_PRINTER(JSIteratorFlatMapHelper)
   DECL_VERIFIER(JSIteratorFlatMapHelper)
 
   TQ_OBJECT_CONSTRUCTORS(JSIteratorFlatMapHelper)
+};
+
+// The iterator helper returned by Iterator.concat.
+class JSIteratorConcatHelper
+    : public TorqueGeneratedJSIteratorConcatHelper<JSIteratorConcatHelper,
+                                                   JSIteratorHelper> {
+ public:
+  DECL_PRINTER(JSIteratorConcatHelper)
+  DECL_VERIFIER(JSIteratorConcatHelper)
+
+  TQ_OBJECT_CONSTRUCTORS(JSIteratorConcatHelper)
 };
 
 }  // namespace internal

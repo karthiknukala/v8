@@ -21,6 +21,26 @@ MemOperand FieldMemOperand(Register object, int offset) {
   return MemOperand(object, offset - kHeapObjectTag);
 }
 
+// Provides access to exit frame parameters (GC-ed).
+MemOperand ExitFrameStackSlotOperand(int offset) {
+  // The slot at [sp] is reserved in all ExitFrames for storing the return
+  // address before doing the actual call, it's necessary for frame iteration
+  // (see StoreReturnAddressAndCall for details).
+  static constexpr int kSPOffset = 1 * kSystemPointerSize;
+  return MemOperand(sp, kSPOffset + offset);
+}
+
+// Provides access to exit frame parameters (GC-ed).
+MemOperand ExitFrameCallerStackSlotOperand(int index) {
+  return MemOperand(fp, (ExitFrameConstants::kFixedSlotCountAboveFp + index) *
+                            kSystemPointerSize);
+}
+
+MemOperand MacroAssembler::AsMemOperand(IsolateFieldId id) {
+  DCHECK(root_array_available());
+  return MemOperand(kRootRegister, IsolateData::GetOffset(id));
+}
+
 void MacroAssembler::And(const Register& rd, const Register& rn,
                          const Operand& operand) {
   DCHECK(allow_macro_instructions());
@@ -183,12 +203,23 @@ void MacroAssembler::Ccmn(const Register& rn, const Operand& operand,
 void MacroAssembler::Add(const Register& rd, const Register& rn,
                          const Operand& operand) {
   DCHECK(allow_macro_instructions());
-  if (operand.IsImmediate() && (operand.ImmediateValue() < 0) &&
-      IsImmAddSub(-operand.ImmediateValue())) {
-    AddSubMacro(rd, rn, -operand.ImmediateValue(), LeaveFlags, SubOpFor(rd));
-  } else {
-    AddSubMacro(rd, rn, operand, LeaveFlags, AddOpFor(rd));
+  if (operand.IsImmediate()) {
+    int64_t imm = operand.ImmediateValue();
+    if ((imm > 0) && IsImmAddSub(imm)) {
+      DataProcImmediate(rd, rn, static_cast<int>(imm), AddOpFor(rd));
+      return;
+    } else if ((imm < 0) && IsImmAddSub(-imm)) {
+      DataProcImmediate(rd, rn, static_cast<int>(-imm), SubOpFor(rd));
+      return;
+    }
+  } else if (operand.IsShiftedRegister() && (operand.shift_amount() == 0)) {
+    if (!rd.IsSP() && !rn.IsSP() && !operand.reg().IsSP() &&
+        !operand.reg().IsZero()) {
+      DataProcPlainRegister(rd, rn, operand.reg(), AddOpFor(rd));
+      return;
+    }
   }
+  AddSubMacro(rd, rn, operand, LeaveFlags, AddOpFor(rd));
 }
 
 void MacroAssembler::Adds(const Register& rd, const Register& rn,
@@ -208,7 +239,7 @@ void MacroAssembler::Adds(const Register& rd, const Register& rn,
 }
 
 #if V8_TARGET_CHERI
-void MacroAssembler::Cpy(const Register& cd, const Register& cn) {
+void MacroAssembler::CapMov(const Register& cd, const Register& cn) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
   DCHECK(cn.IsC());
@@ -338,7 +369,7 @@ void MacroAssembler::Subsc(const Register& rd, const Register& cn,
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireC();
     DCHECK(!AreAliased(operand.reg(), temp));
-    Cpy(temp, cn);
+    CapMov(temp, cn);
     subsc(rd, temp, operand);
   } else {
     subsc(rd, cn, operand);
@@ -389,7 +420,7 @@ void MacroAssembler::DebugAssertValidContext(const Register& cs) {
   }
 }
 #else
-void MacroAssembler::Cpy(const Register& cd, const Register& cn) {}
+void MacroAssembler::CapMov(const Register& cd, const Register& cn) {}
 void MacroAssembler::CzeroC(const Register& cd, Condition cond) {
   CzeroX(cd, cond);
 }
@@ -421,12 +452,23 @@ void MacroAssembler::DebugAssertValidContext(const Register& cs) {}
 void MacroAssembler::Sub(const Register& rd, const Register& rn,
                          const Operand& operand) {
   DCHECK(allow_macro_instructions());
-  if (operand.IsImmediate() && (operand.ImmediateValue() < 0) &&
-      IsImmAddSub(-operand.ImmediateValue())) {
-    AddSubMacro(rd, rn, -operand.ImmediateValue(), LeaveFlags, AddOpFor(rd));
-  } else {
-    AddSubMacro(rd, rn, operand, LeaveFlags, SubOpFor(rd));
+  if (operand.IsImmediate()) {
+    int64_t imm = operand.ImmediateValue();
+    if ((imm > 0) && IsImmAddSub(imm)) {
+      DataProcImmediate(rd, rn, static_cast<int>(imm), SubOpFor(rd));
+      return;
+    } else if ((imm < 0) && IsImmAddSub(-imm)) {
+      DataProcImmediate(rd, rn, static_cast<int>(-imm), AddOpFor(rd));
+      return;
+    }
+  } else if (operand.IsShiftedRegister() && (operand.shift_amount() == 0)) {
+    if (!rd.IsSP() && !rn.IsSP() && !operand.reg().IsSP() &&
+        !operand.reg().IsZero()) {
+      DataProcPlainRegister(rd, rn, operand.reg(), SubOpFor(rd));
+      return;
+    }
   }
+  AddSubMacro(rd, rn, operand, LeaveFlags, SubOpFor(rd));
 }
 
 void MacroAssembler::Subs(const Register& rd, const Register& rn,
@@ -453,6 +495,12 @@ void MacroAssembler::Cmn(const Register& rn, const Operand& operand) {
 
 void MacroAssembler::Cmp(const Register& rn, const Operand& operand) {
   DCHECK(allow_macro_instructions());
+  if (operand.IsShiftedRegister() && operand.shift_amount() == 0) {
+    if (!rn.IsSP() && !operand.reg().IsSP()) {
+      CmpPlainRegister(rn, operand.reg());
+      return;
+    }
+  }
   Subs(AppropriateZeroRegFor(rn), rn, operand);
 }
 
@@ -760,15 +808,31 @@ void MacroAssembler::BindJumpOrCallTarget(Label* label) {
 #endif
 }
 
-void MacroAssembler::Bl(Label* label) {
+void MacroAssembler::Call(Label* label) {
+  Assembler::BlockPoolsScope block_pools(this);
   DCHECK(allow_macro_instructions());
   bl(label);
 }
 
-void MacroAssembler::Blr(const Register& rn) {
+void MacroAssembler::Call(const Register& rn) {
+  Assembler::BlockPoolsScope block_pools(this);
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, rn.IsC());
+#if V8_TARGET_CHERI
+  if (v8_flags.debug_code) {
+    Label ok;
+    HardAbortScope hard_aborts(this);
+    Register temp = target == c0 ? c1 : c0;
+    Push(temp, padregc);
+    Gctag(temp.X(), target);
+    Tbnz(temp.X(), 0, &ok);
+    brk(0);
+    Bind(&ok);
+    Pop(padregc, temp);
+  }
+  PrepareC64Jump(target);
+#endif  // V8_TARGET_CHERI
   blr(rn);
 }
 
@@ -828,6 +892,24 @@ void MacroAssembler::Cneg(const Register& rd, const Register& rn,
   DCHECK(!rd.IsC());
   DCHECK(!rn.IsC());
   cneg(rd, rn, cond);
+}
+
+void MacroAssembler::Abs(const Register& rd, const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(!rd.IsZero());
+  abs(rd, rn);
+}
+
+void MacroAssembler::Cnt(const Register& rd, const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(!rd.IsZero());
+  cnt(rd, rn);
+}
+
+void MacroAssembler::Ctz(const Register& rd, const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(!rd.IsZero());
+  ctz(rd, rn);
 }
 
 // Conditionally zero the destination register. Only X registers are supported
@@ -904,6 +986,38 @@ void MacroAssembler::Csneg(const Register& rd, const Register& rn,
   DCHECK(!rn.IsC());
   DCHECK(!rm.IsC());
   csneg(rd, rn, rm, cond);
+}
+
+void MacroAssembler::Cpy(const Register& rd, const Register& rs,
+                         const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(rd.Is64Bits());
+  DCHECK(rs.Is64Bits());
+  DCHECK(rn.Is64Bits());
+  DCHECK(!rd.IsZero());
+  DCHECK(!rs.IsZero());
+  DCHECK(!rn.IsZero());
+
+  // TODO(sparker): Check whether forward copies, ones that either don't
+  // overlap or where the source address is greater than the destination, could
+  // be faster.
+  cpyp(rd, rs, rn);
+  cpym(rd, rs, rn);
+  cpye(rd, rs, rn);
+}
+
+void MacroAssembler::Set(const Register& rd, const Register& rn,
+                         const Register& rs) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(rd.Is64Bits());
+  DCHECK(rn.Is64Bits());
+  DCHECK(rs.Is64Bits());
+  DCHECK(!rd.IsZero());
+  DCHECK(!rn.IsZero());
+
+  setp(rd, rn, rs);
+  setm(rd, rn, rs);
+  sete(rd, rn, rs);
 }
 
 void MacroAssembler::Dmb(BarrierDomain domain, BarrierType type) {
@@ -1094,6 +1208,12 @@ void MacroAssembler::Fmov(VRegister fd, Register rn) {
 
 void MacroAssembler::Fmov(VRegister vd, double imm) {
   DCHECK(allow_macro_instructions());
+  uint64_t bits = base::bit_cast<uint64_t>(imm);
+
+  if (bits == 0) {
+    Movi(vd.D(), 0);
+    return;
+  }
 
   if (vd.Is1S() || vd.Is2S() || vd.Is4S()) {
     Fmov(vd, static_cast<float>(imm));
@@ -1101,49 +1221,37 @@ void MacroAssembler::Fmov(VRegister vd, double imm) {
   }
 
   DCHECK(vd.Is1D() || vd.Is2D());
-  if (IsImmFP64(imm)) {
+  if (IsImmFP64(bits)) {
     fmov(vd, imm);
   } else {
-    uint64_t bits = base::bit_cast<uint64_t>(imm);
-    if (vd.IsScalar()) {
-      if (bits == 0) {
-        fmov(vd, xzr);
-      } else {
-        UseScratchRegisterScope temps(this);
-        Register tmp = temps.AcquireX();
-        Mov(tmp, bits);
-        fmov(vd, tmp);
-      }
-    } else {
-      Movi(vd, bits);
-    }
+    Movi64bitHelper(vd, bits);
   }
 }
 
 void MacroAssembler::Fmov(VRegister vd, float imm) {
   DCHECK(allow_macro_instructions());
+  uint32_t bits = base::bit_cast<uint32_t>(imm);
+
+  if (bits == 0) {
+    Movi(vd.D(), 0);
+    return;
+  }
+
   if (vd.Is1D() || vd.Is2D()) {
     Fmov(vd, static_cast<double>(imm));
     return;
   }
 
   DCHECK(vd.Is1S() || vd.Is2S() || vd.Is4S());
-  if (IsImmFP32(imm)) {
+  if (IsImmFP32(bits)) {
     fmov(vd, imm);
+  } else if (vd.IsScalar()) {
+    UseScratchRegisterScope temps(this);
+    Register tmp = temps.AcquireW();
+    Mov(tmp, bits);
+    Fmov(vd, tmp);
   } else {
-    uint32_t bits = base::bit_cast<uint32_t>(imm);
-    if (vd.IsScalar()) {
-      if (bits == 0) {
-        fmov(vd, wzr);
-      } else {
-        UseScratchRegisterScope temps(this);
-        Register tmp = temps.AcquireW();
-        Mov(tmp, bits);
-        Fmov(vd, tmp);
-      }
-    } else {
-      Movi(vd, bits);
-    }
+    Movi(vd, bits);
   }
 }
 
@@ -1562,6 +1670,8 @@ void MacroAssembler::Uxtw(const Register& rd, const Register& rn) {
 void MacroAssembler::InitializeRootRegister() {
   ExternalReference isolate_root = ExternalReference::isolate_root(isolate());
   Mov(kRootRegister, Operand(isolate_root));
+  Fmov(fp_zero, 0.0);
+
 #ifdef V8_COMPRESS_POINTERS
   LoadRootRelative(kPtrComprCageBaseRegister, IsolateData::cage_base_offset());
 #endif
@@ -1652,6 +1762,11 @@ void MacroAssembler::JumpIfEqual(Register x, int32_t y, Label* dest) {
 
 void MacroAssembler::JumpIfLessThan(Register x, int32_t y, Label* dest) {
   CompareAndBranch(x, y, lt, dest);
+}
+
+void MacroAssembler::JumpIfUnsignedLessThan(Register x, int32_t y,
+                                            Label* dest) {
+  CompareAndBranch(x, y, lo, dest);
 }
 
 void MacroAssembler::JumpIfNotSmi(Register value, Label* not_smi_label) {
@@ -1901,25 +2016,15 @@ void MacroAssembler::Drop(const Register& count, uint64_t unit_size) {
   Add(csp, csp, size);
 }
 
-void MacroAssembler::DropArguments(const Register& count,
-                                   ArgumentsCountMode mode) {
-  int extra_slots = 1;  // Padding slot.
-  if (mode == kCountExcludesReceiver) {
-    // Add a slot for the receiver.
-    ++extra_slots;
-  }
+void MacroAssembler::DropArguments(const Register& count, int extra_slots) {
   UseScratchRegisterScope temps(this);
   Register tmp = temps.AcquireX();
-  Add(tmp, count, extra_slots);
+  Add(tmp, count, extra_slots + 1);  // +1 is for rounding the count up to 2.
   Bic(tmp, tmp, 1);
   Drop(tmp, kCRegSize);
 }
 
-void MacroAssembler::DropArguments(int64_t count, ArgumentsCountMode mode) {
-  if (mode == kCountExcludesReceiver) {
-    // Add a slot for the receiver.
-    ++count;
-  }
+void MacroAssembler::DropArguments(int64_t count) {
   Drop(RoundUp(count, 2), kCRegSize);
 }
 
@@ -1933,17 +2038,28 @@ void MacroAssembler::PushArgument(const Register& arg) {
 
 void MacroAssembler::CompareAndBranch(const Register& lhs, const Operand& rhs,
                                       Condition cond, Label* label) {
-  if (rhs.IsImmediate() && (rhs.ImmediateValue() == 0) &&
-      ((cond == eq) || (cond == ne) || (cond == hi) || (cond == ls))) {
-    if ((cond == eq) || (cond == ls)) {
-      Cbz(lhs, label);
-    } else {
-      Cbnz(lhs, label);
+  if (rhs.IsImmediate() && (rhs.ImmediateValue() == 0)) {
+    switch (cond) {
+      case eq:
+      case ls:
+        Cbz(lhs, label);
+        return;
+      case lt:
+        Tbnz(lhs, lhs.SizeInBits() - 1, label);
+        return;
+      case ge:
+        Tbz(lhs, lhs.SizeInBits() - 1, label);
+        return;
+      case ne:
+      case hi:
+        Cbnz(lhs, label);
+        return;
+      default:
+        break;
     }
-  } else {
-    Cmp(lhs, rhs);
-    B(cond, label);
   }
+  Cmp(lhs, rhs);
+  B(cond, label);
 }
 
 void MacroAssembler::CompareTaggedAndBranch(const Register& lhs,
@@ -1984,9 +2100,32 @@ void MacroAssembler::TestAndBranchIfAllClear(const Register& reg,
   }
 }
 
-void MacroAssembler::MoveHeapNumber(Register dst, double value) {
-  Mov(dst, Operand::EmbeddedHeapNumber(value));
-}
+#define MINMAX(V)         \
+  V(Smax, smax, is_int8)  \
+  V(Smin, smin, is_int8)  \
+  V(Umax, umax, is_uint8) \
+  V(Umin, umin, is_uint8)
+
+#define DEFINE_MASM_FUNC(MASM, ASM, RANGE)                          \
+  void MacroAssembler::MASM(const Register& rd, const Register& rn, \
+                            const Operand& op) {                    \
+    DCHECK(allow_macro_instructions());                             \
+    DCHECK(!rd.IsZero());                                           \
+    if (op.IsImmediate()) {                                         \
+      int64_t imm = op.ImmediateValue();                            \
+      if (!RANGE(imm)) {                                            \
+        UseScratchRegisterScope temps(this);                        \
+        Register temp = temps.AcquireSameSizeAs(rd);                \
+        Mov(temp, imm);                                             \
+        MASM(rd, rn, temp);                                         \
+        return;                                                     \
+      }                                                             \
+    }                                                               \
+    ASM(rd, rn, op);                                                \
+  }
+MINMAX(DEFINE_MASM_FUNC)
+#undef DEFINE_MASM_FUNC
+#undef MINMAX
 
 }  // namespace internal
 }  // namespace v8

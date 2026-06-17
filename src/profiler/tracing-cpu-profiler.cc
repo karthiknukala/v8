@@ -51,6 +51,18 @@ void TracingCpuProfilerImpl::OnTraceEnabled() {
       this);
 }
 
+namespace {
+class RunInterruptsTask : public v8::Task {
+ public:
+  explicit RunInterruptsTask(v8::internal::Isolate* isolate)
+      : isolate_(isolate) {}
+  void Run() override { isolate_->stack_guard()->HandleInterrupts(); }
+
+ private:
+  v8::internal::Isolate* isolate_;
+};
+}  // namespace
+
 #if defined(V8_USE_PERFETTO)
 void TracingCpuProfilerImpl::OnStop(const perfetto::DataSourceBase::StopArgs&) {
 #else
@@ -64,6 +76,12 @@ void TracingCpuProfilerImpl::OnTraceDisabled() {
         reinterpret_cast<TracingCpuProfilerImpl*>(data)->StopProfiling();
       },
       this);
+  // It could be a long time until the Isolate next runs any JS which could be
+  // interrupted, and we'd rather not leave the sampler thread running during
+  // that time, so also post a task to run any interrupts.
+  V8::GetCurrentPlatform()
+      ->GetForegroundTaskRunner(reinterpret_cast<v8::Isolate*>(isolate_))
+      ->PostTask(std::make_unique<RunInterruptsTask>(isolate_));
 }
 
 void TracingCpuProfilerImpl::StartProfiling() {
@@ -73,7 +91,11 @@ void TracingCpuProfilerImpl::StartProfiling() {
   profiler_.reset(new CpuProfiler(isolate_, kDebugNaming));
   profiler_->set_sampling_interval(
       base::TimeDelta::FromMicroseconds(sampling_interval_us));
-  profiler_->StartProfiling("", {kLeafNodeLineNumbers});
+  v8::CpuProfilingOptions options(
+      v8::kLeafNodeLineNumbers, v8::CpuProfilingOptions::kNoSampleLimit,
+      /* sampling_interval_us */ 0, v8::MaybeLocal<v8::Context>(),
+      v8::CpuProfileSource::kInternal);
+  profiler_->StartProfiling("", std::move(options));
 }
 
 void TracingCpuProfilerImpl::StopProfiling() {

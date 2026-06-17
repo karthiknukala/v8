@@ -30,16 +30,16 @@ class AddressRegion {
   constexpr AddressRegion(Address address, size_t size)
       : address_(address), size_(size) {}
 
-  Address begin() const { return address_; }
-  Address end() const { return address_ + size_; }
+  constexpr Address begin() const { return address_; }
+  constexpr Address end() const { return address_ + size_; }
 
-  size_t size() const { return size_; }
+  constexpr size_t size() const { return size_; }
   void set_size(size_t size) { size_ = size; }
 
-  bool is_empty() const { return size_ == 0; }
+  constexpr bool is_empty() const { return size_ == 0; }
 
-  bool contains(Address address) const {
-    static_assert(std::is_unsigned<Address>::value);
+  constexpr bool contains(Address address) const {
+    static_assert(std::is_unsigned_v<Address>);
 #ifdef __CHERI_PURE_CAPABILITY__
     // We do an inbounds check on CHERI because anything else will result in
     // runtime crashes.
@@ -49,8 +49,9 @@ class AddressRegion {
 #endif  // __CHERI_PURE_CAPABILITY__
   }
 
-  bool contains(Address address, size_t size) const {
-    static_assert(std::is_unsigned<Address>::value);
+  constexpr bool contains(Address address, size_t size) const {
+    static_assert(std::is_unsigned_v<Address>);
+    const Address offset = address - begin();
 #ifdef __CHERI_PURE_CAPABILITY__
     // We do an inbounds check on CHERI because anything else will result in
     // runtime crashes.
@@ -58,32 +59,23 @@ class AddressRegion {
     return V8_CHERI_INBOUNDS(begin(), addr) &&
            V8_CHERI_INBOUNDS(begin(), addr + size - 1);
 #else   // !__CHERI_PURE_CAPABILITY__
-    Address offset = address - begin();
     return (offset < size_) && (offset + size <= size_);
 #endif  // __CHERI_PURE_CAPABILITY__
   }
 
-  bool contains(AddressRegion region) const {
+  constexpr bool contains(AddressRegion region) const {
     return contains(region.address_, region.size_);
   }
 
-  base::AddressRegion GetOverlap(AddressRegion region) const {
-    // FIXME(ds815): There is no way this works, but we don't do wasm yet (which
-    // is the only caller of this). Avoid addressing it now to avoid upstream
-    // diffs, which could change the behaviour of this. For now, we just keep
-    // this ifdef to stop a compile-time error on CHERI.
-    Address overlap_start = std::max(begin(), region.begin());
-    Address overlap_end =
+  constexpr base::AddressRegion GetOverlap(AddressRegion region) const {
+    const Address overlap_start = std::max(begin(), region.begin());
+    const Address overlap_end =
         std::max(overlap_start, std::min(end(), region.end()));
     return {overlap_start, static_cast<size_t>(overlap_end - overlap_start)};
   }
 
-  bool operator==(AddressRegion other) const {
+  constexpr bool operator==(AddressRegion other) const {
     return address_ == other.address_ && size_ == other.size_;
-  }
-
-  bool operator!=(AddressRegion other) const {
-    return address_ != other.address_ || size_ != other.size_;
   }
 
  private:

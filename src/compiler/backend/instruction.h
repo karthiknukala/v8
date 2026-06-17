@@ -7,6 +7,7 @@
 
 #include <iosfwd>
 #include <map>
+#include <optional>
 
 #include "src/base/compiler-specific.h"
 #include "src/base/numbers/double.h"
@@ -30,6 +31,10 @@ namespace compiler {
 
 class Schedule;
 class SourcePositionTable;
+
+namespace turboshaft {
+class Graph;
+}
 
 #if defined(V8_CC_MSVC) && defined(V8_TARGET_ARCH_IA32)
 // MSVC on x86 has issues with ALIGNAS(8) on InstructionOperand, but does
@@ -103,6 +108,10 @@ class V8_EXPORT_PRIVATE INSTRUCTION_OPERAND_ALIGN InstructionOperand {
   inline bool IsSimd128StackSlot() const;
   inline bool IsSimd256StackSlot() const;
   inline bool IsCapabilityStackSlot() const;
+
+#if defined(V8_TARGET_ARCH_X64)
+  inline bool CanBeSimd128Register() const;
+#endif
 
   template <typename SubKindOperand>
   static SubKindOperand* New(Zone* zone, const SubKindOperand& op) {
@@ -610,6 +619,12 @@ class LocationOperand : public InstructionOperand {
   }
 
 #if defined(V8_TARGET_ARCH_X64)
+  // On x64, Simd256 and Simd128 share the identical register.
+  Simd128Register GetSimd256RegisterAsSimd128() const {
+    DCHECK(IsSimd256Register());
+    return Simd128Register::from_code(register_code());
+  }
+
   Simd256Register GetSimd256Register() const {
     DCHECK(IsSimd256Register());
     return Simd256Register::from_code(register_code());
@@ -637,6 +652,7 @@ class LocationOperand : public InstructionOperand {
       case MachineRepresentation::kTagged:
       case MachineRepresentation::kCompressedPointer:
       case MachineRepresentation::kCompressed:
+      case MachineRepresentation::kProtectedPointer:
       case MachineRepresentation::kSandboxedPointer:
 #if V8_TARGET_CHERI
         [[fallthrough]];
@@ -646,12 +662,14 @@ class LocationOperand : public InstructionOperand {
       case MachineRepresentation::kBit:
       case MachineRepresentation::kWord8:
       case MachineRepresentation::kWord16:
+      case MachineRepresentation::kFloat16:
       case MachineRepresentation::kNone:
         return false;
       case MachineRepresentation::kMapWord:
-        break;
+      case MachineRepresentation::kIndirectPointer:
+      case MachineRepresentation::kFloat16RawBits:
+        UNREACHABLE();
     }
-    UNREACHABLE();
   }
 
   // Return true if the locations can be moved to one another.
@@ -737,6 +755,20 @@ bool InstructionOperand::IsSimd128Register() const {
   return IsAnyRegister() && LocationOperand::cast(this)->representation() ==
                                 MachineRepresentation::kSimd128;
 }
+
+#if defined(V8_TARGET_ARCH_X64)
+bool InstructionOperand::CanBeSimd128Register() const {
+  // IsSimd128Register is called for multiple purposes. Use this function when
+  // we need to use a simd128 register only. On x64, Simd256 and Simd128 share
+  // identical register code.
+  if (IsAnyRegister()) {
+    MachineRepresentation rep = LocationOperand::cast(this)->representation();
+    return rep == MachineRepresentation::kSimd128 ||
+           rep == MachineRepresentation::kSimd256;
+  }
+  return false;
+}
+#endif
 
 bool InstructionOperand::IsSimd256Register() const {
   return IsAnyRegister() && LocationOperand::cast(this)->representation() ==
@@ -863,7 +895,8 @@ class V8_EXPORT_PRIVATE MoveOperands final
     if (dest_rep == MR::kTagged || dest_rep == MR::kTaggedPointer) {
       MR src_rep = LocationOperand::cast(&source_)->representation();
       DCHECK_NE(src_rep, MR::kCompressedPointer);
-      DCHECK_NE(src_rep, MR::kCompressed);
+      // TODO(dmercadier): it would be nice to insert a DEBUG runtime check here
+      // to make sure that if `src_rep` is kCompressed, then the value is a Smi.
     }
 #endif
   }
@@ -958,10 +991,12 @@ class V8_EXPORT_PRIVATE ParallelMove final
 
 std::ostream& operator<<(std::ostream&, const ParallelMove&);
 
+// TODOC(dmercadier): what is a ReferenceMap exactly, what does it contain,
+// when is it created, and what is it used for?
 class ReferenceMap final : public ZoneObject {
  public:
   explicit ReferenceMap(Zone* zone)
-      : reference_operands_(8, zone), instruction_position_(-1) {}
+      : reference_operands_(zone), instruction_position_(-1) {}
 
   const ZoneVector<InstructionOperand>& reference_operands() const {
     return reference_operands_;
@@ -1034,6 +1069,7 @@ class V8_EXPORT_PRIVATE Instruction final {
   FlagsCondition flags_condition() const {
     return FlagsConditionField::decode(opcode());
   }
+  bool branch_hinted() const { return BranchHintField::decode(opcode()); }
   int misc() const { return MiscField::decode(opcode()); }
   bool HasMemoryAccessMode() const {
     return compiler::HasMemoryAccessMode(arch_opcode());
@@ -1102,17 +1138,18 @@ class V8_EXPORT_PRIVATE Instruction final {
     return FlagsModeField::decode(opcode()) == kFlags_trap;
   }
 
+  bool IsConditionalTrap() const {
+    return FlagsModeField::decode(opcode()) == kFlags_conditional_trap;
+  }
+
   bool IsJump() const { return arch_opcode() == ArchOpcode::kArchJmp; }
   bool IsRet() const { return arch_opcode() == ArchOpcode::kArchRet; }
   bool IsTailCall() const {
 #if V8_ENABLE_WEBASSEMBLY
-    return arch_opcode() <= ArchOpcode::kArchTailCallWasm;
+    return arch_opcode() <= ArchOpcode::kArchTailCallWasmIndirect;
 #else
     return arch_opcode() <= ArchOpcode::kArchTailCallAddress;
 #endif  // V8_ENABLE_WEBASSEMBLY
-  }
-  bool IsThrow() const {
-    return arch_opcode() == ArchOpcode::kArchThrowTerminator;
   }
 
   static constexpr bool IsCallWithDescriptorFlags(InstructionCode arch_opcode) {
@@ -1130,6 +1167,45 @@ class V8_EXPORT_PRIVATE Instruction final {
     DCHECK_EQ(static_cast<int>(flag) & kInstructionCodeFlagsMask, flag);
 #endif
     return MiscField::decode(opcode()) & flag;
+  }
+
+#ifdef V8_ENABLE_WEBASSEMBLY
+  size_t WasmSignatureHashInputIndex() const {
+    // Keep in sync with instruction-selector.cc where the inputs are assembled.
+    switch (arch_opcode()) {
+      case kArchCallWasmFunctionIndirect:
+        return InputCount() - 1 -
+               HasCallDescriptorFlag(CallDescriptor::kHasExceptionHandler) -
+               2 * HasCallDescriptorFlag(CallDescriptor::kHasEffectHandler);
+      case kArchTailCallWasmIndirect:
+        return InputCount() - 3;
+      default:
+        UNREACHABLE();
+    }
+  }
+#endif
+
+  // For call instructions, computes the index of the CodeEntrypointTag input.
+  size_t CodeEnrypointTagInputIndex() const {
+    // Keep in sync with instruction-selector.cc where the inputs are assembled.
+    switch (arch_opcode()) {
+      case kArchCallCodeObject:
+        return InputCount() - 1 -
+               HasCallDescriptorFlag(CallDescriptor::kHasExceptionHandler) -
+               2 * HasCallDescriptorFlag(CallDescriptor::kHasEffectHandler);
+      case kArchTailCallCodeObject:
+        return InputCount() - 3;
+      default:
+        UNREACHABLE();
+    }
+  }
+
+  // For JS call instructions, computes the index of the argument count input.
+  size_t JSCallArgumentCountInputIndex() const {
+    // Keep in sync with instruction-selector.cc where the inputs are assembled.
+    return InputCount() - 1 -
+           HasCallDescriptorFlag(CallDescriptor::kHasExceptionHandler) -
+           2 * HasCallDescriptorFlag(CallDescriptor::kHasEffectHandler);
   }
 
   enum GapPosition {
@@ -1264,16 +1340,15 @@ class V8_EXPORT_PRIVATE Constant final {
 #endif   // __CHERI_PURE_CAPABILITY__
   explicit Constant(float v)
       : type_(kFloat32), value_(base::bit_cast<int32_t>(v)) {}
+  explicit Constant(Float32 v) : type_(kFloat32), value_(v.get_bits()) {}
   explicit Constant(double v)
       : type_(kFloat64), value_(base::bit_cast<int64_t>(v)) {}
+  explicit Constant(Float64 v) : type_(kFloat64), value_(v.get_bits()) {}
   explicit Constant(ExternalReference ref)
-      : type_(kExternalReference),
-        value_(base::bit_cast<intptr_t>(ref.address())) {
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(V8_CHERI_TAG_GET(value_));
-#endif  // __CHERI_PURE_CAPABILITY__
+      : type_(kExternalReference), value_(base::bit_cast<intptr_t>(ref.raw())) {
+    DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, V8_CHERI_TAG_GET(value_));
   }
-  explicit Constant(Handle<HeapObject> obj, bool is_compressed = false)
+  explicit Constant(IndirectHandle<HeapObject> obj, bool is_compressed = false)
       : type_(is_compressed ? kCompressedHeapObject : kHeapObject),
         value_(base::bit_cast<intptr_t>(obj)) {}
   explicit Constant(RpoNumber rpo) : type_(kRpoNumber), value_(rpo.ToInt()) {}
@@ -1338,6 +1413,13 @@ class V8_EXPORT_PRIVATE Constant final {
     return base::bit_cast<float>(static_cast<int32_t>(value_));
   }
 
+  // TODO(ahaas): All callers of ToFloat32() should call this function instead
+  // to preserve signaling NaNs.
+  Float32 ToFloat32Safe() const {
+    DCHECK_EQ(kFloat32, type());
+    return Float32::FromBits(static_cast<uint32_t>(value_));
+  }
+
   uint32_t ToFloat32AsInt() const {
     DCHECK_EQ(kFloat32, type());
     return base::bit_cast<uint32_t>(static_cast<int32_t>(value_));
@@ -1368,8 +1450,8 @@ class V8_EXPORT_PRIVATE Constant final {
     return RpoNumber::FromInt(static_cast<int>(value_));
   }
 
-  Handle<HeapObject> ToHeapObject() const;
-  Handle<Code> ToCode() const;
+  IndirectHandle<HeapObject> ToHeapObject() const;
+  IndirectHandle<Code> ToCode() const;
 
  private:
   Type type_;
@@ -1389,11 +1471,15 @@ class FrameStateDescriptor;
 enum class StateValueKind : uint8_t {
   kArgumentsElements,
   kArgumentsLength,
+  kRestLength,
   kPlain,
   kOptimizedOut,
-  kNested,
-  kDuplicate
+  kNestedObject,
+  kDuplicate,
+  kStringConcat
 };
+
+std::ostream& operator<<(std::ostream& os, StateValueKind kind);
 
 class StateValueDescriptor {
  public:
@@ -1410,6 +1496,10 @@ class StateValueDescriptor {
     return StateValueDescriptor(StateValueKind::kArgumentsLength,
                                 MachineType::AnyTagged());
   }
+  static StateValueDescriptor RestLength() {
+    return StateValueDescriptor(StateValueKind::kRestLength,
+                                MachineType::AnyTagged());
+  }
   static StateValueDescriptor Plain(MachineType type) {
     return StateValueDescriptor(StateValueKind::kPlain, type);
   }
@@ -1418,13 +1508,19 @@ class StateValueDescriptor {
                                 MachineType::AnyTagged());
   }
   static StateValueDescriptor Recursive(size_t id) {
-    StateValueDescriptor descr(StateValueKind::kNested,
+    StateValueDescriptor descr(StateValueKind::kNestedObject,
                                MachineType::AnyTagged());
     descr.id_ = id;
     return descr;
   }
   static StateValueDescriptor Duplicate(size_t id) {
     StateValueDescriptor descr(StateValueKind::kDuplicate,
+                               MachineType::AnyTagged());
+    descr.id_ = id;
+    return descr;
+  }
+  static StateValueDescriptor StringConcat(size_t id) {
+    StateValueDescriptor descr(StateValueKind::kStringConcat,
                                MachineType::AnyTagged());
     descr.id_ = id;
     return descr;
@@ -1436,20 +1532,29 @@ class StateValueDescriptor {
   bool IsArgumentsLength() const {
     return kind_ == StateValueKind::kArgumentsLength;
   }
+  bool IsRestLength() const { return kind_ == StateValueKind::kRestLength; }
   bool IsPlain() const { return kind_ == StateValueKind::kPlain; }
   bool IsOptimizedOut() const { return kind_ == StateValueKind::kOptimizedOut; }
-  bool IsNested() const { return kind_ == StateValueKind::kNested; }
+  bool IsNestedObject() const { return kind_ == StateValueKind::kNestedObject; }
+  bool IsNested() const {
+    return kind_ == StateValueKind::kNestedObject ||
+           kind_ == StateValueKind::kStringConcat;
+  }
   bool IsDuplicate() const { return kind_ == StateValueKind::kDuplicate; }
+  bool IsStringConcat() const { return kind_ == StateValueKind::kStringConcat; }
   MachineType type() const { return type_; }
   size_t id() const {
     DCHECK(kind_ == StateValueKind::kDuplicate ||
-           kind_ == StateValueKind::kNested);
+           kind_ == StateValueKind::kNestedObject ||
+           kind_ == StateValueKind::kStringConcat);
     return id_;
   }
   ArgumentsStateType arguments_type() const {
     DCHECK(kind_ == StateValueKind::kArgumentsElements);
     return args_type_;
   }
+
+  void Print(std::ostream& os) const;
 
  private:
   StateValueDescriptor(StateValueKind kind, MachineType type)
@@ -1528,11 +1633,20 @@ class StateValueList {
     nested_.push_back(nested);
     return nested;
   }
+  StateValueList* PushStringConcat(Zone* zone, size_t id) {
+    fields_.push_back(StateValueDescriptor::StringConcat(id));
+    StateValueList* nested = zone->New<StateValueList>(zone);
+    nested_.push_back(nested);
+    return nested;
+  }
   void PushArgumentsElements(ArgumentsStateType type) {
     fields_.push_back(StateValueDescriptor::ArgumentsElements(type));
   }
   void PushArgumentsLength() {
     fields_.push_back(StateValueDescriptor::ArgumentsLength());
+  }
+  void PushRestLength() {
+    fields_.push_back(StateValueDescriptor::RestLength());
   }
   void PushDuplicate(size_t id) {
     fields_.push_back(StateValueDescriptor::Duplicate(id));
@@ -1574,22 +1688,37 @@ class StateValueList {
 
 class FrameStateDescriptor : public ZoneObject {
  public:
-  FrameStateDescriptor(Zone* zone, FrameStateType type,
-                       BytecodeOffset bailout_id,
-                       OutputFrameStateCombine state_combine,
-                       size_t parameters_count, size_t locals_count,
-                       size_t stack_count,
-                       MaybeHandle<SharedFunctionInfo> shared_info,
-                       FrameStateDescriptor* outer_state = nullptr);
+  FrameStateDescriptor(
+      Zone* zone, FrameStateType type, BytecodeOffset bailout_id,
+      OutputFrameStateCombine state_combine, uint16_t parameters_count,
+      uint16_t max_arguments, size_t locals_count, size_t stack_count,
+      MaybeIndirectHandle<SharedFunctionInfo> shared_info,
+      MaybeIndirectHandle<BytecodeArray> bytecode_array,
+      FrameStateDescriptor* outer_state = nullptr,
+      uint32_t wasm_liftoff_frame_size = std::numeric_limits<uint32_t>::max(),
+      uint32_t wasm_function_index = std::numeric_limits<uint32_t>::max());
 
   FrameStateType type() const { return type_; }
   BytecodeOffset bailout_id() const { return bailout_id_; }
   OutputFrameStateCombine state_combine() const { return frame_state_combine_; }
-  size_t parameters_count() const { return parameters_count_; }
+  uint16_t parameters_count() const { return parameters_count_; }
+  uint16_t max_arguments() const { return max_arguments_; }
   size_t locals_count() const { return locals_count_; }
   size_t stack_count() const { return stack_count_; }
-  MaybeHandle<SharedFunctionInfo> shared_info() const { return shared_info_; }
+  MaybeIndirectHandle<SharedFunctionInfo> shared_info() const {
+    return shared_info_;
+  }
+  MaybeIndirectHandle<BytecodeArray> bytecode_array() const {
+    return bytecode_array_;
+  }
   FrameStateDescriptor* outer_state() const { return outer_state_; }
+  bool HasClosure() const {
+    return
+#if V8_ENABLE_WEBASSEMBLY
+        type_ != FrameStateType::kLiftoffFunction &&
+#endif
+        type_ != FrameStateType::kConstructInvokeStub;
+  }
   bool HasContext() const {
     return FrameStateFunctionInfo::IsJSFunctionType(type_) ||
            type_ == FrameStateType::kBuiltinContinuation ||
@@ -1599,7 +1728,8 @@ class FrameStateDescriptor : public ZoneObject {
            // inlined wasm functions?
            type_ == FrameStateType::kWasmInlinedIntoJS ||
 #endif  // V8_ENABLE_WEBASSEMBLY
-           type_ == FrameStateType::kConstructStub;
+           type_ == FrameStateType::kConstructCreateStub ||
+           type_ == FrameStateType::kConstructInvokeStub;
   }
 
   // The frame height on the stack, in number of slots, as serialized into a
@@ -1621,6 +1751,11 @@ class FrameStateDescriptor : public ZoneObject {
   size_t GetFrameCount() const;
   size_t GetJSFrameCount() const;
 
+  uint32_t GetWasmFunctionIndex() const {
+    DCHECK(wasm_function_index_ != std::numeric_limits<uint32_t>::max());
+    return wasm_function_index_;
+  }
+
   StateValueList* GetStateValueDescriptors() { return &values_; }
 
   static const int kImpossibleValue = 0xdead;
@@ -1629,31 +1764,33 @@ class FrameStateDescriptor : public ZoneObject {
   FrameStateType type_;
   BytecodeOffset bailout_id_;
   OutputFrameStateCombine frame_state_combine_;
-  const size_t parameters_count_;
+  const uint16_t parameters_count_;
+  const uint16_t max_arguments_;
   const size_t locals_count_;
   const size_t stack_count_;
   const size_t total_conservative_frame_size_in_bytes_;
   StateValueList values_;
-  MaybeHandle<SharedFunctionInfo> const shared_info_;
+  MaybeIndirectHandle<SharedFunctionInfo> const shared_info_;
+  MaybeIndirectHandle<BytecodeArray> const bytecode_array_;
   FrameStateDescriptor* const outer_state_;
+  uint32_t wasm_function_index_;
 };
 
 #if V8_ENABLE_WEBASSEMBLY
 class JSToWasmFrameStateDescriptor : public FrameStateDescriptor {
  public:
-  JSToWasmFrameStateDescriptor(Zone* zone, FrameStateType type,
-                               BytecodeOffset bailout_id,
-                               OutputFrameStateCombine state_combine,
-                               size_t parameters_count, size_t locals_count,
-                               size_t stack_count,
-                               MaybeHandle<SharedFunctionInfo> shared_info,
-                               FrameStateDescriptor* outer_state,
-                               const wasm::FunctionSig* wasm_signature);
+  JSToWasmFrameStateDescriptor(
+      Zone* zone, FrameStateType type, BytecodeOffset bailout_id,
+      OutputFrameStateCombine state_combine, uint16_t parameters_count,
+      size_t locals_count, size_t stack_count,
+      MaybeIndirectHandle<SharedFunctionInfo> shared_info,
+      FrameStateDescriptor* outer_state,
+      const wasm::CanonicalSig* wasm_signature);
 
-  base::Optional<wasm::ValueKind> return_kind() const { return return_kind_; }
+  std::optional<wasm::ValueKind> return_kind() const { return return_kind_; }
 
  private:
-  base::Optional<wasm::ValueKind> return_kind_;
+  std::optional<wasm::ValueKind> return_kind_;
 };
 #endif  // V8_ENABLE_WEBASSEMBLY
 
@@ -1759,12 +1896,15 @@ class V8_EXPORT_PRIVATE InstructionBlock final
     return loop_end_;
   }
   inline bool IsLoopHeader() const { return loop_end_.IsValid(); }
-  inline bool IsSwitchTarget() const { return switch_target_; }
-  inline bool ShouldAlignCodeTarget() const { return code_target_alignment_; }
-  inline bool ShouldAlignLoopHeader() const { return loop_header_alignment_; }
+  inline bool IsTableSwitchTarget() const { return table_switch_target_; }
+  inline bool ShouldAlignSwitchTarget() const { return align_switch_targets_; }
+  inline bool ShouldAlignBranchTarget() const { return align_branch_targets_; }
+  inline bool ShouldAlignLoopHeader() const { return align_loop_headers_; }
   inline bool IsLoopHeaderInAssemblyOrder() const {
-    return loop_header_alignment_;
+    return align_loop_headers_;
   }
+  bool omitted_by_jump_threading() const { return omitted_by_jump_threading_; }
+  void set_omitted_by_jump_threading() { omitted_by_jump_threading_ = true; }
 
   using Predecessors = ZoneVector<RpoNumber>;
   Predecessors& predecessors() { return predecessors_; }
@@ -1787,10 +1927,11 @@ class V8_EXPORT_PRIVATE InstructionBlock final
 
   void set_ao_number(RpoNumber ao_number) { ao_number_ = ao_number; }
 
-  void set_code_target_alignment(bool val) { code_target_alignment_ = val; }
-  void set_loop_header_alignment(bool val) { loop_header_alignment_ = val; }
+  void set_align_switch_targets(bool val) { align_switch_targets_ = val; }
+  void set_align_branch_targets(bool val) { align_branch_targets_ = val; }
+  void set_align_loop_headers(bool val) { align_loop_headers_ = val; }
 
-  void set_switch_target(bool val) { switch_target_ = val; }
+  void set_table_switch_target(bool val) { table_switch_target_ = val; }
 
   bool needs_frame() const { return needs_frame_; }
   void mark_needs_frame() { needs_frame_ = true; }
@@ -1811,18 +1952,22 @@ class V8_EXPORT_PRIVATE InstructionBlock final
   const RpoNumber loop_header_;
   const RpoNumber loop_end_;
   RpoNumber dominator_;
-  int32_t code_start_;   // start index of arch-specific code.
-  int32_t code_end_ = -1;     // end index of arch-specific code.
-  const bool deferred_ : 1;   // Block contains deferred code.
-  bool handler_ : 1;          // Block is a handler entry point.
-  bool switch_target_ : 1;
-  bool code_target_alignment_ : 1;  // insert code target alignment before this
-                                    // block
-  bool loop_header_alignment_ : 1;  // insert loop header alignment before this
-                                    // block
+  int32_t code_start_;       // start index of arch-specific code.
+  int32_t code_end_ = -1;    // end index of arch-specific code.
+  const bool deferred_ : 1;  // Block contains deferred code.
+  bool handler_ : 1;         // Block is a handler entry point.
+  bool table_switch_target_ : 1;  // Block is a table switch target, implying an
+                                  //  indirect jump.
+  bool align_switch_targets_ : 1;  // insert switch target alignment before
+                                   // this block
+  bool align_branch_targets_ : 1;  // insert branch target alignment before
+                                   // this block
+  bool align_loop_headers_ : 1;    // insert loop header alignment before this
+                                   // block
   bool needs_frame_ : 1;
   bool must_construct_frame_ : 1;
   bool must_deconstruct_frame_ : 1;
+  bool omitted_by_jump_threading_ : 1;  // Just for cleaner code comments.
 };
 
 class InstructionSequence;
@@ -1834,12 +1979,9 @@ struct PrintableInstructionBlock {
 
 std::ostream& operator<<(std::ostream&, const PrintableInstructionBlock&);
 
-using ConstantDeque = ZoneDeque<Constant>;
-using ConstantMap = std::map<int, Constant, std::less<int>,
-                             ZoneAllocator<std::pair<const int, Constant> > >;
-
-using InstructionDeque = ZoneDeque<Instruction*>;
-using ReferenceMapDeque = ZoneDeque<ReferenceMap*>;
+using ConstantMap = ZoneUnorderedMap</* virtual register */ int, Constant>;
+using Instructions = ZoneVector<Instruction*>;
+using ReferenceMaps = ZoneVector<ReferenceMap*>;
 using InstructionBlocks = ZoneVector<InstructionBlock*>;
 
 // Represents architecture-specific generated code before, during, and after
@@ -1849,6 +1991,8 @@ class V8_EXPORT_PRIVATE InstructionSequence final
  public:
   static InstructionBlocks* InstructionBlocksFor(Zone* zone,
                                                  const Schedule* schedule);
+  static InstructionBlocks* InstructionBlocksFor(
+      Zone* zone, const turboshaft::Graph& graph);
   InstructionSequence(Isolate* isolate, Zone* zone,
                       InstructionBlocks* instruction_blocks);
   InstructionSequence(const InstructionSequence&) = delete;
@@ -1880,7 +2024,9 @@ class V8_EXPORT_PRIVATE InstructionSequence final
     return instruction_blocks_->at(rpo_number.ToSize());
   }
 
-  InstructionBlock* GetInstructionBlock(int instruction_index) const;
+  InstructionBlock* GetInstructionBlock(int instruction_index) const {
+    return instructions()[instruction_index]->block();
+  }
 
   static MachineRepresentation DefaultRepresentation() {
     return MachineType::PointerRepresentation();
@@ -1897,6 +2043,7 @@ class V8_EXPORT_PRIVATE InstructionSequence final
   int representation_mask() const { return representation_mask_; }
   bool HasFPVirtualRegisters() const {
     constexpr int kFPRepMask =
+        RepresentationBit(MachineRepresentation::kFloat16) |
         RepresentationBit(MachineRepresentation::kFloat32) |
         RepresentationBit(MachineRepresentation::kFloat64) |
         RepresentationBit(MachineRepresentation::kSimd128) |
@@ -1912,10 +2059,10 @@ class V8_EXPORT_PRIVATE InstructionSequence final
 
   Instruction* GetBlockStart(RpoNumber rpo) const;
 
-  using const_iterator = InstructionDeque::const_iterator;
+  using const_iterator = Instructions::const_iterator;
   const_iterator begin() const { return instructions_.begin(); }
   const_iterator end() const { return instructions_.end(); }
-  const InstructionDeque& instructions() const { return instructions_; }
+  const Instructions& instructions() const { return instructions_; }
   int LastInstructionIndex() const {
     return static_cast<int>(instructions().size()) - 1;
   }
@@ -1927,21 +2074,21 @@ class V8_EXPORT_PRIVATE InstructionSequence final
   }
 
   Isolate* isolate() const { return isolate_; }
-  const ReferenceMapDeque* reference_maps() const { return &reference_maps_; }
+  const ReferenceMaps* reference_maps() const { return &reference_maps_; }
   Zone* zone() const { return zone_; }
 
   // Used by the instruction selector while adding instructions.
   int AddInstruction(Instruction* instr);
   void StartBlock(RpoNumber rpo);
   void EndBlock(RpoNumber rpo);
+  void EndBlock(RpoNumber rpo, Instruction* terminator);
 
-  int AddConstant(int virtual_register, Constant constant) {
+  void AddConstant(int virtual_register, Constant constant) {
     // TODO(titzer): allow RPO numbers as constants?
     DCHECK_NE(Constant::kRpoNumber, constant.type());
     DCHECK(virtual_register >= 0 && virtual_register < next_virtual_register_);
     DCHECK(constants_.find(virtual_register) == constants_.end());
-    constants_.insert(std::make_pair(virtual_register, constant));
-    return virtual_register;
+    constants_.emplace(virtual_register, constant);
   }
   Constant GetConstant(int virtual_register) const {
     auto it = constants_.find(virtual_register);
@@ -1961,7 +2108,7 @@ class V8_EXPORT_PRIVATE InstructionSequence final
       if (constant.type() == Constant::kRpoNumber) {
         // Ideally we would inline RPO numbers into the operand, however jump-
         // threading modifies RPO values and so we indirect through a vector
-        // of rpo_immediates to enable rewriting. We keep this seperate from the
+        // of rpo_immediates to enable rewriting. We keep this separate from the
         // immediates vector so that we don't repeatedly push the same rpo
         // number.
         RpoNumber rpo_number = constant.ToRpoNumber();
@@ -2061,7 +2208,8 @@ class V8_EXPORT_PRIVATE InstructionSequence final
   friend V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&,
                                                     const InstructionSequence&);
 
-  using SourcePositionMap = ZoneMap<const Instruction*, SourcePosition>;
+  using SourcePositionMap =
+      ZoneAbslFlatHashMap<const Instruction*, SourcePosition>;
 
   static const RegisterConfiguration* RegisterConfigurationForTesting();
   static const RegisterConfiguration* registerConfigurationForTesting_;
@@ -2077,9 +2225,9 @@ class V8_EXPORT_PRIVATE InstructionSequence final
   ConstantMap constants_;
   Immediates immediates_;
   RpoImmediates rpo_immediates_;
-  InstructionDeque instructions_;
+  Instructions instructions_;
   int next_virtual_register_;
-  ReferenceMapDeque reference_maps_;
+  ReferenceMaps reference_maps_;
   ZoneVector<MachineRepresentation> representations_;
   int representation_mask_;
   DeoptimizationVector deoptimization_entries_;
@@ -2091,6 +2239,21 @@ class V8_EXPORT_PRIVATE InstructionSequence final
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&,
                                            const InstructionSequence&);
 #undef INSTRUCTION_OPERAND_ALIGN
+
+// Constants for accessing ConditionalCompare data, shared between isel and
+// codegen.
+constexpr size_t kNumCcmpOperands = 5;
+constexpr size_t kCcmpOffsetOfOpcode = 0;
+constexpr size_t kCcmpOffsetOfLhs = 1;
+constexpr size_t kCcmpOffsetOfRhs = 2;
+constexpr size_t kCcmpOffsetOfDefaultFlags = 3;
+constexpr size_t kCcmpOffsetOfCompareCondition = 4;
+constexpr size_t kConditionalTrapEndOffsetOfNumCcmps = 2;
+constexpr size_t kConditionalTrapEndOffsetOfCondition = 3;
+constexpr size_t kBranchEndOffsetOfFalseBlock = 1;
+constexpr size_t kBranchEndOffsetOfTrueBlock = 2;
+constexpr size_t kConditionalBranchEndOffsetOfNumCcmps = 3;
+constexpr size_t kConditionalBranchEndOffsetOfCondition = 4;
 
 }  // namespace compiler
 }  // namespace internal

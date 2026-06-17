@@ -124,11 +124,7 @@ class V8_EXPORT_PRIVATE BitVector : public ZoneObject {
     DCHECK_LE(0, length);
     int data_length = (length + kDataBits - 1) >> kDataBitShift;
     if (data_length > 1) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-      data_.ptr_ = zone->NewArray<ptraddr_t>(data_length);
-#else   // !__CHERI_PURE_CAPABILITY__
-      data_.ptr_ = zone->NewArray<uintptr_t>(data_length);
-#endif  // !__CHERI_PURE_CAPABILITY__
+      data_.ptr_ = zone->AllocateArray<ptraddr_t>(data_length);
       std::fill_n(data_.ptr_, data_length, 0);
       data_begin_ = data_.ptr_;
       data_end_ = data_begin_ + data_length;
@@ -140,15 +136,34 @@ class V8_EXPORT_PRIVATE BitVector : public ZoneObject {
     if (!other.is_inline()) {
       int data_length = other.data_length();
       DCHECK_LT(1, data_length);
-#if defined(__CHERI_PURE_CAPABILITY__)
-      data_.ptr_ = zone->NewArray<ptraddr_t>(data_length);
-#else   // !__CHERI_PURE_CAPABILITY__
-      data_.ptr_ = zone->NewArray<uintptr_t>(data_length);
-#endif  // !__CHERI_PURE_CAPABILITY__
+      data_.ptr_ = zone->AllocateArray<ptraddr_t>(data_length);
       data_begin_ = data_.ptr_;
       data_end_ = data_begin_ + data_length;
       std::copy_n(other.data_begin_, data_length, data_begin_);
     }
+  }
+
+  // Disallow copy and copy-assignment.
+  BitVector(const BitVector&) = delete;
+  BitVector& operator=(const BitVector&) = delete;
+
+  BitVector(BitVector&& other) V8_NOEXCEPT { *this = std::move(other); }
+
+  BitVector& operator=(BitVector&& other) V8_NOEXCEPT {
+    length_ = other.length_;
+    data_ = other.data_;
+    if (other.is_inline()) {
+      data_begin_ = &data_.inline_;
+      data_end_ = data_begin_ + other.data_length();
+    } else {
+      data_begin_ = other.data_begin_;
+      data_end_ = other.data_end_;
+      // Reset other to inline.
+      other.length_ = 0;
+      other.data_begin_ = &other.data_.inline_;
+      other.data_end_ = other.data_begin_ + 1;
+    }
+    return *this;
   }
 
   void CopyFrom(const BitVector& other) {
@@ -163,11 +178,7 @@ class V8_EXPORT_PRIVATE BitVector : public ZoneObject {
     DCHECK_LE(1, old_data_length);
     int new_data_length = (new_length + kDataBits - 1) >> kDataBitShift;
     if (new_data_length > old_data_length) {
-#if defined(__CHERI_PURE_CAPABILITY__)
-      ptraddr_t* new_data = zone->NewArray<ptraddr_t>(new_data_length);
-#else   // !__CHERI_PURE_CAPABILITY__
-      uintptr_t* new_data = zone->NewArray<uintptr_t>(new_data_length);
-#endif  // !__CHERI_PURE_CAPABILITY__
+      ptraddr_t* new_data = zone->AllocateArray<ptraddr_t>(new_data_length);
 
       // Copy over the data.
       std::copy_n(data_begin_, old_data_length, new_data);
@@ -245,6 +256,14 @@ class V8_EXPORT_PRIVATE BitVector : public ZoneObject {
     }
   }
 
+  bool IsSubsetOf(const BitVector& other) const {
+    DCHECK(other.length() == length());
+    for (int i = 0; i < data_length(); i++) {
+      if ((data_begin_[i] & ~other.data_begin_[i]) != 0) return false;
+    }
+    return true;
+  }
+
   void Clear() { std::fill_n(data_begin_, data_length(), 0); }
 
   bool IsEmpty() const {
@@ -266,8 +285,6 @@ class V8_EXPORT_PRIVATE BitVector : public ZoneObject {
 #ifdef DEBUG
   void Print() const;
 #endif
-
-  MOVE_ONLY_NO_DEFAULT_CONSTRUCTOR(BitVector);
 
  private:
   union DataStorage {
@@ -324,6 +341,8 @@ class GrowableBitVector {
     if (V8_UNLIKELY(!InBitsRange(value))) Grow(value, zone);
     bits_.Add(value);
   }
+
+  bool IsEmpty() const { return bits_.IsEmpty(); }
 
   void Clear() { bits_.Clear(); }
 
