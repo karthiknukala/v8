@@ -45,9 +45,9 @@ vars = {
   # Fetch and build V8 builtins with PGO profiles
   'checkout_v8_builtins_pgo_profiles': False,
 
-  'chromium_cheri_url': 'https://github.com/chromium-cheri',
   'android_url': 'https://android.googlesource.com',
   'chromium_url': 'https://chromium.googlesource.com',
+  'chromium_cheri_url': 'https://github.com/chromium-cheri',
   'download_gcmole': False,
   'download_jsfunfuzz': False,
   'download_prebuilt_bazel': False,
@@ -137,11 +137,9 @@ vars = {
 
 deps = {
   'build':
-    Var('chromium_cheri_url') + '/build.git' + '@' + '488dc76b73b8f3c1f0a6a3c780d60494ca5fda06',
+    Var('chromium_cheri_url') + '/chromium/src/build.git' + '@' + '56fce5dc99c62730cc95bcd4b60b2a6a1e8f994e',
   'buildtools':
-    Var('chromium_cheri_url') + '/buildtools.git' + '@' + '8b16338d17cd71b04a6ba28da7322ab6739892c2',
-  'buildtools/clang_format/script':
-    Var('chromium_url') + '/external/github.com/llvm/llvm-project/clang/tools/clang-format.git' + '@' + 'f97059df7f8b205064625cdb5f97b56668a125ef',
+    Var('chromium_cheri_url') + '/chromium/src/buildtools.git' + '@' + '4dc32b3f510b330137385e2b3a631ca8e13a8e22',
   'buildtools/linux64': {
     'packages': [
       {
@@ -510,8 +508,6 @@ deps = {
       'url': Var('chromium_url') + '/external/github.com/kennethreitz/requests.git' + '@' + 'c7e0fc087ceeadb8b4c84a0953a422c474093d6d',
       'condition': 'checkout_android',
   },
-  'third_party/zlib':
-    Var('chromium_cheri_url') + '/zlib.git'+ '@' + '05ca39ba1b282fc3ed9e5e3f0ebfadafaa25ef21',
   'tools/rust':
     Var('chromium_url') + '/chromium/src/tools/rust' + '@' + 'd1690596df82f4968e4a157034691f18dc8a9d35',
   'tools/win':
@@ -563,7 +559,7 @@ deps = {
     'condition': 'not build_with_chromium and host_cpu != "s390x" and host_os != "zos" and host_cpu != "ppc64"',
   },
   'third_party/zlib':
-    Var('chromium_url') + '/chromium/src/third_party/zlib.git'+ '@' + '2182f37a0861358faa9f6b8e0dacce32142c3a33',
+    Var('chromium_cheri_url') + '/chromium/src/third_party/zlib.git'+ '@' + '348bf057230b1da12c074a98451924c1d9d5f54d',
   'tools/clang':
     Var('chromium_url') + '/chromium/src/tools/clang.git' + '@' + '3240f2283a294839cf928f7329fe1a89230fa74e',
   'tools/protoc_wrapper':
