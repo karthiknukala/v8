@@ -2697,6 +2697,7 @@ template("run_mksnapshot") {
           rebase_path("$target_gen_dir/embedded${suffix}.S", root_build_dir),
         ]
       }
+      ext = "S"
     } else {
       if (current_os != "zos") {
         ext = "S"
