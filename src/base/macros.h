@@ -209,7 +209,8 @@ V8_INLINE constexpr Dest bit_cast(Source const& source) noexcept {
       std::is_trivially_copyable_v<Dest>,
       "bit_cast requires the destination type to be trivially copyable");
 
-  return std::bit_cast<Dest, Source>(source);
+  // FIXME(cheri): Workaround.
+  return __builtin_bit_cast(Dest, source);
 }
 
 }  // namespace v8::base
