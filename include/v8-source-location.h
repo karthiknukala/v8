@@ -6,7 +6,7 @@
 #define INCLUDE_SOURCE_LOCATION_H_
 
 #include <cstddef>
-#include <source_location>
+#include <src/base/source-location.h>
 #include <string>
 
 #include "v8config.h"  // NOLINT(build/include_directory)
@@ -26,12 +26,14 @@ class V8_EXPORT SourceLocation final {
    * call site.
    */
   static constexpr SourceLocation Current(
-      const std::source_location& loc = std::source_location::current()) {
+      const v8::base::source_location& loc =
+          v8::base::source_location::current()) {
     return SourceLocation(loc);
   }
 #ifdef DEBUG
   static constexpr SourceLocation CurrentIfDebug(
-      const std::source_location& loc = std::source_location::current()) {
+      const v8::base::source_location& loc =
+          v8::base::source_location::current()) {
     return SourceLocation(loc);
   }
 #else
@@ -80,10 +82,10 @@ class V8_EXPORT SourceLocation final {
   operator bool() const { return loc_.line() != 0; }
 
  private:
-  constexpr explicit SourceLocation(const std::source_location& loc)
+  constexpr explicit SourceLocation(const v8::base::source_location& loc)
       : loc_(loc) {}
 
-  std::source_location loc_;
+  v8::base::source_location loc_;
 };
 
 }  // namespace v8
