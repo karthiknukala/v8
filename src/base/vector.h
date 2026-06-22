@@ -16,6 +16,7 @@
 #include "src/base/hashing.h"
 #include "src/base/logging.h"
 #include "src/base/macros.h"
+#include "src/base/memory.h"
 
 namespace v8 {
 namespace base {
@@ -294,7 +295,7 @@ class OwnedVector {
   // Elements in the new vector are default-initialized.
   static OwnedVector<T> NewForOverwrite(size_t size) {
     if (size == 0) return {};
-    return OwnedVector<T>(std::make_unique_for_overwrite<T[]>(size), size);
+    return OwnedVector<T>(v8::base::make_unique_for_overwrite<T[]>(size), size);
   }
 
   // Allocates a new vector containing the specified collection of values.

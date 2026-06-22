@@ -5,6 +5,9 @@
 #ifndef V8_BASE_MEMORY_H_
 #define V8_BASE_MEMORY_H_
 
+// FIXME(cheri): Remove this with C++20 support.
+#include <memory>
+
 #include "src/base/macros.h"
 
 namespace v8 {
@@ -94,6 +97,18 @@ static inline void WriteLittleEndianValue(V* p, V value) {
       !std::is_array_v<V>,
       "Passing an array decays to pointer, causing unexpected results.");
   WriteLittleEndianValue<V>(reinterpret_cast<Address>(p), value);
+}
+
+// FIXME(cheri): Remove this with C++20 support.
+template <typename T>
+std::unique_ptr<T> make_unique_for_overwrite() {
+  return std::unique_ptr<T>(new T);
+}
+
+// FIXME(cheri): Remove this with C++20 support.
+template <typename T>
+std::unique_ptr<T[]> make_unique_for_overwrite(size_t size) {
+  return std::unique_ptr<T[]>(new T[size]);
 }
 
 }  // namespace base

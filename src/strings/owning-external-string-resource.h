@@ -12,6 +12,7 @@
 #include <string_view>
 
 #include "include/v8-primitive.h"
+#include "src/base/memory.h"
 #include "src/objects/string.h"
 #include "src/objects/tagged.h"
 
@@ -73,7 +74,7 @@ class OwningExternalStringResourceImpl : public Base {
     return IsolateGroup::current()->external_strings_cage()->Allocate<CharT>(
         length);
 #else   // V8_ENABLE_MEMORY_CORRUPTION_API
-    return std::make_unique_for_overwrite<CharT[]>(length);
+    return v8::base::make_unique_for_overwrite<CharT[]>(length);
 #endif  // V8_ENABLE_MEMORY_CORRUPTION_API
   }
 
