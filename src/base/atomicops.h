@@ -73,6 +73,9 @@ inline void SeqCst_MemoryFence() {
 
 template <typename T>
 concept AtomicTypeForTrivialOperations =
+#ifdef __CHERI_PURE_CAPABILITY__
+    std::is_same_v<T, AtomicWord> ||
+#endif
 #if defined(V8_HOST_ARCH_64_BIT)
     std::is_same_v<T, Atomic64> ||
 #endif
