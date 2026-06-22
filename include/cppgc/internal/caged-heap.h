@@ -41,8 +41,8 @@ class V8_EXPORT CagedHeapBase {
     static_assert((static_cast<size_t>(1) << kHeapBaseShift) ==
                   api_constants::kCagedHeapMaxReservationSize);
     CPPGC_DCHECK(g_heap_base_);
-    ptraddr_t a1 = static_cast<ptraddr_t>(addr1);
-    ptraddr_t a2 = static_cast<ptraddr_t>(addr2);
+    ptraddr_t a1 = reinterpret_cast<ptraddr_t>(addr1);
+    ptraddr_t a2 = reinterpret_cast<ptraddr_t>(addr2);
     ptraddr_t g_heap_base_addr = static_cast<ptraddr_t>(g_heap_base_);
     return !(((a1 ^ g_heap_base_addr) | (a2 ^ g_heap_base_addr)) >>
              kHeapBaseShift);
