@@ -238,7 +238,7 @@ const StructType* TypeVisitor::ComputeType(
         struct_type->RegisterField(
             {field.name_and_type.name->pos,
              struct_type,
-             base::nullopt,
+             std::nullopt,
              {"__cheri_padding_" + u8->SimpleName() + struct_type->name() +
                   std::to_string(padding_count++),
               u8},
