@@ -137,7 +137,7 @@ vars = {
 
 deps = {
   'build':
-    Var('chromium_cheri_url') + '/build.git' + '@' + '56fce5dc99c62730cc95bcd4b60b2a6a1e8f994e',
+    Var('chromium_cheri_url') + '/build.git' + '@' + '9e9a775a3b2849ee8227731c91c149b1258babd0',
   'buildtools':
     Var('chromium_cheri_url') + '/buildtools.git' + '@' + '4dc32b3f510b330137385e2b3a631ca8e13a8e22',
   'buildtools/linux64': {
