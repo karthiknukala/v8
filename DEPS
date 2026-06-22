@@ -565,7 +565,7 @@ deps = {
   'tools/protoc_wrapper':
     Var('chromium_url') + '/chromium/src/tools/protoc_wrapper.git' + '@' + '3438d4183bfc7c0d6850e8b970204cc8189f0323',
   'third_party/abseil-cpp': {
-    'url': Var('chromium_url') + '/chromium/src/third_party/abseil-cpp.git' + '@' + '1597226b825a16493de66c1732171efe89b271d9',
+    'url': Var('ctsrd_cheri_url') + '/abseil-cpp.git' + '@' + 'a8ed9dcca9792764f1442aa03ac4c266fca56a54',
     'condition': 'not build_with_chromium',
   },
   'third_party/zoslib': {
