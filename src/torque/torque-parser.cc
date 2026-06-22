@@ -91,8 +91,6 @@ class BuildFlags : public base::ContextualClass<BuildFlags> {
     build_flags_["DEBUG"] = DEBUG_BOOL;
 #ifdef __CHERI_PURE_CAPABILITY__
     build_flags_["CHERI_PURECAP"] = true;
-    build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] = V8_SFI_NEEDS_PADDING;
-    build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] = false;
     build_flags_["CHERI_PURECAP_COMPRESSED"] = COMPRESS_POINTERS_BOOL;
     build_flags_["CHERI_PURECAP_UNCOMPRESSED"] = !COMPRESS_POINTERS_BOOL;
 #else   // !__CHERI_PURE_CAPABILITY__
@@ -101,10 +99,6 @@ class BuildFlags : public base::ContextualClass<BuildFlags> {
         options.cheri_abi && COMPRESS_POINTERS_BOOL;
     build_flags_["CHERI_PURECAP_UNCOMPRESSED"] =
         options.cheri_abi && !COMPRESS_POINTERS_BOOL;
-    build_flags_["V8_CHERI_SFI_NEEDS_PADDING"] =
-        options.cheri_abi && !COMPRESS_POINTERS_BOOL;
-    build_flags_["V8_NONCHERI_SFI_NEEDS_PADDING"] =
-        !options.cheri_abi && V8_SFI_NEEDS_PADDING;
 #endif  // __CHERI_PURE_CAPABILITY__
 #ifdef V8_ENABLE_DRUMBRAKE
     build_flags_["V8_ENABLE_DRUMBRAKE"] = true;
