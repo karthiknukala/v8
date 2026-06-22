@@ -10,6 +10,7 @@
 #include <optional>
 #include <vector>
 
+#include "src/base/atomic-ref.h"
 #include "src/base/atomic-utils.h"
 #include "src/base/logging.h"
 #include "src/common/globals.h"
@@ -58,7 +59,7 @@ V8_INLINE void AtomicZapBlock(Address addr, size_t size_in_bytes) {
   const size_t size_in_tagged = size_in_bytes / kTaggedSize;
   Tagged_t* current_addr = reinterpret_cast<Tagged_t*>(addr);
   for (size_t i = 0; i < size_in_tagged; ++i) {
-    std::atomic_ref<Tagged_t>(*current_addr)
+    v8::base::atomic_ref<Tagged_t>(*current_addr)
         .store(kZapTagged, std::memory_order_relaxed);
     current_addr++;
   }

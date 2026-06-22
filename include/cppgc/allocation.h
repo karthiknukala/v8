@@ -16,6 +16,7 @@
 #include "cppgc/internal/api-constants.h"
 #include "cppgc/internal/gc-info.h"
 #include "cppgc/type-traits.h"
+#include "src/base/atomic-ref.h"
 #include "v8config.h"  // NOLINT(build/include_directory)
 
 #if defined(__has_attribute)
@@ -50,7 +51,7 @@ class MakeGarbageCollectedTraitInternal {
  protected:
   static inline void MarkObjectAsFullyConstructed(const void* payload) {
     // See api_constants for an explanation of the constants.
-    std::atomic_ref<uint16_t> atomic_mutable_bitfield(
+    v8::base::atomic_ref<uint16_t> atomic_mutable_bitfield(
         *const_cast<uint16_t*>(reinterpret_cast<const uint16_t*>(
             reinterpret_cast<const uint8_t*>(payload) -
             api_constants::kFullyConstructedBitFieldOffsetFromPayload)));

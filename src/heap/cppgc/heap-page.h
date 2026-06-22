@@ -8,6 +8,7 @@
 #include <atomic>
 
 #include "include/cppgc/internal/base-page-handle.h"
+#include "src/base/atomic-ref.h"
 #include "src/base/hashing.h"
 #include "src/base/iterator.h"
 #include "src/base/macros.h"
@@ -79,14 +80,15 @@ class V8_EXPORT_PRIVATE BasePage : public BasePageHandle {
   // added for tsan builds.
   void SynchronizedLoad() const {
 #if defined(THREAD_SANITIZER)
-    std::atomic_ref<PageType>(const_cast<PageType&>(type_))
+    v8::base::atomic_ref<PageType>(const_cast<PageType&>(type_))
         .load(std::memory_order_acquire);
 #endif
   }
   void SynchronizedStore() {
     std::atomic_thread_fence(std::memory_order_seq_cst);
 #if defined(THREAD_SANITIZER)
-    std::atomic_ref<PageType>(type_).store(type_, std::memory_order_release);
+    v8::base::atomic_ref<PageType>(type_).store(type_,
+                                                std::memory_order_release);
 #endif
   }
 

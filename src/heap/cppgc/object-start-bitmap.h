@@ -11,6 +11,7 @@
 #include <array>
 
 #include "include/cppgc/internal/write-barrier.h"
+#include "src/base/atomic-ref.h"
 #include "src/base/atomic-utils.h"
 #include "src/base/bits.h"
 #include "src/base/macros.h"
@@ -166,7 +167,7 @@ void ObjectStartBitmap::store(size_t cell_index, uint8_t value) {
     object_start_bit_map_[cell_index] = value;
     return;
   }
-  std::atomic_ref<uint8_t>(object_start_bit_map_[cell_index])
+  v8::base::atomic_ref<uint8_t>(object_start_bit_map_[cell_index])
       .store(value, std::memory_order_release);
 }
 
@@ -175,7 +176,7 @@ uint8_t ObjectStartBitmap::load(size_t cell_index) const {
   if (mode == AccessMode::kNonAtomic) {
     return object_start_bit_map_[cell_index];
   }
-  return std::atomic_ref<uint8_t>(
+  return v8::base::atomic_ref<uint8_t>(
              const_cast<uint8_t&>(object_start_bit_map_[cell_index]))
       .load(std::memory_order_acquire);
 }

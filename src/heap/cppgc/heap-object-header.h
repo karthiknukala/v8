@@ -12,6 +12,7 @@
 #include "include/cppgc/internal/gc-info.h"
 #include "include/cppgc/internal/member-storage.h"
 #include "include/cppgc/internal/name-trait.h"
+#include "src/base/atomic-ref.h"
 #include "src/base/atomic-utils.h"
 #include "src/base/bit-field.h"
 #include "src/base/logging.h"
@@ -199,7 +200,7 @@ HeapObjectHeader::HeapObjectHeader(size_t size, GCInfoIndex gc_info_index) {
   // this write is not observed by the marker, since the sweeper  sets the
   // in-construction bit to 0 and we can rely on that to guarantee a correct
   // answer when checking if objects are in-construction.
-  std::atomic_ref<uint16_t>(encoded_high_)
+  v8::base::atomic_ref<uint16_t>(encoded_high_)
       .store(GCInfoIndexField::encode(gc_info_index),
              std::memory_order_relaxed);
   DCHECK(IsInConstruction());
@@ -284,7 +285,7 @@ void HeapObjectHeader::Unmark() {
 }
 
 bool HeapObjectHeader::TryMarkAtomic() {
-  std::atomic_ref<uint16_t> atomic_encoded(encoded_low_);
+  v8::base::atomic_ref<uint16_t> atomic_encoded(encoded_low_);
   uint16_t old_value = atomic_encoded.load(std::memory_order_relaxed);
   const uint16_t new_value = old_value | MarkBitField::encode(true);
   if (new_value == old_value) {
@@ -357,7 +358,7 @@ uint16_t HeapObjectHeader::LoadEncoded() const {
   if constexpr (mode == AccessMode::kNonAtomic) {
     return half;
   }
-  return std::atomic_ref(const_cast<uint16_t&>(half)).load(memory_order);
+  return v8::base::atomic_ref(const_cast<uint16_t&>(half)).load(memory_order);
 }
 
 template <AccessMode mode, HeapObjectHeader::EncodedHalf part,
@@ -376,7 +377,7 @@ void HeapObjectHeader::StoreEncoded(uint16_t bits, uint16_t mask) {
   }
   // We don't perform CAS loop here assuming that only none of the info that
   // shares the same encoded halfs change at the same time.
-  std::atomic_ref<uint16_t> atomic_encoded(half);
+  v8::base::atomic_ref<uint16_t> atomic_encoded(half);
   uint16_t value = atomic_encoded.load(std::memory_order_relaxed);
   value = (value & ~mask) | bits;
   atomic_encoded.store(value, memory_order);
