@@ -38,7 +38,7 @@ class AddressRegion {
 
   constexpr bool is_empty() const { return size_ == 0; }
 
-  constexpr bool contains(Address address) const {
+  bool contains(Address address) const {
     static_assert(std::is_unsigned_v<Address>);
 #ifdef __CHERI_PURE_CAPABILITY__
     // We do an inbounds check on CHERI because anything else will result in
@@ -49,7 +49,7 @@ class AddressRegion {
 #endif  // __CHERI_PURE_CAPABILITY__
   }
 
-  constexpr bool contains(Address address, size_t size) const {
+  bool contains(Address address, size_t size) const {
     static_assert(std::is_unsigned_v<Address>);
     const Address offset = address - begin();
 #ifdef __CHERI_PURE_CAPABILITY__
