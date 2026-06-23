@@ -166,7 +166,7 @@ class HeapObjectHeader {
   uint16_t encoded_high_;
   uint16_t encoded_low_;
 #ifdef __CHERI_PURE_CAPABILITY__
-  uint8_t cheri_padding_[4];
+  uint8_t cheri_padding_[8];
 #endif
 };
 
