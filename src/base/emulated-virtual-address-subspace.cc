@@ -44,12 +44,8 @@ Address EmulatedVirtualAddressSubspace::RandomPageAddress() {
 }
 
 Address EmulatedVirtualAddressSubspace::AllocatePages(
-#if defined(__CHERI_PURE_CAPABILITY__)
     Address hint, size_t size, size_t alignment, PagePermissions permissions,
     PagePermissions max_permissions) {
-#else   // !__CHERI_PURE_CAPABILITY__
-    Address hint, size_t size, size_t alignment, PagePermissions permissions) {
-#endif  // !__CHERI_PURE_CAPABILITY__
   if (hint == kNoHint || MappedRegionContains(hint, size)) {
     MutexGuard guard(&mutex_);
 
@@ -57,7 +53,8 @@ Address EmulatedVirtualAddressSubspace::AllocatePages(
     Address address = region_allocator_.AllocateRegion(hint, size, alignment);
     if (address != RegionAllocator::kAllocationFailure) {
       // Success. Only need to adjust the page permissions.
-      if (parent_space_->SetPagePermissions(address, size, permissions)) {
+      if (parent_space_->SetPagePermissions(address, size, permissions,
+                                            max_permissions)) {
         return address;
       }
       // Probably ran out of memory, but still try to allocate in the unmapped
@@ -83,13 +80,8 @@ Address EmulatedVirtualAddressSubspace::AllocatePages(
     }
     hint = RoundDown(hint, alignment);
 
-    const Address result =
-#if defined(__CHERI_PURE_CAPABILITY__)
-        parent_space_->AllocatePages(hint, size, alignment, permissions,
-                                     max_permissions);
-#else   // !__CHERI_PURE_CAPABILITY__
-        parent_space_->AllocatePages(hint, size, alignment, permissions);
-#endif  // !__CHERI_PURE_CAPABILITY__
+    const Address result = parent_space_->AllocatePages(
+        hint, size, alignment, permissions, max_permissions);
     if (UnmappedRegionContains(result, size)) {
       return result;
     } else if (result) {
@@ -149,9 +141,11 @@ void EmulatedVirtualAddressSubspace::FreeSharedPages(Address address,
 }
 
 bool EmulatedVirtualAddressSubspace::SetPagePermissions(
-    Address address, size_t size, PagePermissions permissions) {
+    Address address, size_t size, PagePermissions permissions,
+    PagePermissions max_permissions) {
   DCHECK(Contains(address, size));
-  return parent_space_->SetPagePermissions(address, size, permissions);
+  return parent_space_->SetPagePermissions(address, size, permissions,
+                                           max_permissions);
 }
 
 bool EmulatedVirtualAddressSubspace::AllocateGuardRegion(Address address,
@@ -190,9 +184,11 @@ EmulatedVirtualAddressSubspace::AllocateSubspace(
 }
 
 bool EmulatedVirtualAddressSubspace::RecommitPages(
-    Address address, size_t size, PagePermissions permissions) {
+    Address address, size_t size, PagePermissions permissions,
+    PagePermissions max_permissions) {
   DCHECK(Contains(address, size));
-  return parent_space_->RecommitPages(address, size, permissions);
+  return parent_space_->RecommitPages(address, size, permissions,
+                                      max_permissions);
 }
 
 bool EmulatedVirtualAddressSubspace::DiscardSystemPages(Address address,

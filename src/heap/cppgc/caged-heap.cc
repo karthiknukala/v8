@@ -79,7 +79,8 @@ CagedHeap::Reservation CagedHeap::ReserveCagedHeap(
   // masked out part is 1. This will internally try to reserve 48GB -
   // SystemPageSize, which may fail on system with small virtual address space.
   void* start = platform_allocator.AllocatePages(
-      hint, kTryReserveSize, kReservationAlignment, PageAllocator::kNoAccess);
+      hint, kTryReserveSize, kReservationAlignment, PageAllocator::kNoAccess,
+      PageAllocator::kReadWrite);
   if (V8_LIKELY(start)) {
     const uintptr_t lower_half = reinterpret_cast<uintptr_t>(start);
     const uintptr_t upper_half =
@@ -208,7 +209,7 @@ void CagedHeap::CommitAgeTable(PageAllocator& platform_allocator) {
           reinterpret_cast<void*>(CagedHeapBase::g_heap_base_),
           RoundUp(CagedHeapBase::g_age_table_size_,
                   platform_allocator.CommitPageSize()),
-          PageAllocator::kReadWrite)) {
+          PageAllocator::kReadWrite, PageAllocator::kReadWrite)) {
     GetGlobalOOMHandler()("Oilpan: CagedHeap commit CageHeapLocalData.");
   }
 }

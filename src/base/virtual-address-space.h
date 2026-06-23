@@ -59,17 +59,13 @@ class V8_BASE_EXPORT VirtualAddressSpace : public VirtualAddressSpaceBase {
   Address RandomPageAddress() override;
 
   Address AllocatePages(Address hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                         PagePermissions access,
                         PagePermissions max_access) override;
-#else   // !__CHERI_PURE_CAPABILITY__
-                        PagePermissions access) override;
-#endif  // !__CHERI_PURE_CAPABILITY__
 
   void FreePages(Address address, size_t size) override;
 
-  bool SetPagePermissions(Address address, size_t size,
-                          PagePermissions access) override;
+  bool SetPagePermissions(Address address, size_t size, PagePermissions access,
+                          PagePermissions max_access) override;
 
   bool AllocateGuardRegion(Address address, size_t size) override;
 
@@ -92,8 +88,8 @@ class V8_BASE_EXPORT VirtualAddressSpace : public VirtualAddressSpaceBase {
       std::optional<MemoryProtectionKeyId> key,
       std::optional<SharedMemoryHandle> handle) override;
 
-  bool RecommitPages(Address address, size_t size,
-                     PagePermissions access) override;
+  bool RecommitPages(Address address, size_t size, PagePermissions access,
+                     PagePermissions max_access) override;
 
   bool DiscardSystemPages(Address address, size_t size) override;
 
@@ -116,17 +112,14 @@ class V8_BASE_EXPORT VirtualAddressSubspace : public VirtualAddressSpaceBase {
   Address RandomPageAddress() override;
 
   Address AllocatePages(Address hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                         PagePermissions permissions,
                         PagePermissions max_permissions) override;
-#else   // !__CHERI_PURE_CAPABILITY__
-                        PagePermissions permissions) override;
-#endif  // !__CHERI_PURE_CAPABILITY__
 
   void FreePages(Address address, size_t size) override;
 
   bool SetPagePermissions(Address address, size_t size,
-                          PagePermissions permissions) override;
+                          PagePermissions permissions,
+                          PagePermissions max_permissions) override;
 
   bool AllocateGuardRegion(Address address, size_t size) override;
 
@@ -149,8 +142,8 @@ class V8_BASE_EXPORT VirtualAddressSubspace : public VirtualAddressSpaceBase {
       std::optional<MemoryProtectionKeyId> key,
       std::optional<SharedMemoryHandle> handle) override;
 
-  bool RecommitPages(Address address, size_t size,
-                     PagePermissions permissions) override;
+  bool RecommitPages(Address address, size_t size, PagePermissions permissions,
+                     PagePermissions max_permissions) override;
 
   bool DiscardSystemPages(Address address, size_t size) override;
 

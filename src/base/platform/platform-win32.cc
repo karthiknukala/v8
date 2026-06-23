@@ -1016,7 +1016,7 @@ void CheckIsOOMError(int error) {
 
 // static
 void* OS::Allocate(void* hint, size_t size, size_t alignment,
-                   MemoryPermission access,
+                   MemoryPermission access, MemoryPermission max_access,
                    std::optional<SharedMemoryHandle> handle) {
   // File handles aren't supported.
   DCHECK(!handle.has_value());
@@ -1045,7 +1045,8 @@ void OS::Free(void* address, size_t size) {
 
 // static
 void* OS::AllocateShared(void* hint, size_t size, MemoryPermission permission,
-                         SharedMemoryHandle handle, uint64_t offset) {
+                         MemoryPermission max_access, SharedMemoryHandle handle,
+                         uint64_t offset) {
   DCHECK_EQ(0, reinterpret_cast<uintptr_t>(hint) % AllocatePageSize());
   DCHECK_EQ(0, size % AllocatePageSize());
   DCHECK_EQ(0, offset % AllocatePageSize());
@@ -1079,7 +1080,8 @@ void OS::Release(void* address, size_t size) {
 }
 
 // static
-bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+bool OS::SetPermissions(void* address, size_t size, MemoryPermission access,
+                        MemoryPermission max_access) {
   DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
   DCHECK_EQ(0, size % CommitPageSize());
   if (access == MemoryPermission::kNoAccess) {
@@ -1106,8 +1108,9 @@ void OS::SetDataReadOnly(void* address, size_t size) {
 }
 
 // static
-bool OS::RecommitPages(void* address, size_t size, MemoryPermission access) {
-  return SetPermissions(address, size, access);
+bool OS::RecommitPages(void* address, size_t size, MemoryPermission access,
+                       MemoryPermission max_access) {
+  return SetPermissions(address, size, access, max_access);
 }
 
 // static
@@ -1413,7 +1416,8 @@ bool AddressSpaceReservation::MergePlaceholders(void* address, size_t size) {
 }
 
 bool AddressSpaceReservation::Allocate(void* address, size_t size,
-                                       OS::MemoryPermission access) {
+                                       OS::MemoryPermission access,
+                                       OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
   CHECK(VirtualAlloc2);
   DWORD flags = (access == OS::MemoryPermission::kNoAccess)
@@ -1431,6 +1435,7 @@ bool AddressSpaceReservation::Free(void* address, size_t size) {
 
 bool AddressSpaceReservation::AllocateShared(void* address, size_t size,
                                              OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access,
                                              SharedMemoryHandle handle,
                                              uint64_t offset) {
   DCHECK(Contains(address, size));
@@ -1451,15 +1456,17 @@ bool AddressSpaceReservation::FreeShared(void* address, size_t size) {
 }
 
 bool AddressSpaceReservation::SetPermissions(void* address, size_t size,
-                                             OS::MemoryPermission access) {
+                                             OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
-  return OS::SetPermissions(address, size, access);
+  return OS::SetPermissions(address, size, access, max_access);
 }
 
 bool AddressSpaceReservation::RecommitPages(void* address, size_t size,
-                                            OS::MemoryPermission access) {
+                                            OS::MemoryPermission access,
+                                            OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
-  return OS::RecommitPages(address, size, access);
+  return OS::RecommitPages(address, size, access, max_access);
 }
 
 bool AddressSpaceReservation::DiscardSystemPages(void* address, size_t size) {

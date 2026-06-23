@@ -55,16 +55,7 @@ GCInfoTable::GCInfoTable(PageAllocator& page_allocator,
       oom_handler_(oom_handler),
       table_(static_cast<decltype(table_)>(page_allocator_.AllocatePages(
           nullptr, MaxTableSize(), page_allocator_.AllocatePageSize(),
-#if defined(__CHERI_PURE_CAPABILITY__)
-	  // TODO(https://github.com/CTSRD-CHERI/cheribsd/issues/1818): On
-	  // CHERI architectures set PROT_WRITE so that the mapped memory gains
-	  // permissions to write capabilities: VM_PROT_ADD_CAP is never called
-	  // on prot and max_prot in mprotect itself.
-          PageAllocator::kReadWrite,
-          PageAllocator::kReadWrite))),
-#else
-          PageAllocator::kNoAccess))),
-#endif // __CHERI_PURE_CAPABILITY__
+          PageAllocator::kReadWrite, PageAllocator::kReadWrite))),
       read_only_table_end_(reinterpret_cast<uint8_t*>(table_)) {
   if (!table_) {
     oom_handler_("Oilpan: GCInfoTable initial reservation.");
@@ -105,6 +96,7 @@ void GCInfoTable::Resize() {
       reinterpret_cast<uint8_t*>(table_) + old_committed_size;
   const size_t table_size_delta = new_committed_size - old_committed_size;
   if (!page_allocator_.SetPermissions(current_table_end, table_size_delta,
+                                      PageAllocator::kReadWrite,
                                       PageAllocator::kReadWrite)) {
     oom_handler_("Oilpan: GCInfoTable resize.");
   }
@@ -114,6 +106,7 @@ void GCInfoTable::Resize() {
     DCHECK_GT(current_table_end, read_only_table_end_);
     const size_t read_only_delta = current_table_end - read_only_table_end_;
     CHECK(page_allocator_.SetPermissions(read_only_table_end_, read_only_delta,
+                                         PageAllocator::kRead,
                                          PageAllocator::kRead));
     read_only_table_end_ += read_only_delta;
   }

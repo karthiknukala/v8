@@ -105,33 +105,31 @@ class V8_BASE_EXPORT BoundedPageAllocator : public v8::PageAllocator {
   }
 
   void* AllocatePages(void* hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                      Permission access,
-                      Permission max_access) override;
-#else
-                      Permission access) override;
-#endif // __CHERI_PURE_CAPABILITY__
+                      Permission access, Permission max_access) override;
 
   void* AllocatePages(
-      size_t size, size_t alignment, Permission access,
+      size_t size, size_t alignment, Permission access, Permission max_access,
       v8::PageAllocator::AllocationHint allocation_hint) override;
 
   bool ReserveForSharedMemoryMapping(void* address, size_t size) override;
 
   // Allocates pages at given address, returns true on success.
-  bool AllocatePagesAt(Address address, size_t size, Permission access);
+  bool AllocatePagesAt(Address address, size_t size, Permission access,
+                       Permission max_access);
 
   bool ResizeAllocationAt(void* address, size_t old_size, size_t new_size,
-                          Permission access) override;
+                          Permission access, Permission max_access) override;
 
   bool FreePages(void* address, size_t size) override;
 
   bool ReleasePages(void* address, size_t size, size_t new_size) override;
 
-  bool SetPermissions(void* address, size_t size, Permission access) override;
+  bool SetPermissions(void* address, size_t size, Permission access,
+                      Permission max_access) override;
 
   bool RecommitPages(void* address, size_t size,
-                     PageAllocator::Permission access) override;
+                     PageAllocator::Permission access,
+                     PageAllocator::Permission max_access) override;
 
   bool DiscardSystemPages(void* address, size_t size) override;
 

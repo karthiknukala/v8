@@ -142,7 +142,8 @@ void OS::SetRandomMmapSeed(int64_t seed) { SB_NOTIMPLEMENTED(); }
 // static
 void* OS::GetRandomMmapAddr() { return nullptr; }
 
-void* Allocate(void* address, size_t size, OS::MemoryPermission access) {
+void* Allocate(void* address, size_t size, OS::MemoryPermission access,
+               OS::MemoryPermission max_access) {
   int prot_flags;
   switch (access) {
     case OS::MemoryPermission::kNoAccess:
@@ -166,7 +167,7 @@ void* Allocate(void* address, size_t size, OS::MemoryPermission access) {
 
 // static
 void* OS::Allocate(void* address, size_t size, size_t alignment,
-                   MemoryPermission access) {
+                   MemoryPermission access, MemoryPermission max_access) {
   size_t page_size = AllocatePageSize();
   DCHECK_EQ(0, size % page_size);
   DCHECK_EQ(0, alignment % page_size);
@@ -210,7 +211,8 @@ void OS::Release(void* address, size_t size) {
 }
 
 // static
-bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+bool OS::SetPermissions(void* address, size_t size, MemoryPermission access,
+                        MemoryPermission max_access) {
   int new_protection;
   switch (access) {
     case OS::MemoryPermission::kNoAccess:
@@ -236,8 +238,9 @@ bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
 }
 
 // static
-bool OS::RecommitPages(void* address, size_t size, MemoryPermission access) {
-  return SetPermissions(address, size, access);
+bool OS::RecommitPages(void* address, size_t size, MemoryPermission access,
+                       MemoryPermission max_access) {
+  return SetPermissions(address, size, access, max_access);
 }
 
 // static

@@ -287,7 +287,7 @@ void OS::Initialize(const char* const gc_fake_mmap) {
 
 // static
 void* OS::Allocate(void* address, size_t size, size_t alignment,
-                   MemoryPermission access,
+                   MemoryPermission access, MemoryPermission max_access,
                    std::optional<SharedMemoryHandle> handle) {
   // File handles aren't supported.
   DCHECK(!handle.has_value());
@@ -305,8 +305,9 @@ void OS::Free(void* address, size_t size) {
 
 // static
 void* OS::AllocateShared(void* address, size_t size,
-                         OS::MemoryPermission access, SharedMemoryHandle handle,
-                         uint64_t offset) {
+                         OS::MemoryPermission access,
+                         OS::MemoryPermission max_access,
+                         SharedMemoryHandle handle, uint64_t offset) {
   PlacementMode placement =
       address != nullptr ? PlacementMode::kUseHint : PlacementMode::kAnywhere;
   zx::unowned_vmo vmo(handle.GetPlatformHandle());
@@ -324,7 +325,8 @@ void OS::FreeShared(void* address, size_t size) {
 void OS::Release(void* address, size_t size) { Free(address, size); }
 
 // static
-bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+bool OS::SetPermissions(void* address, size_t size, MemoryPermission access,
+                        MemoryPermission max_access) {
   return SetPermissionsInternal(*zx::vmar::root_self(), CommitPageSize(),
                                 address, size, access);
 }
@@ -334,7 +336,8 @@ void OS::SetDataReadOnly(void* address, size_t size) {
 }
 
 // static
-bool OS::RecommitPages(void* address, size_t size, MemoryPermission access) {
+bool OS::RecommitPages(void* address, size_t size, MemoryPermission access,
+                       MemoryPermission max_access) {
   return SetPermissions(address, size, access);
 }
 
@@ -463,7 +466,8 @@ bool AddressSpaceReservation::FreeSubReservation(
 }
 
 bool AddressSpaceReservation::Allocate(void* address, size_t size,
-                                       OS::MemoryPermission access) {
+                                       OS::MemoryPermission access,
+                                       OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
   void* allocation = CreateAndMapVmo(
       *zx::unowned_vmar(vmar_), base(), OS::AllocatePageSize(), address,
@@ -480,6 +484,7 @@ bool AddressSpaceReservation::Free(void* address, size_t size) {
 
 bool AddressSpaceReservation::AllocateShared(void* address, size_t size,
                                              OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access,
                                              SharedMemoryHandle handle,
                                              uint64_t offset) {
   DCHECK(Contains(address, size));
@@ -496,15 +501,17 @@ bool AddressSpaceReservation::FreeShared(void* address, size_t size) {
 }
 
 bool AddressSpaceReservation::SetPermissions(void* address, size_t size,
-                                             OS::MemoryPermission access) {
+                                             OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
   return SetPermissionsInternal(*zx::unowned_vmar(vmar_), OS::CommitPageSize(),
                                 address, size, access);
 }
 
 bool AddressSpaceReservation::RecommitPages(void* address, size_t size,
-                                            OS::MemoryPermission access) {
-  return SetPermissions(address, size, access);
+                                            OS::MemoryPermission access,
+                                            OS::MemoryPermission max_access) {
+  return SetPermissions(address, size, access, max_access);
 }
 
 bool AddressSpaceReservation::DiscardSystemPages(void* address, size_t size) {

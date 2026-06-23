@@ -31,12 +31,8 @@ class V8_BASE_EXPORT PageAllocator
   void* GetRandomMmapAddr() override;
 
   void* AllocatePages(void* hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                       PageAllocator::Permission access,
                       PageAllocator::Permission max_access) override;
-#else
-                      PageAllocator::Permission access) override;
-#endif // __CHERI_PURE_CAPABILITY__
 
   bool CanAllocateSharedPages() override;
 
@@ -48,10 +44,12 @@ class V8_BASE_EXPORT PageAllocator
   bool ReleasePages(void* address, size_t size, size_t new_size) override;
 
   bool SetPermissions(void* address, size_t size,
-                      PageAllocator::Permission access) override;
+                      PageAllocator::Permission access,
+                      Permission max_access) override;
 
   bool RecommitPages(void* address, size_t size,
-                     PageAllocator::Permission access) override;
+                     PageAllocator::Permission access,
+                     Permission max_access) override;
 
   bool DiscardSystemPages(void* address, size_t size) override;
 

@@ -28,19 +28,15 @@ V8_WARN_UNUSED_RESULT bool TryUnprotect(PageAllocator& allocator,
   // The allocator needs to support committing the overall range.
   CHECK_EQ(0u, memory_region.size() % allocator.CommitPageSize());
   return allocator.SetPermissions(memory_region.base(), memory_region.size(),
+                                  PageAllocator::Permission::kReadWrite,
                                   PageAllocator::Permission::kReadWrite);
 }
 
 std::optional<MemoryRegion> ReserveMemoryRegion(PageAllocator& allocator,
                                                 size_t allocation_size) {
-  void* region_memory =
-      allocator.AllocatePages(nullptr, allocation_size, kPageSize,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                              PageAllocator::Permission::kNoAccess,
-                              PageAllocator::Permission::kReadWrite);
-#else
-                              PageAllocator::Permission::kNoAccess);
-#endif // __CHERI_PURE_CAPABILITY__
+  void* region_memory = allocator.AllocatePages(
+      nullptr, allocation_size, kPageSize, PageAllocator::Permission::kNoAccess,
+      PageAllocator::Permission::kReadWrite);
   if (!region_memory) {
     return std::nullopt;
   }
@@ -134,9 +130,11 @@ PageMemoryRegion* NormalPageMemoryPool::Take() {
   if (entry.is_decommitted) {
     // Also need to make the pages accessible.
     CHECK(entry.region->allocator().RecommitPages(
-        base, size, v8::PageAllocator::kReadWrite));
+        base, size, v8::PageAllocator::kReadWrite,
+        v8::PageAllocator::kReadWrite));
     bool ok = entry.region->allocator().SetPermissions(
-        base, size, v8::PageAllocator::kReadWrite);
+        base, size, v8::PageAllocator::kReadWrite,
+        v8::PageAllocator::kReadWrite);
     if (!ok) {
 #if V8_OS_POSIX
       // Changing permissions can return ENOMEM in several cases, including

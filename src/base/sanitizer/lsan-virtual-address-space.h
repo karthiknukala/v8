@@ -32,12 +32,8 @@ class V8_BASE_EXPORT LsanVirtualAddressSpace final
   Address RandomPageAddress() override { return vas_->RandomPageAddress(); }
 
   Address AllocatePages(Address hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                         PagePermissions permissions,
                         PagePermissions max_permissions) override;
-#else   // !__CHERI_PURE_CAPABILITY__
-                        PagePermissions permissions) override;
-#endif  // !__CHERI_PURE_CAPABILITY__
 
   void FreePages(Address address, size_t size) override;
 
@@ -49,13 +45,15 @@ class V8_BASE_EXPORT LsanVirtualAddressSpace final
   void FreeSharedPages(Address address, size_t size) override;
 
   bool SetPagePermissions(Address address, size_t size,
-                          PagePermissions permissions) override {
-    return vas_->SetPagePermissions(address, size, permissions);
+                          PagePermissions permissions,
+                          PagePermissions max_permissions) override {
+    return vas_->SetPagePermissions(address, size, permissions,
+                                    max_permissions);
   }
 
-  bool RecommitPages(Address address, size_t size,
-                     PagePermissions permissions) override {
-    return vas_->RecommitPages(address, size, permissions);
+  bool RecommitPages(Address address, size_t size, PagePermissions permissions,
+                     PagePermissions max_permissions) override {
+    return vas_->RecommitPages(address, size, permissions, max_permissions);
   }
 
   bool AllocateGuardRegion(Address address, size_t size) override {

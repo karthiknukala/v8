@@ -12,21 +12,12 @@ VirtualAddressSpacePageAllocator::VirtualAddressSpacePageAllocator(
     : vas_(vas) {}
 
 void* VirtualAddressSpacePageAllocator::AllocatePages(
-    void* hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
-    PageAllocator::Permission access,
+    void* hint, size_t size, size_t alignment, PageAllocator::Permission access,
     PageAllocator::Permission max_access) {
-#else
-    PageAllocator::Permission access) {
-#endif // __CHERI_PURE_CAPABILITY__
   return reinterpret_cast<void*>(
       vas_->AllocatePages(reinterpret_cast<Address>(hint), size, alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                           static_cast<PagePermissions>(access),
                           static_cast<PagePermissions>(max_access)));
-#else   // !__CHERI_PURE_CAPABILITY__
-                          static_cast<PagePermissions>(access)));
-#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 bool VirtualAddressSpacePageAllocator::FreePages(void* ptr, size_t size) {
@@ -62,15 +53,19 @@ bool VirtualAddressSpacePageAllocator::ReleasePages(void* ptr, size_t size,
 }
 
 bool VirtualAddressSpacePageAllocator::SetPermissions(
-    void* address, size_t size, PageAllocator::Permission access) {
+    void* address, size_t size, PageAllocator::Permission access,
+    PageAllocator::Permission max_access) {
   return vas_->SetPagePermissions(reinterpret_cast<Address>(address), size,
-                                  static_cast<PagePermissions>(access));
+                                  static_cast<PagePermissions>(access),
+                                  static_cast<PagePermissions>(max_access));
 }
 
 bool VirtualAddressSpacePageAllocator::RecommitPages(
-    void* address, size_t size, PageAllocator::Permission access) {
+    void* address, size_t size, PageAllocator::Permission access,
+    PageAllocator::Permission max_access) {
   return vas_->RecommitPages(reinterpret_cast<Address>(address), size,
-                             static_cast<PagePermissions>(access));
+                             static_cast<PagePermissions>(access),
+                             static_cast<PagePermissions>(max_access));
 }
 
 bool VirtualAddressSpacePageAllocator::DiscardSystemPages(void* address,

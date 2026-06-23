@@ -76,24 +76,17 @@ Address VirtualAddressSpace::RandomPageAddress() {
 
 Address VirtualAddressSpace::AllocatePages(Address hint, size_t size,
                                            size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                                            PagePermissions permissions,
                                            PagePermissions max_permissions) {
-#else  // !__CHERI_PURE_CAPABILITY__
-                                           PagePermissions permissions) {
-#endif // !__CHERI_PURE_CAPABILITY__
   DCHECK(IsAligned(alignment, allocation_granularity()));
   DCHECK(IsAligned(hint, alignment));
   DCHECK(IsAligned(size, allocation_granularity()));
+  DCHECK(IsSubset(max_permissions, max_page_permissions()));
 
   return reinterpret_cast<Address>(
       OS::Allocate(reinterpret_cast<void*>(hint), size, alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                    static_cast<OS::MemoryPermission>(permissions),
-                   static_cast<OS::MemoryPermission>(max_permissions)));
-#else
-      static_cast<OS::MemoryPermission>(permissions)));
-#endif // __CHERI_PURE_CAPABILITY__
+                   static_cast<OS::MemoryPermission>(max_page_permissions())));
 }
 
 void VirtualAddressSpace::FreePages(Address address, size_t size) {
@@ -104,12 +97,16 @@ void VirtualAddressSpace::FreePages(Address address, size_t size) {
 }
 
 bool VirtualAddressSpace::SetPagePermissions(Address address, size_t size,
-                                             PagePermissions permissions) {
+                                             PagePermissions permissions,
+                                             PagePermissions max_permissions) {
   DCHECK(IsAligned(address, page_size()));
   DCHECK(IsAligned(size, page_size()));
+  DCHECK(IsSubset(max_permissions, max_page_permissions()));
 
-  return OS::SetPermissions(reinterpret_cast<void*>(address), size,
-                            static_cast<OS::MemoryPermission>(permissions));
+  return OS::SetPermissions(
+      reinterpret_cast<void*>(address), size,
+      static_cast<OS::MemoryPermission>(permissions),
+      static_cast<OS::MemoryPermission>(max_page_permissions()));
 }
 
 bool VirtualAddressSpace::AllocateGuardRegion(Address address, size_t size) {
@@ -118,12 +115,8 @@ bool VirtualAddressSpace::AllocateGuardRegion(Address address, size_t size) {
 
   void* hint = reinterpret_cast<void*>(address);
   void* result = OS::Allocate(hint, size, allocation_granularity(),
-#if defined(__CHERI_PURE_CAPABILITY__)
                               OS::MemoryPermission::kNoAccess,
                               OS::MemoryPermission::kNoAccess);
-#else
-                              OS::MemoryPermission::kNoAccess);
-#endif // __CHERI_PURE_CAPABILITY__
   if (result && result != hint) {
     OS::Free(result, size);
   }
@@ -151,7 +144,9 @@ Address VirtualAddressSpace::AllocateSharedPages(Address hint, size_t size,
 
   return reinterpret_cast<Address>(OS::AllocateShared(
       reinterpret_cast<void*>(hint), size,
-      static_cast<OS::MemoryPermission>(permissions), handle, offset));
+      static_cast<OS::MemoryPermission>(permissions),
+      static_cast<OS::MemoryPermission>(max_page_permissions()), handle,
+      offset));
 }
 
 void VirtualAddressSpace::FreeSharedPages(Address address, size_t size) {
@@ -186,12 +181,16 @@ VirtualAddressSpace::ActiveMemoryProtectionKey() {
 }
 
 bool VirtualAddressSpace::RecommitPages(Address address, size_t size,
-                                        PagePermissions permissions) {
+                                        PagePermissions permissions,
+                                        PagePermissions max_permissions) {
   DCHECK(IsAligned(address, page_size()));
   DCHECK(IsAligned(size, page_size()));
+  DCHECK(IsSubset(max_permissions, max_page_permissions()));
 
-  return OS::RecommitPages(reinterpret_cast<void*>(address), size,
-                           static_cast<OS::MemoryPermission>(permissions));
+  return OS::RecommitPages(
+      reinterpret_cast<void*>(address), size,
+      static_cast<OS::MemoryPermission>(permissions),
+      static_cast<OS::MemoryPermission>(max_page_permissions()));
 }
 
 bool VirtualAddressSpace::DiscardSystemPages(Address address, size_t size) {
@@ -275,29 +274,23 @@ Address VirtualAddressSubspace::RandomPageAddress() {
 
 Address VirtualAddressSubspace::AllocatePages(Address hint, size_t size,
                                               size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                                               PagePermissions permissions,
                                               PagePermissions max_permissions) {
-#else   // !__CHERI_PURE_CAPABILITY__
-                                              PagePermissions permissions) {
-#endif  // !__CHERI_PURE_CAPABILITY__
   DCHECK(IsAligned(alignment, allocation_granularity()));
   DCHECK(IsAligned(hint, alignment));
   DCHECK(IsAligned(size, allocation_granularity()));
   DCHECK(IsSubset(permissions, max_page_permissions()));
+  DCHECK(IsSubset(max_permissions, max_page_permissions()));
 
   MutexGuard guard(&mutex_);
 
   Address address = region_allocator_.AllocateRegion(hint, size, alignment);
   if (address == RegionAllocator::kAllocationFailure) return kNullAddress;
 
-  if (!reservation_.Allocate(reinterpret_cast<void*>(address), size,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                             static_cast<OS::MemoryPermission>(permissions),
-                             static_cast<OS::MemoryPermission>(max_page_permissions()))) {
-#else
-                             static_cast<OS::MemoryPermission>(permissions))) {
-#endif // __CHERI_PURE_CAPABILITY__
+  if (!reservation_.Allocate(
+          reinterpret_cast<void*>(address), size,
+          static_cast<OS::MemoryPermission>(permissions),
+          static_cast<OS::MemoryPermission>(max_page_permissions()))) {
     // This most likely means that we ran out of memory.
     CHECK_EQ(size, region_allocator_.FreeRegion(address));
     return kNullAddress;
@@ -335,15 +328,18 @@ void VirtualAddressSubspace::FreePages(Address address, size_t size) {
 #endif  // V8_HAS_PKU_SUPPORT
 }
 
-bool VirtualAddressSubspace::SetPagePermissions(Address address, size_t size,
-                                                PagePermissions permissions) {
+bool VirtualAddressSubspace::SetPagePermissions(
+    Address address, size_t size, PagePermissions permissions,
+    PagePermissions max_permissions) {
   DCHECK(IsAligned(address, page_size()));
   DCHECK(IsAligned(size, page_size()));
   DCHECK(IsSubset(permissions, max_page_permissions()));
+  DCHECK(IsSubset(max_permissions, max_page_permissions()));
 
   return reservation_.SetPermissions(
       reinterpret_cast<void*>(address), size,
-      static_cast<OS::MemoryPermission>(permissions));
+      static_cast<OS::MemoryPermission>(permissions),
+      static_cast<OS::MemoryPermission>(max_page_permissions()));
 }
 
 bool VirtualAddressSubspace::AllocateGuardRegion(Address address, size_t size) {
@@ -381,7 +377,9 @@ Address VirtualAddressSubspace::AllocateSharedPages(Address hint, size_t size,
 
   if (!reservation_.AllocateShared(
           reinterpret_cast<void*>(address), size,
-          static_cast<OS::MemoryPermission>(permissions), handle, offset)) {
+          static_cast<OS::MemoryPermission>(permissions),
+          static_cast<OS::MemoryPermission>(max_page_permissions()), handle,
+          offset)) {
     CHECK_EQ(size, region_allocator_.FreeRegion(address));
     return kNullAddress;
   }
@@ -447,14 +445,17 @@ VirtualAddressSubspace::ActiveMemoryProtectionKey() {
 }
 
 bool VirtualAddressSubspace::RecommitPages(Address address, size_t size,
-                                           PagePermissions permissions) {
+                                           PagePermissions permissions,
+                                           PagePermissions max_permissions) {
   DCHECK(IsAligned(address, page_size()));
   DCHECK(IsAligned(size, page_size()));
   DCHECK(IsSubset(permissions, max_page_permissions()));
+  DCHECK(IsSubset(max_permissions, max_page_permissions()));
 
   return reservation_.RecommitPages(
       reinterpret_cast<void*>(address), size,
-      static_cast<OS::MemoryPermission>(permissions));
+      static_cast<OS::MemoryPermission>(permissions),
+      static_cast<OS::MemoryPermission>(max_page_permissions()));
 }
 
 bool VirtualAddressSubspace::DiscardSystemPages(Address address, size_t size) {

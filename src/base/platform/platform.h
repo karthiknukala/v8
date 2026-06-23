@@ -417,13 +417,12 @@ class V8_BASE_EXPORT OS {
 
   V8_WARN_UNUSED_RESULT static void* Allocate(
       void* address, size_t size, size_t alignment, MemoryPermission access,
-#ifdef __CHERI_PURE_CAPABILITY__
       MemoryPermission max_access,
-#endif
       std::optional<SharedMemoryHandle> handle = std::nullopt);
 
-  V8_WARN_UNUSED_RESULT static void* AllocateShared(size_t size,
-                                                    MemoryPermission access);
+  V8_WARN_UNUSED_RESULT static void* AllocateShared(
+      size_t size, OS::MemoryPermission access,
+      OS::MemoryPermission max_access);
 
   V8_WARN_UNUSED_RESULT static void* RemapShared(void* old_address,
                                                  void* new_address,
@@ -431,20 +430,22 @@ class V8_BASE_EXPORT OS {
 
   static void Free(void* address, size_t size);
 
-  V8_WARN_UNUSED_RESULT static void* AllocateShared(void* address, size_t size,
-                                                    OS::MemoryPermission access,
-                                                    SharedMemoryHandle handle,
-                                                    uint64_t offset);
+  V8_WARN_UNUSED_RESULT static void* AllocateShared(
+      void* address, size_t size, OS::MemoryPermission access,
+      OS::MemoryPermission max_access, SharedMemoryHandle handle,
+      uint64_t offset);
 
   static void FreeShared(void* address, size_t size);
 
   static void Release(void* address, size_t size);
 
   V8_WARN_UNUSED_RESULT static bool SetPermissions(void* address, size_t size,
-                                                   MemoryPermission access);
+                                                   MemoryPermission access,
+                                                   MemoryPermission max_access);
 
   V8_WARN_UNUSED_RESULT static bool RecommitPages(void* address, size_t size,
-                                                  MemoryPermission access);
+                                                  MemoryPermission access,
+                                                  MemoryPermission max_access);
 
   V8_WARN_UNUSED_RESULT static bool DiscardSystemPages(void* address,
                                                        size_t size);
@@ -508,27 +509,25 @@ class V8_BASE_EXPORT AddressSpaceReservation {
   }
 
   V8_WARN_UNUSED_RESULT bool Allocate(void* address, size_t size,
-#if defined(__CHERI_PURE_CAPABILITY__)
                                       OS::MemoryPermission access,
                                       OS::MemoryPermission max_access);
-#else
-                                      OS::MemoryPermission access);
-#endif // __CHERI_PURE_CAPABILITY__
-
   V8_WARN_UNUSED_RESULT bool Free(void* address, size_t size);
 
   V8_WARN_UNUSED_RESULT bool AllocateShared(void* address, size_t size,
                                             OS::MemoryPermission access,
+                                            OS::MemoryPermission max_access,
                                             SharedMemoryHandle handle,
                                             uint64_t offset);
 
   V8_WARN_UNUSED_RESULT bool FreeShared(void* address, size_t size);
 
   V8_WARN_UNUSED_RESULT bool SetPermissions(void* address, size_t size,
-                                            OS::MemoryPermission access);
+                                            OS::MemoryPermission access,
+                                            OS::MemoryPermission max_access);
 
   V8_WARN_UNUSED_RESULT bool RecommitPages(void* address, size_t size,
-                                           OS::MemoryPermission access);
+                                           OS::MemoryPermission access,
+                                           OS::MemoryPermission max_access);
 
   V8_WARN_UNUSED_RESULT bool DiscardSystemPages(void* address, size_t size);
 

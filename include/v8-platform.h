@@ -426,11 +426,11 @@ class TracingController {
       char phase, const uint8_t* category_enabled_flag, const char* name,
       const char* scope, uint64_t id, uint64_t bind_id, int32_t num_args,
       const char** arg_names, const uint8_t* arg_types,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
       const uintptr_t* arg_values,
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
       const uint64_t* arg_values,
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
       std::unique_ptr<ConvertableToTraceFormat>* arg_convertables,
       unsigned int flags) {
     return 0;
@@ -439,11 +439,11 @@ class TracingController {
       char phase, const uint8_t* category_enabled_flag, const char* name,
       const char* scope, uint64_t id, uint64_t bind_id, int32_t num_args,
       const char** arg_names, const uint8_t* arg_types,
-#if defined(__CHERI_PURE_CAPABILITY__)
+#ifdef __CHERI_PURE_CAPABILITY__
       const uintptr_t* arg_values,
-#else   // !__CHERI_PURE_CAPABILITY__
+#else
       const uint64_t* arg_values,
-#endif  // !__CHERI_PURE_CAPABILITY__
+#endif
       std::unique_ptr<ConvertableToTraceFormat>* arg_convertables,
       unsigned int flags, int64_t timestamp) {
     return 0;
@@ -631,12 +631,8 @@ class PageAllocator {
    * Allocates memory in range with the given alignment and permission.
    */
   virtual void* AllocatePages(void* address, size_t length, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
                               Permission permissions,
                               Permission max_permissions) = 0;
-#else
-                              Permission permissions) = 0;
-#endif // __CHERI_PURE_CAPABILITY__
 
   /**
    * Allocates memory in range with the given alignment and permission. In
@@ -644,8 +640,10 @@ class PageAllocator {
    * underlying implementation may not make use of hints.
    */
   virtual void* AllocatePages(size_t length, size_t alignment,
-                              Permission permissions, AllocationHint hint) {
-    return AllocatePages(hint.Address(), length, alignment, permissions);
+                              Permission permissions,
+                              Permission max_permissions, AllocationHint hint) {
+    return AllocatePages(hint.Address(), length, alignment, permissions,
+                         max_permissions);
   }
 
   /**
@@ -654,7 +652,8 @@ class PageAllocator {
    * either not supported or the object could not be resized in-place.
    */
   virtual bool ResizeAllocationAt(void* address, size_t old_length,
-                                  size_t new_length, Permission permissions) {
+                                  size_t new_length, Permission permissions,
+                                  Permission max_permissions) {
     return false;
   }
 
@@ -673,7 +672,8 @@ class PageAllocator {
    * Sets permissions on pages in an allocated range.
    */
   virtual bool SetPermissions(void* address, size_t length,
-                              Permission permissions) = 0;
+                              Permission permissions,
+                              Permission max_permissions) = 0;
 
   /**
    * Recommits discarded pages in the given range with given permissions.
@@ -681,11 +681,11 @@ class PageAllocator {
    * before they are used again.
    */
   virtual bool RecommitPages(void* address, size_t length,
-                             Permission permissions) {
+                             Permission permissions,
+                             Permission max_permissions) {
     // TODO(v8:12797): make it pure once it's implemented on Chromium side.
     return false;
   }
-
   /**
    * Frees memory in the given [address, address + size) range. address and size
    * should be operating system page-aligned. The next write to this
@@ -933,14 +933,9 @@ class VirtualAddressSpace {
    * failure.
    */
   static constexpr Address kNoHint = 0;
-  virtual V8_WARN_UNUSED_RESULT Address
-  AllocatePages(Address hint, size_t size, size_t alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                PagePermissions permissions,
-                PagePermissions max_permissions) = 0;
-#else   // !__CHERI_PURE_CAPABILITY__
-                PagePermissions permissions) = 0;
-#endif  // !__CHERI_PURE_CAPABILITY__
+  virtual V8_WARN_UNUSED_RESULT Address AllocatePages(
+      Address hint, size_t size, size_t alignment, PagePermissions permissions,
+      PagePermissions max_permissions) = 0;
 
   /**
    * Frees previously allocated pages.
@@ -974,7 +969,8 @@ class VirtualAddressSpace {
    * \returns true on success, false on OOM.
    */
   virtual V8_WARN_UNUSED_RESULT bool SetPagePermissions(
-      Address address, size_t size, PagePermissions permissions) = 0;
+      Address address, size_t size, PagePermissions permissions,
+      PagePermissions max_permissions) = 0;
 
   /**
    * Creates a guard region at the specified address.
@@ -1142,7 +1138,8 @@ class VirtualAddressSpace {
    * \returns true on success, false otherwise.
    */
   virtual V8_WARN_UNUSED_RESULT bool RecommitPages(
-      Address address, size_t size, PagePermissions permissions) = 0;
+      Address address, size_t size, PagePermissions permissions,
+      PagePermissions max_permissions) = 0;
 
   /**
    * Frees memory in the given [address, address + size) range. address and

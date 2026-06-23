@@ -182,7 +182,8 @@ void OS::DestroySharedMemoryHandle(SharedMemoryHandle handle) {
 
 // static
 void* OS::AllocateShared(void* hint, size_t size, MemoryPermission access,
-                         SharedMemoryHandle handle, uint64_t offset) {
+                         MemoryPermission max_access, SharedMemoryHandle handle,
+                         uint64_t offset) {
   DCHECK_EQ(0, size % AllocatePageSize());
 
   mach_vm_address_t addr = reinterpret_cast<mach_vm_address_t>(hint);
@@ -230,6 +231,7 @@ bool OS::RemapPages(const void* address, size_t size, void* new_address,
 
 bool AddressSpaceReservation::AllocateShared(void* address, size_t size,
                                              OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access,
                                              SharedMemoryHandle handle,
                                              uint64_t offset) {
   DCHECK(Contains(address, size));

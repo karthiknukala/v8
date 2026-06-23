@@ -5,6 +5,7 @@
 #include "src/base/page-allocator.h"
 
 #include "src/base/platform/platform.h"
+#include "src/common/globals.h"
 
 #if V8_OS_DARWIN
 #include <sys/mman.h>  // For MAP_JIT.
@@ -41,31 +42,18 @@ void PageAllocator::SetRandomMmapSeed(int64_t seed) {
 void* PageAllocator::GetRandomMmapAddr() {
   return base::OS::GetRandomMmapAddr();
 }
-
 void* PageAllocator::AllocatePages(void* hint, size_t size, size_t alignment,
-#ifdef __CHERI_PURE_CAPABILITY
                                    PageAllocator::Permission access,
                                    PageAllocator::Permission max_access) {
-#else
-                                   PageAllocator::Permission access) {
-#endif
 #if !V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !V8_HAS_BECORE_JIT_WRITE_PROTECT
-  // kNoAccessWillJitLater is only used on Apple Silicon. Map it to regular
-  // kNoAccess on other platforms, so code doesn't have to handle both enum
-  // values.
-#if !defined(__CHERI_PURE_CAPABILITY__)
-  if (access == PageAllocator::kNoAccessWillJitLater) {
+  if (!V8_CHERI_PURECAP_BOOL &&
+      access == PageAllocator::kNoAccessWillJitLater) {
     access = PageAllocator::kNoAccess;
   }
-#endif // !__CHERI_PURE_CAPABILITY
 #endif
-  return base::OS::Allocate(hint, size, alignment,
-#if defined(__CHERI_PURE_CAPABILITY__)
-                            static_cast<base::OS::MemoryPermission>(access),
-                            static_cast<base::OS::MemoryPermission>(max_access));
-#else
-                            static_cast<base::OS::MemoryPermission>(access));
-#endif // __CHERI_PURE_CAPABILITY__
+  return base::OS::Allocate(
+      hint, size, alignment, static_cast<base::OS::MemoryPermission>(access),
+      static_cast<base::OS::MemoryPermission>(max_access));
 }
 
 class SharedMemoryMapping : public ::v8::PageAllocator::SharedMemoryMapping {
@@ -118,11 +106,13 @@ std::unique_ptr<v8::PageAllocator::SharedMemory>
 PageAllocator::AllocateSharedPages(size_t size, const void* original_address) {
 #ifdef V8_OS_LINUX
   void* ptr =
-      base::OS::AllocateShared(size, base::OS::MemoryPermission::kReadWrite);
+      base::OS::AllocateShared(size, base::OS::MemoryPermission::kReadWrite,
+                               base::OS::MemoryPermission::kReadWrite);
   CHECK_NOT_NULL(ptr);
   memcpy(ptr, original_address, size);
   bool success = base::OS::SetPermissions(
-      ptr, size, base::OS::MemoryPermission::kReadWrite);
+      ptr, size, base::OS::MemoryPermission::kReadWrite,
+      base::OS::MemoryPermission::kReadWrite);
   CHECK(success);
 
   auto shared_memory =
@@ -155,15 +145,19 @@ bool PageAllocator::ReleasePages(void* address, size_t size, size_t new_size) {
 }
 
 bool PageAllocator::SetPermissions(void* address, size_t size,
-                                   PageAllocator::Permission access) {
+                                   PageAllocator::Permission access,
+                                   PageAllocator::Permission max_access) {
   return base::OS::SetPermissions(
-      address, size, static_cast<base::OS::MemoryPermission>(access));
+      address, size, static_cast<base::OS::MemoryPermission>(access),
+      static_cast<base::OS::MemoryPermission>(max_access));
 }
 
 bool PageAllocator::RecommitPages(void* address, size_t size,
-                                  PageAllocator::Permission access) {
+                                  PageAllocator::Permission access,
+                                  PageAllocator::Permission max_access) {
   return base::OS::RecommitPages(
-      address, size, static_cast<base::OS::MemoryPermission>(access));
+      address, size, static_cast<base::OS::MemoryPermission>(access),
+      static_cast<base::OS::MemoryPermission>(max_access));
 }
 
 bool PageAllocator::DiscardSystemPages(void* address, size_t size) {

@@ -46,6 +46,7 @@
 #include "src/base/platform/platform.h"
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
+#include "src/common/globals.h"
 
 #ifdef V8_FAST_TLS_SUPPORTED
 #include <atomic>
@@ -166,18 +167,13 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access, PageType page_type,
 }
 
 void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
-#ifdef __CHERI_PURE_CAPABILITY__
-               MemoryPermission max_access,
-#endif
-               PageType page_type,
+               OS::MemoryPermission max_access, PageType page_type,
                std::optional<SharedMemoryHandle> handle = std::nullopt,
                bool fixed = false) {
-#ifdef __CHERI_PURE_CAPABILITY__
   int prot = GetProtectionFromMemoryPermission(access, max_access);
+#ifdef __CHERI_PURE_CAPABILITY__
   hint = reinterpret_cast<void*>(
       static_cast<uintptr_t>(reinterpret_cast<ptraddr_t>(hint)));
-#else
-  int prot = GetProtectionFromMemoryPermission(access);
 #endif
   int flags = GetFlagsForMemoryPermission(access, page_type, handle, fixed);
 #if V8_OS_DARWIN
@@ -218,11 +214,11 @@ void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
 
 }  // namespace
 
-#ifdef __CHERI_PURE_CAPABILITY__
 int GetProtectionFromMemoryPermission(OS::MemoryPermission access,
 				      OS::MemoryPermission max_access) {
   int prot = GetProtectionFromMemoryPermission(access);
   switch (max_access) {
+#ifdef __CHERI_PURE_CAPABILITY__
     case OS::MemoryPermission::kNoAccessWillJitLater:
       return PROT_MAX(PROT_READ | PROT_WRITE | PROT_EXEC) | prot;
     case OS::MemoryPermission::kRead:
@@ -233,12 +229,12 @@ int GetProtectionFromMemoryPermission(OS::MemoryPermission access,
       return PROT_MAX(PROT_READ | PROT_EXEC) | prot;
     case OS::MemoryPermission::kReadWriteExecute:
       return PROT_MAX(PROT_READ | PROT_WRITE | PROT_EXEC) | prot;
+#endif
     default:
       return prot;
   }
   UNREACHABLE();
 }
-#endif // __CHERI_PURE_CAPABILITY__
 
 // TODO(v8:10026): Add the right permission flag to make executable pages
 // guarded.
@@ -337,11 +333,13 @@ void OS::EnsureAlternativeSignalStackIsAvailableForCurrentThread() {
   // ensure that we catch stack overflows (and similar issues) on that stack.
   const size_t kPageSize = AllocatePageSize();
   const size_t kAllocationSize = kStackSize + 2 * kPageSize;
-  void* ptr = Allocate(nullptr, kAllocationSize, kPageSize,
-                       MemoryPermission::kNoAccess);
+  void* ptr =
+      Allocate(nullptr, kAllocationSize, kPageSize, MemoryPermission::kNoAccess,
+               MemoryPermission::kReadWrite);
   CHECK_NE(ptr, nullptr);
   void* stack_ptr = reinterpret_cast<char*>(ptr) + kPageSize;
-  CHECK(SetPermissions(stack_ptr, kStackSize, MemoryPermission::kReadWrite));
+  CHECK(SetPermissions(stack_ptr, kStackSize, MemoryPermission::kReadWrite,
+                       MemoryPermission::kReadWrite));
 
   ss.ss_sp = stack_ptr;
   ss.ss_size = kStackSize;
@@ -396,11 +394,7 @@ void OS::SetRandomMmapSeed(int64_t seed) {
 
 // static
 void* OS::GetRandomMmapAddr() {
-#if defined(__CHERI_PURE_CAPABILITY__)
   ptraddr_t raw_addr;
-#else
-  uintptr_t raw_addr;
-#endif
   {
     MutexGuard guard(rng_mutex.Pointer());
     GetPlatformRandomNumberGenerator()->NextBytes(&raw_addr, sizeof(raw_addr));
@@ -505,10 +499,7 @@ void* OS::GetRandomMmapAddr() {
 #if !V8_OS_ZOS
 // static
 void* OS::Allocate(void* hint, size_t size, size_t alignment,
-                   MemoryPermission access,
-#ifdef __CHERI_PURE_CAPABILITY__
-                   MemoryPermission max_access,
-#endif
+                   OS::MemoryPermission access, OS::MemoryPermission max_access,
                    std::optional<SharedMemoryHandle> handle) {
   size_t page_size = AllocatePageSize();
   DCHECK_EQ(0, size % page_size);
@@ -518,7 +509,8 @@ void* OS::Allocate(void* hint, size_t size, size_t alignment,
   size_t request_size = size + (alignment - page_size);
   request_size = RoundUp(request_size, OS::AllocatePageSize());
   PageType page_type = PageType::kPrivate;
-  void* result = base::Allocate(hint, request_size, access, max_access, page_type, handle);
+  void* result =
+      base::Allocate(hint, request_size, access, max_access, page_type, handle);
   if (result == nullptr) return nullptr;
 
   // Unmap memory allocated before the aligned base address.
@@ -544,8 +536,9 @@ void* OS::Allocate(void* hint, size_t size, size_t alignment,
   if (aligned_base != base && handle.has_value()) {
     // We have to remap because the base of mapping must correspond to the base
     // of the the underlying file.
-    uint8_t* new_base = reinterpret_cast<uint8_t*>(base::Allocate(
-        aligned_base, size, access, page_type, handle, true /* fixed */));
+    uint8_t* new_base = reinterpret_cast<uint8_t*>(
+        base::Allocate(aligned_base, size, access, max_access, page_type,
+                       handle, true /* fixed */));
     if (new_base != aligned_base) {
       return nullptr;
     }
@@ -555,13 +548,10 @@ void* OS::Allocate(void* hint, size_t size, size_t alignment,
 }
 
 // static
-void* OS::AllocateShared(size_t size, MemoryPermission access) {
+void* OS::AllocateShared(size_t size, OS::MemoryPermission access,
+                         OS::MemoryPermission max_access) {
   DCHECK_EQ(0, size % AllocatePageSize());
-#ifdef __CHERI_PURE_CAPABILITY__
-  return base::Allocate(nullptr, size, access, access, PageType::kShared);
-#else   // !__CHERI_PURE_CAPABILITY__
-  return base::Allocate(nullptr, size, access, PageType::kShared);
-#endif  // __CHERI_PURE_CAPABILITY__
+  return base::Allocate(nullptr, size, access, max_access, PageType::kShared);
 }
 
 // static
@@ -574,10 +564,11 @@ void OS::Free(void* address, size_t size) {
 // Darwin specific implementation in platform-darwin.cc.
 #if !defined(V8_OS_DARWIN)
 // static
-void* OS::AllocateShared(void* hint, size_t size, MemoryPermission access,
+void* OS::AllocateShared(void* hint, size_t size, OS::MemoryPermission access,
+                         OS::MemoryPermission max_access,
                          SharedMemoryHandle handle, uint64_t offset) {
   DCHECK_EQ(0, size % AllocatePageSize());
-  int prot = GetProtectionFromMemoryPermission(access);
+  int prot = GetProtectionFromMemoryPermission(access, max_access);
   int fd = handle.GetPlatformHandle();
   void* result = mmap(hint, size, prot, MAP_SHARED, fd, offset);
   if (result == MAP_FAILED) return nullptr;
@@ -599,14 +590,15 @@ void OS::Release(void* address, size_t size) {
 }
 
 // static
-bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+bool OS::SetPermissions(void* address, size_t size, OS::MemoryPermission access,
+                        OS::MemoryPermission max_access) {
   DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
   DCHECK_EQ(0, size % CommitPageSize());
 #if defined(__CHERI_PURE_CAPABILITY__) && V8_OS_FREEBSD
   DCHECK_NE(0, V8_CHERI_PERMS(address) & CHERI_PERM_SW_VMEM);
 #endif
 
-  int prot = GetProtectionFromMemoryPermission(access);
+  int prot = GetProtectionFromMemoryPermission(access, max_access);
   int ret = mprotect(address, size, prot);
 
   // Setting permissions can fail if the limit of VMAs is exceeded.
@@ -656,7 +648,8 @@ void OS::SetDataReadOnly(void* address, size_t size) {
 }
 
 // static
-bool OS::RecommitPages(void* address, size_t size, MemoryPermission access) {
+bool OS::RecommitPages(void* address, size_t size, OS::MemoryPermission access,
+                       OS::MemoryPermission max_access) {
   DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
   DCHECK_EQ(0, size % CommitPageSize());
 
@@ -756,32 +749,23 @@ bool OS::CanReserveAddressSpace() { return true; }
 std::optional<AddressSpaceReservation> OS::CreateAddressSpaceReservation(
     void* hint, size_t size, size_t alignment, MemoryPermission max_permission,
     std::optional<SharedMemoryHandle> handle) {
-#ifdef __CHERI_PURE_CAPABILITY__
   // VM_PROT_ADD_CAP is never called on prot and max_prot in mprotect itself.
   // https://github.com/CTSRD-CHERI/cheribsd/issues/1818
-  MemoryPermission permission = MemoryPermission::kReadWrite;
-#else
   // On POSIX, address space reservations are backed by private memory mappings.
-  MemoryPermission permission = MemoryPermission::kNoAccess;
-#endif  // __CHERI_PURE_CAPABILITY__
+  MemoryPermission permission = V8_CHERI_PURECAP_BOOL
+                                    ? MemoryPermission::kReadWrite
+                                    : MemoryPermission::kNoAccess;
   if (max_permission == MemoryPermission::kReadWriteExecute) {
     permission = MemoryPermission::kNoAccessWillJitLater;
   }
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  void* reservation = Allocate(hint, size, alignment, permission, max_permission, handle);
-#endif
-  void* reservation = Allocate(hint, size, alignment, permission, handle);
-#endif
+  void* reservation =
+      Allocate(hint, size, alignment, permission, max_permission, handle);
   if (!reservation && permission == MemoryPermission::kNoAccessWillJitLater) {
     // Retry without MAP_JIT, for example in case we are running on an old OS X.
     permission = MemoryPermission::kNoAccess;
-#ifdef __CHERI_PURE_CAPABILITY__
     reservation =
         Allocate(hint, size, alignment, permission, max_permission, handle);
-#else
-    reservation = Allocate(hint, size, alignment, permission, handle);
-#endif
   }
 
   if (!reservation) return {};
@@ -1214,12 +1198,8 @@ bool AddressSpaceReservation::FreeSubReservation(
 }
 
 bool AddressSpaceReservation::Allocate(void* address, size_t size,
-#ifdef __CHERI_PURE_CAPABILITY__
                                        OS::MemoryPermission access,
                                        OS::MemoryPermission max_access) {
-#else   // !__CHERI_PURE_CAPABILITY__
-                                       OS::MemoryPermission access) {
-#endif  // __CHERI_PURE_CAPABILITY__
   // The region is already mmap'ed, so it just has to be made accessible now.
   DCHECK(Contains(address, size));
   if (access == OS::MemoryPermission::kNoAccess) {
@@ -1228,7 +1208,7 @@ bool AddressSpaceReservation::Allocate(void* address, size_t size,
     // probably not desired here.
     return true;
   }
-  return OS::SetPermissions(address, size, access);
+  return OS::SetPermissions(address, size, access, max_access);
 }
 
 bool AddressSpaceReservation::Free(void* address, size_t size) {
@@ -1242,10 +1222,11 @@ bool AddressSpaceReservation::Free(void* address, size_t size) {
 #if !defined(V8_OS_DARWIN)
 bool AddressSpaceReservation::AllocateShared(void* address, size_t size,
                                              OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access,
                                              SharedMemoryHandle handle,
                                              uint64_t offset) {
   DCHECK(Contains(address, size));
-  int prot = GetProtectionFromMemoryPermission(access);
+  int prot = GetProtectionFromMemoryPermission(access, max_access);
   int fd = handle.GetPlatformHandle();
   return mmap(address, size, prot, MAP_SHARED | MAP_FIXED, fd, offset) !=
          MAP_FAILED;
@@ -1260,15 +1241,17 @@ bool AddressSpaceReservation::FreeShared(void* address, size_t size) {
 #endif  // !V8_OS_ZOS
 
 bool AddressSpaceReservation::SetPermissions(void* address, size_t size,
-                                             OS::MemoryPermission access) {
+                                             OS::MemoryPermission access,
+                                             OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
-  return OS::SetPermissions(address, size, access);
+  return OS::SetPermissions(address, size, access, max_access);
 }
 
 bool AddressSpaceReservation::RecommitPages(void* address, size_t size,
-                                            OS::MemoryPermission access) {
+                                            OS::MemoryPermission access,
+                                            OS::MemoryPermission max_access) {
   DCHECK(Contains(address, size));
-  return OS::RecommitPages(address, size, access);
+  return OS::RecommitPages(address, size, access, max_access);
 }
 
 bool AddressSpaceReservation::DiscardSystemPages(void* address, size_t size) {

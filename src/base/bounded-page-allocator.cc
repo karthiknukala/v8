@@ -81,12 +81,12 @@ void* BoundedPageAllocator::AllocatePages(size_t size, size_t alignment,
   }
 
   if (page_initialization_mode_ == PageInitializationMode::kRecommitOnly) {
-    if (page_allocator_->RecommitPages(ptr, size, access)) {
+    if (page_allocator_->RecommitPages(ptr, size, access, max_access)) {
       allocation_status_ = AllocationStatus::kSuccess;
       return ptr;
     }
   } else {
-    if (page_allocator_->SetPermissions(ptr, size, access)) {
+    if (page_allocator_->SetPermissions(ptr, size, access, max_access)) {
       allocation_status_ = AllocationStatus::kSuccess;
       return ptr;
     }
@@ -114,7 +114,7 @@ bool BoundedPageAllocator::AllocatePagesAt(
   }
 
   void* ptr = reinterpret_cast<void*>(address);
-  if (!page_allocator_->SetPermissions(ptr, size, access)) {
+  if (!page_allocator_->SetPermissions(ptr, size, access, max_access)) {
     // This most likely means that we ran out of memory.
     CHECK_EQ(region_allocator_.FreeRegion(address), size);
     allocation_status_ = AllocationStatus::kFailedToCommit;
@@ -156,7 +156,7 @@ bool BoundedPageAllocator::ResizeAllocationAt(
 
   if (!page_allocator_->SetPermissions(
           reinterpret_cast<void*>(address_at + old_size), new_size - old_size,
-          access)) {
+          access, max_access)) {
     if (allocated_old_size < allocated_new_size) {
       // This most likely means that we ran out of memory.
       CHECK_EQ(region_allocator_.TrimRegion(address_at, allocated_old_size),
@@ -191,7 +191,8 @@ bool BoundedPageAllocator::ReserveForSharedMemoryMapping(void* ptr,
   }
 
   const bool success = page_allocator_->SetPermissions(
-      ptr, size, PageAllocator::Permission::kNoAccess);
+      ptr, size, PageAllocator::Permission::kNoAccess,
+      PageAllocator::Permission::kReadWrite);
   if (success) {
     allocation_status_ = AllocationStatus::kSuccess;
   } else {
@@ -221,7 +222,8 @@ bool BoundedPageAllocator::FreePages(void* raw_address, size_t size) {
         DCHECK_EQ(page_initialization_mode_,
                   PageInitializationMode::kAllocatedPagesCanBeUninitialized);
         success = page_allocator_->SetPermissions(raw_address, size,
-                                                  PageAllocator::kNoAccess);
+                                                  PageAllocator::kNoAccess,
+                                                  PageAllocator::kReadWrite);
         break;
 
       case PageFreeingMode::kDiscard:
@@ -276,7 +278,8 @@ bool BoundedPageAllocator::ReleasePages(void* raw_address, size_t size,
     DCHECK_EQ(page_initialization_mode_,
               PageInitializationMode::kAllocatedPagesCanBeUninitialized);
     return page_allocator_->SetPermissions(free_address, free_size,
-                                           PageAllocator::kNoAccess);
+                                           PageAllocator::kNoAccess,
+                                           PageAllocator::kReadWrite);
   }
   CHECK_EQ(page_freeing_mode_, PageFreeingMode::kDiscard);
   return page_allocator_->DiscardSystemPages(free_address, free_size);
@@ -288,7 +291,8 @@ bool BoundedPageAllocator::SetPermissions(
   DCHECK(IsAligned(reinterpret_cast<Address>(address), commit_page_size_));
   DCHECK(IsAligned(size, commit_page_size_));
   DCHECK(region_allocator_.contains(reinterpret_cast<Address>(address), size));
-  const bool success = page_allocator_->SetPermissions(address, size, access);
+  const bool success =
+      page_allocator_->SetPermissions(address, size, access, max_access);
   if (!success) {
     allocation_status_ = AllocationStatus::kFailedToCommit;
   }
@@ -301,7 +305,8 @@ bool BoundedPageAllocator::RecommitPages(void* address, size_t size,
   DCHECK(IsAligned(reinterpret_cast<Address>(address), commit_page_size_));
   DCHECK(IsAligned(size, commit_page_size_));
   DCHECK(region_allocator_.contains(reinterpret_cast<Address>(address), size));
-  const bool success = page_allocator_->RecommitPages(address, size, access);
+  const bool success =
+      page_allocator_->RecommitPages(address, size, access, max_access);
   if (!success) {
     allocation_status_ = AllocationStatus::kFailedToCommit;
   }
