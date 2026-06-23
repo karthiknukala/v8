@@ -156,10 +156,14 @@ struct SmiTagging<4> {
   static constexpr intptr_t kSmiMaxValue = -(kSmiMinValue + 1);
 #endif  // !__CHERI_PURE_CAPABILITY__
 
-  V8_INLINE static constexpr int SmiToInt(Address value) {
+  template <typename T>
+    requires(std::is_same_v<T, Address> || std::is_same_v<T, ScaledInt>)
+  V8_INLINE static constexpr int SmiToInt(T value) {
     int shift_bits = kSmiTagSize + kSmiShiftSize;
     // Truncate and shift down (requires >> to be sign extending).
-    return static_cast<int32_t>(static_cast<uint32_t>(value)) >> shift_bits;
+    return static_cast<int32_t>(
+               static_cast<uint32_t>(static_cast<ScaledInt>(value))) >>
+           shift_bits;
   }
 
   template <class T, typename std::enable_if_t<std::is_integral_v<T> &&
@@ -215,10 +219,12 @@ struct SmiTagging<8> {
   static constexpr intptr_t kSmiMaxValue = -(kSmiMinValue + 1);
 #endif  // !__CHERI_PURE_CAPABILITY__
 
-  V8_INLINE static constexpr int SmiToInt(Address value) {
+  template <typename T>
+    requires(std::is_same_v<T, Address> || std::is_same_v<T, ScaledInt>)
+  V8_INLINE static constexpr int SmiToInt(T value) {
     int shift_bits = kSmiTagSize + kSmiShiftSize;
     // Shift down and throw away top 32 bits.
-    return static_cast<int>(static_cast<intptr_t>(value) >> shift_bits);
+    return static_cast<int>(static_cast<ScaledInt>(value) >> shift_bits);
   }
 
   template <class T, typename std::enable_if_t<std::is_integral_v<T> &&
@@ -247,7 +253,7 @@ struct SmiTagging<16> {
       static_cast<int64_t>(kUintptrAllBitsSet << (kSmiValueSize - 1));
   static constexpr int64_t kSmiMaxValue = -(kSmiMinValue + 1);
 
-  V8_INLINE static int SmiToInt(const int64_t value) {
+  V8_INLINE static constexpr int SmiToInt(const int64_t value) {
     int shift_bits = kSmiTagSize + kSmiShiftSize;
     // Shift down and throw away top 32 bits.
     return static_cast<int>(static_cast<int64_t>(value) >> shift_bits);
@@ -297,8 +303,8 @@ constexpr bool SmiValuesAre32Bits() { return kSmiValueSize == 32; }
 constexpr bool Is128() { return kApiSystemPointerSize == 16; }
 constexpr bool Is64() { return kApiSystemPointerAddrSize == sizeof(int64_t); }
 
-V8_INLINE static constexpr Address IntToSmi(int value) {
-  return (static_cast<Address>(value) << (kSmiTagSize + kSmiShiftSize)) |
+V8_INLINE static constexpr ScaledInt IntToSmi(int value) {
+  return (static_cast<ScaledInt>(value) << (kSmiTagSize + kSmiShiftSize)) |
          kSmiTag;
 }
 
@@ -967,8 +973,13 @@ V8_EXPORT internal::Isolate* IsolateFromNeverReadOnlySpaceObject(Address obj);
 V8_EXPORT bool ShouldThrowOnError(internal::Isolate* isolate);
 
 struct HandleScopeData final {
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr uint32_t kSizeInBytes =
+      2 * kApiSystemPointerSize + 2 * kApiInt32Size + 8;
+#else
   static constexpr uint32_t kSizeInBytes =
       2 * kApiSystemPointerSize + 2 * kApiInt32Size;
+#endif
 
   Address* next;
   Address* limit;
@@ -1269,23 +1280,25 @@ class Internals {
     return (value & kHeapObjectTagMask) == static_cast<Address>(kHeapObjectTag);
   }
 
-  V8_INLINE static constexpr int SmiValue(Address value) {
+  template <typename T>
+    requires(std::is_same_v<T, Address> || std::is_same_v<T, ScaledInt>)
+  V8_INLINE static constexpr int SmiValue(T value) {
     return PlatformSmiTagging::SmiToInt(value);
   }
 
-  V8_INLINE static constexpr Address AddressToSmi(Address value) {
+  V8_INLINE static constexpr ScaledInt ScaledIntToSmi(ScaledInt value) {
     return (value << (kSmiTagSize + PlatformSmiTagging::kSmiShiftSize)) |
            kSmiTag;
   }
 
-  V8_INLINE static constexpr Address IntToSmi(int value) {
-    return AddressToSmi(static_cast<Address>(value));
+  V8_INLINE static constexpr ScaledInt IntToSmi(int value) {
+    return ScaledIntToSmi(static_cast<ScaledInt>(value));
   }
 
   template <typename T,
             typename std::enable_if_t<std::is_integral_v<T>>* = nullptr>
   V8_INLINE static constexpr Address IntegralToSmi(T value) {
-    return AddressToSmi(static_cast<Address>(value));
+    return ScaledIntToSmi(static_cast<ScaledInt>(value));
   }
 
   template <typename T,
@@ -1298,7 +1311,7 @@ class Internals {
             typename std::enable_if_t<std::is_integral_v<T>>* = nullptr>
   static constexpr std::optional<Address> TryIntegralToSmi(T value) {
     if (V8_LIKELY(PlatformSmiTagging::IsValidSmi(value))) {
-      return {AddressToSmi(static_cast<Address>(value))};
+      return {ScaledIntToSmi(static_cast<ScaledInt>(value))};
     }
     return {};
   }
