@@ -7,7 +7,11 @@
 
 #include <memory>
 
+#include "include/v8-internal.h"
 #include "src/bigint/bigint.h"
+
+// FIXME(cheri): Hack.
+namespace i = v8::internal;
 
 namespace v8 {
 namespace bigint {
@@ -83,9 +87,9 @@ class ProcessorImpl : public Processor {
   // interrupt requests every now and then (roughly every 10-100 ms; often
   // enough not to appear stuck, rarely enough not to cause noticeable
   // overhead).
-  static const uintptr_t kWorkEstimateThreshold = 5000000;
+  static const i::ScaledUint kWorkEstimateThreshold = 5000000;
 
-  void AddWorkEstimate(uintptr_t estimate) {
+  void AddWorkEstimate(i::ScaledUint estimate) {
     work_estimate_ += estimate;
     if (work_estimate_ >= kWorkEstimateThreshold) {
       work_estimate_ = 0;
@@ -96,7 +100,7 @@ class ProcessorImpl : public Processor {
   }
 
  private:
-  uintptr_t work_estimate_{0};
+  i::ScaledUint work_estimate_{0};
   Status status_{Status::kOk};
   Platform* platform_;
 };

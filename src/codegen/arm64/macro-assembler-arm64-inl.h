@@ -401,11 +401,33 @@ void MacroAssembler::DebugAssertCapabilityIsTagged(const Register& cs) {
   if (v8_flags.debug_code) {
     UseScratchRegisterScope temps(this);
     Label out;
-    Register temp = temps.AcquireX();
-    Gctag(temp, cs);
-    Tbnz(temp, 0, &out);
-    DebugBreak();
+    size_t popcount = __builtin_popcount(temps.Available()->bits());
+    if (popcount > 0) {
+      Register temp = temps.AcquireX();
+      Gctag(temp, cs);
+      Tbnz(temp, 0, &out);
+      DebugBreak();
+    } else {
+      if (cs.code() == c0.code()) {
+        Push(c1);
+        temps.Include(c1);
+      } else {
+        Push(c0);
+        temps.Include(c0);
+      }
+      Register temp = temps.AcquireX();
+      Gctag(temp, cs);
+      Tbnz(temp, 0, &out);
+      DebugBreak();
+    }
     Bind(&out);
+    if (popcount == 0) {
+      if (cs.code() == c0.code()) {
+        Pop(c1);
+      } else {
+        Pop(c0);
+      }
+    }
   }
 }
 
@@ -819,20 +841,7 @@ void MacroAssembler::Call(const Register& rn) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, rn.IsC());
-#if V8_TARGET_CHERI
-  if (v8_flags.debug_code) {
-    Label ok;
-    HardAbortScope hard_aborts(this);
-    Register temp = target == c0 ? c1 : c0;
-    Push(temp, padregc);
-    Gctag(temp.X(), target);
-    Tbnz(temp.X(), 0, &ok);
-    brk(0);
-    Bind(&ok);
-    Pop(padregc, temp);
-  }
-  PrepareC64Jump(target);
-#endif  // V8_TARGET_CHERI
+  DebugAssertCapabilityIsTagged(rn);
   blr(rn);
 }
 
@@ -840,6 +849,7 @@ void MacroAssembler::Br(const Register& rn) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, rn.IsC());
+  DebugAssertCapabilityIsTagged(rn);
   br(rn);
 }
 
@@ -1420,6 +1430,7 @@ void MacroAssembler::Rbit(const Register& rd, const Register& rn) {
 void MacroAssembler::Ret(const Register& rn) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
+  DebugAssertCapabilityIsTagged(rn);
   ret(rn);
   CheckVeneerPool(false, false);
 }

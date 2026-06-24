@@ -46,6 +46,8 @@ struct EnumEntry {
 class BuildFlags : public base::ContextualClass<BuildFlags> {
  public:
   BuildFlags(TorqueCompilerOptions options) {
+    build_flags_["COMPRESSED"] = COMPRESS_POINTERS_BOOL;
+    build_flags_["UNCOMPRESSED"] = !COMPRESS_POINTERS_BOOL;
     build_flags_["V8_EXTERNAL_CODE_SPACE"] = V8_EXTERNAL_CODE_SPACE_BOOL;
 #ifdef __CHERI_PURE_CAPABILITY__
     build_flags_["TAGGED_SIZE_8_BYTES"] = TAGGED_SIZE_8_BYTES;

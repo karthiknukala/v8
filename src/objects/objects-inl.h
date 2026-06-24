@@ -1524,7 +1524,10 @@ Tagged<Map> HeapObject::map() const {
 }
 
 Tagged<Map> HeapObject::map(PtrComprCageBase cage_base) const {
-  return map_word(cage_base, kRelaxedLoad).ToMap();
+  Map map_to_return map_word(cage_base, kRelaxedLoad).ToMap();
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
+                 V8_CHERI_TAG_GET(map_to_return.ptr()));
+  return map_to_return;
 }
 
 Tagged<Map> HeapObjectLayout::map() const {
@@ -1571,6 +1574,8 @@ void HeapObject::set_map(Isolate* isolate, Tagged<Map> value) {
 template <typename IsolateT>
 void HeapObject::set_map(IsolateT* isolate, Tagged<Map> value,
                          ReleaseStoreTag tag) {
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
+                 V8_CHERI_TAG_GET(value.ptr()));
   set_map<EmitWriteBarrier::kYes>(isolate, value, kReleaseStore,
                                   VerificationMode::kPotentialLayoutChange);
 }
@@ -1638,6 +1643,8 @@ void HeapObject::set_map(IsolateT* isolate, Tagged<Map> value,
   // maps as immutable. Therefore we are not allowed to mutate them here.
   DCHECK(!IsWasmStructMap(value) && !IsWasmArrayMap(value));
 #endif
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
+                 V8_CHERI_TAG_GET(value.ptr()));
   if (v8_flags.verify_heap) {
     if (mode == VerificationMode::kSafeMapTransition) {
       HeapVerifier::VerifySafeMapTransition(isolate->heap()->AsHeap(), *this,
@@ -1665,6 +1672,9 @@ template <typename IsolateT>
 void HeapObjectLayout::set_map_after_allocation(IsolateT* isolate,
                                                 Tagged<Map> value,
                                                 WriteBarrierMode mode) {
+  DCHECK_IMPLIES(
+      V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL && value.ptr() != 0,
+      V8_CHERI_TAG_GET(value.ptr()));
   // TODO(leszeks): Support MapWord members and access via that instead.
   Tagged<HeapObject>(this)->set_map_after_allocation(isolate, value, mode);
 }
@@ -1672,6 +1682,9 @@ void HeapObjectLayout::set_map_after_allocation(IsolateT* isolate,
 template <typename IsolateT>
 void HeapObject::set_map_after_allocation(IsolateT* isolate, Tagged<Map> value,
                                           WriteBarrierMode mode) {
+  DCHECK_IMPLIES(
+      V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL && value.ptr() != 0,
+      V8_CHERI_TAG_GET(value.ptr()));
   set_map_word(value, kRelaxedStore);
 #ifndef V8_DISABLE_WRITE_BARRIERS
   if (mode != SKIP_WRITE_BARRIER) {
@@ -1719,6 +1732,9 @@ MapWord HeapObject::map_word(PtrComprCageBase cage_base,
 }
 
 void HeapObject::set_map_word(Tagged<Map> map, RelaxedStoreTag) {
+  DCHECK_IMPLIES(
+      V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL && map.ptr() != 0,
+      V8_CHERI_TAG_GET(map.ptr()));
   MapField::Relaxed_Store_Map_Word(*this, MapWord::FromMap(map));
 }
 
@@ -1743,6 +1759,9 @@ MapWord HeapObject::map_word(PtrComprCageBase cage_base,
 }
 
 void HeapObject::set_map_word(Tagged<Map> map, ReleaseStoreTag) {
+  DCHECK_IMPLIES(
+      V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL && map.ptr() != 0,
+      V8_CHERI_TAG_GET(map.ptr()));
   MapField::Release_Store_Map_Word(*this, MapWord::FromMap(map));
 }
 

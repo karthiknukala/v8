@@ -52,9 +52,9 @@ class TaggedIndex : public AllStatic {
 
   static_assert(kSmiTagSize == 1);
   static constexpr int kTaggedValueSize = 31;
-  static constexpr intptr_t kMinValue =
-      static_cast<intptr_t>(kUintptrAllBitsSet << (kTaggedValueSize - 1));
-  static constexpr intptr_t kMaxValue = -(kMinValue + 1);
+  static constexpr ScaledInt kMinValue =
+      static_cast<ScaledInt>(kUintptrAllBitsSet << (kTaggedValueSize - 1));
+  static constexpr ScaledInt kMaxValue = -(kMinValue + 1);
 };
 
 template <>

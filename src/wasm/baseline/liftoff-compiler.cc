@@ -4613,7 +4613,7 @@ class LiftoffCompiler {
     LiftoffRegister ref =
         pinned.set(pass_null_along_branch ? __ PeekToRegister(0, pinned)
                                           : __ PopToRegister(pinned));
-    Register null = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+    Register null = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
     LoadNullValueForCompare(null, pinned, ref_object.type);
     {
       FREEZE_STATE(frozen);
@@ -4640,7 +4640,7 @@ class LiftoffCompiler {
     LiftoffRegList pinned;
     LiftoffRegister ref = pinned.set(__ PeekToRegister(0, pinned));
 
-    Register null = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+    Register null = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp().C();
     LoadNullValueForCompare(null, pinned, ref_object.type);
     {
       FREEZE_STATE(frozen);

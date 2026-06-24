@@ -167,7 +167,7 @@ int MicrotaskQueue::RunMicrotasks(Isolate* isolate) {
   DCHECK_IMPLIES(v8_flags.strict_termination_checks,
                  !isolate->is_execution_terminating());
 
-  intptr_t base_count = finished_microtask_count_;
+  ScaledInt base_count = finished_microtask_count_;
   HandleScope handle_scope(isolate);
   MaybeDirectHandle<Object> maybe_result;
 
@@ -305,16 +305,16 @@ void MicrotaskQueue::OnCompleted(Isolate* isolate) {
   }
 }
 
-Tagged<Microtask> MicrotaskQueue::get(intptr_t index) const {
+Tagged<Microtask> MicrotaskQueue::get(ScaledInt index) const {
   DCHECK_LT(index, size_);
   Tagged<Object> microtask(ring_buffer_[(index + start_) % capacity_]);
   return Cast<Microtask>(microtask);
 }
 
-void MicrotaskQueue::ResizeBuffer(intptr_t new_capacity) {
+void MicrotaskQueue::ResizeBuffer(ScaledInt new_capacity) {
   DCHECK_LE(size_, new_capacity);
   Address* new_ring_buffer = new Address[new_capacity];
-  for (intptr_t i = 0; i < size_; ++i) {
+  for (ScaledInt i = 0; i < size_; ++i) {
     new_ring_buffer[i] = ring_buffer_[(start_ + i) % capacity_];
   }
 

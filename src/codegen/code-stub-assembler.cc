@@ -4583,7 +4583,7 @@ TNode<BigInt> CodeStubAssembler::AllocateBigInt(TNode<IntPtrT> length) {
 TNode<BigInt> CodeStubAssembler::AllocateRawBigInt(TNode<IntPtrT> length) {
   TNode<IntPtrT> size =
       IntPtrAdd(IntPtrConstant(sizeof(BigInt)),
-                Signed(WordShl(length, kSystemPointerSizeLog2)));
+                Signed(WordShl(length, kSystemPointerAddrSizeLog2)));
   TNode<HeapObject> raw_result = Allocate(size);
   StoreMapNoWriteBarrier(raw_result, RootIndex::kBigIntMap);
 #ifdef BIGINT_NEEDS_PADDING
@@ -4607,7 +4607,7 @@ void CodeStubAssembler::StoreBigIntDigit(TNode<BigInt> bigint,
   StoreObjectFieldNoWriteBarrier(
       bigint,
       OFFSET_OF_DATA_START(BigInt) +
-          static_cast<int>(digit_index) * kSystemPointerSize,
+          static_cast<int>(digit_index) * kSystemPointerAddrSize,
       digit);
 }
 
@@ -4616,7 +4616,7 @@ void CodeStubAssembler::StoreBigIntDigit(TNode<BigInt> bigint,
                                          TNode<UintPtrT> digit) {
   TNode<IntPtrT> offset =
       IntPtrAdd(IntPtrConstant(OFFSET_OF_DATA_START(BigInt)),
-                IntPtrMul(digit_index, IntPtrConstant(kSystemPointerSize)));
+                IntPtrMul(digit_index, IntPtrConstant(kSystemPointerAddrSize)));
   StoreObjectFieldNoWriteBarrier(bigint, offset, digit);
 }
 
@@ -4631,14 +4631,14 @@ TNode<UintPtrT> CodeStubAssembler::LoadBigIntDigit(TNode<BigInt> bigint,
   CHECK_LT(digit_index, BigInt::kMaxLength);
   return LoadObjectField<UintPtrT>(
       bigint, OFFSET_OF_DATA_START(BigInt) +
-                  static_cast<int>(digit_index) * kSystemPointerSize);
+                  static_cast<int>(digit_index) * kSystemPointerAddrSize);
 }
 
 TNode<UintPtrT> CodeStubAssembler::LoadBigIntDigit(TNode<BigInt> bigint,
                                                    TNode<IntPtrT> digit_index) {
   TNode<IntPtrT> offset =
       IntPtrAdd(IntPtrConstant(OFFSET_OF_DATA_START(BigInt)),
-                IntPtrMul(digit_index, IntPtrConstant(kSystemPointerSize)));
+                IntPtrMul(digit_index, IntPtrConstant(kSystemPointerAddrSize)));
   return LoadObjectField<UintPtrT>(bigint, offset);
 }
 

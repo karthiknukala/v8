@@ -77,7 +77,7 @@ class Arguments {
     // Note: "LE" is intentional: it's okay to compute the address of the
     // first nonexistent entry.
     SBXCHECK_LE(static_cast<uint32_t>(index), static_cast<uint32_t>(length_));
-    uintptr_t offset = index * kSystemPointerSize;
+    ScaledUint offset = index * kSystemPointerSize;
     if (arguments_type == ArgumentsType::kJS) {
       offset = (length_ - index - 1) * kSystemPointerSize;
     }
@@ -90,7 +90,7 @@ class Arguments {
   V8_INLINE uint32_t ulength() const { return static_cast<uint32_t>(length_); }
 
  private:
-  intptr_t length_;
+  ScaledInt length_;
   Address* arguments_;
 };
 

@@ -111,7 +111,8 @@ template <typename Type, typename Iterable>
 void TestExternalReference_UnOp(ExternalReference ref, void (*wrapper)(Address),
                                 Iterable inputs) {
   BufferedRawMachineAssemblerTester<int32_t> m;
-  constexpr size_t kBufferSize = sizeof(Type);
+  constexpr size_t kBufferSize =
+      V8_CHERI_PURECAP_BOOL ? kSystemPointerSize : sizeof(Type);
   uint8_t buffer[kBufferSize] = {0};
   Address buffer_addr = reinterpret_cast<Address>(buffer);
 
@@ -139,7 +140,9 @@ template <typename Type, typename Iterable>
 void TestExternalReference_BinOp(ExternalReference ref,
                                  void (*wrapper)(Address), Iterable inputs) {
   BufferedRawMachineAssemblerTester<int32_t> m;
-  constexpr size_t kBufferSize = 2 * sizeof(Type);
+  constexpr size_t element_size =
+      V8_CHERI_PURECAP_BOOL ? kSystemPointerSize : sizeof(Type);
+  constexpr size_t kBufferSize = 2 * element_size;
   uint8_t buffer[kBufferSize] = {0};
   Address buffer_addr = reinterpret_cast<Address>(buffer);
 
@@ -152,12 +155,12 @@ void TestExternalReference_BinOp(ExternalReference ref,
   for (Type input1 : inputs) {
     for (Type input2 : inputs) {
       WriteUnalignedValue<Type>(buffer_addr, input1);
-      WriteUnalignedValue<Type>(buffer_addr + sizeof(Type), input2);
-      CHECK_EQ(4356, m.Call());
+      WriteUnalignedValue<Type>(buffer_addr + element_size, input2);
+      CHECK_EQ(4356, m->Call());
       Type output = ReadUnalignedValue<Type>(buffer_addr);
 
       WriteUnalignedValue<Type>(buffer_addr, input1);
-      WriteUnalignedValue<Type>(buffer_addr + sizeof(Type), input2);
+      WriteUnalignedValue<Type>(buffer_addr + element_size, input2);
       wrapper(buffer_addr);
       Type expected_output = ReadUnalignedValue<Type>(buffer_addr);
 
@@ -172,7 +175,9 @@ void TestExternalReference_BinOpWithReturn(ExternalReference ref,
                                            int32_t (*wrapper)(Address),
                                            Iterable inputs) {
   BufferedRawMachineAssemblerTester<int32_t> m;
-  constexpr size_t kBufferSize = 2 * sizeof(Type);
+  constexpr size_t element_size =
+      V8_CHERI_PURECAP_BOOL ? kSystemPointerSize : sizeof(Type);
+  constexpr size_t kBufferSize = 2 * element_size;
   uint8_t buffer[kBufferSize] = {0};
   Address buffer_addr = reinterpret_cast<Address>(buffer);
 
@@ -184,12 +189,12 @@ void TestExternalReference_BinOpWithReturn(ExternalReference ref,
   for (Type input1 : inputs) {
     for (Type input2 : inputs) {
       WriteUnalignedValue<Type>(buffer_addr, input1);
-      WriteUnalignedValue<Type>(buffer_addr + sizeof(Type), input2);
-      int32_t ret = m.Call();
+      WriteUnalignedValue<Type>(buffer_addr + element_size, input2);
+      int32_t ret = m->Call();
       Type output = ReadUnalignedValue<Type>(buffer_addr);
 
       WriteUnalignedValue<Type>(buffer_addr, input1);
-      WriteUnalignedValue<Type>(buffer_addr + sizeof(Type), input2);
+      WriteUnalignedValue<Type>(buffer_addr + element_size, input2);
       int32_t expected_ret = wrapper(buffer_addr);
       Type expected_output = ReadUnalignedValue<Type>(buffer_addr);
 

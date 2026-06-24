@@ -1685,7 +1685,7 @@ void MutableBigInt_BitwiseXorPosNegAndCanonicalize(Address result_addr,
 }
 
 void MutableBigInt_LeftShiftAndCanonicalize(Address result_addr, Address x_addr,
-                                            intptr_t shift) {
+                                            i::ScaledInt shift) {
   Tagged<BigInt> x = Cast<BigInt>(Tagged<Object>(x_addr));
   Tagged<MutableBigInt> result =
       Cast<MutableBigInt>(Tagged<Object>(result_addr));
@@ -1695,7 +1695,7 @@ void MutableBigInt_LeftShiftAndCanonicalize(Address result_addr, Address x_addr,
 }
 
 uint32_t RightShiftResultLength(Address x_addr, uint32_t x_sign,
-                                intptr_t shift) {
+                                i::ScaledInt shift) {
   Tagged<BigInt> x = Cast<BigInt>(Tagged<Object>(x_addr));
   bigint::RightShiftState state;
   uint32_t length =
@@ -1708,7 +1708,7 @@ uint32_t RightShiftResultLength(Address x_addr, uint32_t x_sign,
 }
 
 void MutableBigInt_RightShiftAndCanonicalize(Address result_addr,
-                                             Address x_addr, intptr_t shift,
+                                             Address x_addr, i::ScaledInt shift,
                                              uint32_t must_round_down) {
   Tagged<BigInt> x = Cast<BigInt>(Tagged<Object>(x_addr));
   Tagged<MutableBigInt> result =
