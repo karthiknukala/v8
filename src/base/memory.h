@@ -107,8 +107,9 @@ std::unique_ptr<T> make_unique_for_overwrite() {
 
 // FIXME(cheri): Remove this with C++20 support.
 template <typename T>
-std::unique_ptr<T[]> make_unique_for_overwrite(size_t size) {
-  return std::unique_ptr<T[]>(new T[size]);
+std::enable_if_t<std::is_array_v<T>, std::unique_ptr<T>>
+make_unique_for_overwrite(size_t size) {
+  return std::unique_ptr<T>(new std::remove_extent_t<T>[size]);
 }
 
 }  // namespace base
