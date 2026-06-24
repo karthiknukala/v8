@@ -297,7 +297,6 @@ class IsolateData final {
 
   DEFINE_FIELD_OFFSET_CONSTANTS_WITH_PURE_NAME(0, FIELDS)
 #undef FIELDS
-#endif  // !__CHERI_PURE_CAPABILITY__
 
   const Address cage_base_ = kNullAddress;
 
