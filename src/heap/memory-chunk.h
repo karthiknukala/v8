@@ -388,7 +388,7 @@ template <>
 struct hash<const i::MemoryChunk*> {
   V8_INLINE size_t operator()(const i::MemoryChunk* chunk) const {
     return static_cast<v8::internal::Tagged_t>(
-               reinterpret_cast<ScaledUint>(chunk)) >>
+               reinterpret_cast<v8::internal::ScaledUint>(chunk)) >>
            kPageSizeBits;
   }
 };
