@@ -90,7 +90,7 @@ void SegmentedTable<Entry, size>::Initialize() {
     DCHECK(!pkey);
     Address reservation_base = root_space->AllocatePages(
         VirtualAddressSpace::kNoHint, kReservationSize, kAlignment,
-        PagePermissions::kNoAccess);
+        PagePermissions::kNoAccess, PagePermissions::kReadWrite);
     if (reservation_base) {
       vas_ = new base::EmulatedVirtualAddressSubspace(
           root_space, reservation_base, kReservationSize, kReservationSize);
@@ -178,9 +178,9 @@ template <typename Entry, size_t size>
 std::optional<typename SegmentedTable<Entry, size>::Segment>
 SegmentedTable<Entry, size>::TryAllocateSegment() {
   if constexpr (!kUseSegmentPool) {
-    Address start =
-        vas_->AllocatePages(VirtualAddressSpace::kNoHint, kSegmentSize,
-                            kSegmentSize, PagePermissions::kReadWrite);
+    Address start = vas_->AllocatePages(
+        VirtualAddressSpace::kNoHint, kSegmentSize, kSegmentSize,
+        PagePermissions::kReadWrite, PagePermissions::kReadWrite);
     if (!start) {
       return {};
     }
@@ -210,9 +210,9 @@ SegmentedTable<Entry, size>::FillSegmentsPool(bool return_a_segment) {
   for (size_t i = 0; i < kSegmentPoolSize; ++i) {
     DCHECK_EQ(segment_pool_[i].load(std::memory_order_acquire),
               kSegmentPoolFreeEntry);
-    Address start =
-        vas_->AllocatePages(VirtualAddressSpace::kNoHint, kSegmentSize,
-                            kAlignment, PagePermissions::kReadWrite);
+    Address start = vas_->AllocatePages(
+        VirtualAddressSpace::kNoHint, kSegmentSize, kAlignment,
+        PagePermissions::kReadWrite, PagePermissions::kReadWrite);
     if (!start) continue;
     uint32_t offset = static_cast<uint32_t>(start - vas_->base());
     DCHECK_NE(offset, kSegmentPoolFreeEntry);
