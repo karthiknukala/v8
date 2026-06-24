@@ -1123,17 +1123,10 @@ void SharedFunctionInfo::ClearPreparseData(IsolateForSandbox isolate) {
   // within the object don't need to be invalidated.
   heap->NotifyObjectLayoutChange(data, no_gc, InvalidateRecordedSlots::kNo,
                                  InvalidateExternalPointerSlots::kNo);
-#ifdef __CHERI_PURE_CAPABILITY__
-  static_assert(UncompiledDataWithoutPreparseData::kSize <
-                UncompiledDataWithPreparseData::kSize + 8);
-  static_assert(UncompiledDataWithoutPreparseData::kSize ==
-                UncompiledData::kHeaderSize + 8);
-#else
-  static_assert(UncompiledDataWithoutPreparseData::kSize <
-                UncompiledDataWithPreparseData::kSize);
-  static_assert(UncompiledDataWithoutPreparseData::kSize ==
-                UncompiledData::kHeaderSize);
-#endif
+  static_assert(sizeof(UncompiledDataWithoutPreparseData) <
+                sizeof(UncompiledDataWithPreparseData));
+  static_assert(sizeof(UncompiledDataWithoutPreparseData) ==
+                sizeof(UncompiledData));
 
   // Fill the remaining space with filler and clear slots in the trimmed area.
   int old_size = data->Size();
