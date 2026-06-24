@@ -64,6 +64,7 @@ class GlobalContext : public base::ContextualClass<GlobalContext> {
   static void SetCheriAbi() { Get().cheri_abi_ = true; }
   static bool cheri_abi() { return Get().cheri_abi_; }
   static Ast* ast() { return &Get().ast_; }
+  static void SetAst(Ast ast) { Get().ast_ = std::move(ast); }
   static std::string MakeUniqueName(const std::string& base) {
     return base + "_" + std::to_string(Get().fresh_ids_[base]++);
   }

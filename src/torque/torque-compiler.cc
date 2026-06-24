@@ -47,7 +47,6 @@ void ReadAndParseTorqueFile(const std::string& path,
 }
 
 void CompileCurrentAst(TorqueCompilerOptions options) {
-  GlobalContext::Scope global_context(std::move(CurrentAst::Get()));
   if (options.collect_language_server_data) {
     GlobalContext::SetCollectLanguageServerData();
   }
@@ -126,12 +125,14 @@ TorqueCompilerResult CompileTorque(const std::string& source,
   CurrentSourceFile::Scope no_file_scope(
       SourceFileMap::AddSource("dummy-filename.tq"));
   CurrentAst::Scope ast_scope;
+  GlobalContext::Scope global_context(Ast{});
   TorqueMessages::Scope messages_scope;
   LanguageServerData::Scope server_data_scope;
 
   TorqueCompilerResult result;
   try {
     ParseTorque(source, options);
+    GlobalContext::SetAst(std::move(CurrentAst::Get()));
     CompileCurrentAst(options);
   } catch (TorqueAbortCompilation&) {
     // Do nothing. The relevant TorqueMessage is part of the
@@ -151,6 +152,7 @@ TorqueCompilerResult CompileTorque(const std::vector<std::string>& files,
   SourceFileMap::Scope source_map_scope(options.v8_root);
   CurrentSourceFile::Scope unknown_source_file_scope(SourceId::Invalid());
   CurrentAst::Scope ast_scope;
+  GlobalContext::Scope global_context(Ast{});
   TorqueMessages::Scope messages_scope;
   LanguageServerData::Scope server_data_scope;
 
@@ -159,6 +161,7 @@ TorqueCompilerResult CompileTorque(const std::vector<std::string>& files,
     for (const auto& path : files) {
       ReadAndParseTorqueFile(path, options);
     }
+    GlobalContext::SetAst(std::move(CurrentAst::Get()));
     CompileCurrentAst(options);
   } catch (TorqueAbortCompilation&) {
     // Do nothing. The relevant TorqueMessage is part of the
