@@ -1520,7 +1520,7 @@ Tagged<Map> HeapObject::map() const {
 }
 
 Tagged<Map> HeapObject::map(PtrComprCageBase cage_base) const {
-  Map map_to_return map_word(cage_base, kRelaxedLoad).ToMap();
+  Tagged<Map> map_to_return = map_word(cage_base, kRelaxedLoad).ToMap();
   DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
                  V8_CHERI_TAG_GET(map_to_return.ptr()));
   return map_to_return;
