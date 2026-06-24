@@ -380,6 +380,21 @@ T HeapObject::Relaxed_ReadField(size_t offset) const
 }
 
 template <class T>
+T HeapObject::Relaxed_ReadFieldAlignUp(size_t offset, size_t alignment) const
+  requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
+           !std::is_floating_point_v<T>)
+{
+  // Pointer compression causes types larger than kTaggedSize to be
+  // unaligned. Atomic loads must be aligned.
+  DCHECK_IMPLIES(COMPRESS_POINTERS_BOOL, sizeof(T) <= kTaggedSize);
+  using AtomicT = typename base::AtomicTypeFromByteWidth<sizeof(T)>::type;
+  return static_cast<T>(
+      base::AsAtomicImpl<AtomicT>::Relaxed_Load(reinterpret_cast<AtomicT*>(
+          __builtin_align_up(field_address(offset), alignment))));
+}
+
+
+template <class T>
 void HeapObject::Relaxed_WriteField(size_t offset, T value)
   requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
            !std::is_floating_point_v<T>)
@@ -390,6 +405,22 @@ void HeapObject::Relaxed_WriteField(size_t offset, T value)
   using AtomicT = typename base::AtomicTypeFromByteWidth<sizeof(T)>::type;
   base::AsAtomicImpl<AtomicT>::Relaxed_Store(
       reinterpret_cast<AtomicT*>(field_address(offset)),
+      static_cast<AtomicT>(value));
+}
+
+template <class T>
+void HeapObject::Relaxed_WriteFieldAlignUp(size_t offset, T value,
+                                           size_t alignment)
+  requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
+           !std::is_floating_point_v<T>)
+{
+  // Pointer compression causes types larger than kTaggedSize to be
+  // unaligned. Atomic stores must be aligned.
+  DCHECK_IMPLIES(COMPRESS_POINTERS_BOOL, sizeof(T) <= kTaggedSize);
+  using AtomicT = typename base::AtomicTypeFromByteWidth<sizeof(T)>::type;
+  base::AsAtomicImpl<AtomicT>::Relaxed_Store(
+      reinterpret_cast<AtomicT*>(
+          __builtin_align_up(field_address(offset), alignment)),
       static_cast<AtomicT>(value));
 }
 
@@ -406,42 +437,8 @@ T HeapObject::Acquire_ReadField(size_t offset) const
       reinterpret_cast<AtomicT*>(field_address(offset))));
 }
 
-#ifdef __CHERI_PURE_CAPABILITY__
 template <class T>
-T HeapObject::Relaxed_ReadFieldAlignUp(size_t offset,
-                                       size_t alignment ==
-                                           alignof(max_align_t)) const
-  requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
-           !std::is_floating_point_v<T>)
-{
-  // Pointer compression causes types larger than kTaggedSize to be
-  // unaligned. Atomic loads must be aligned.
-  DCHECK_IMPLIES(COMPRESS_POINTERS_BOOL, sizeof(T) <= kTaggedSize);
-  using AtomicT = typename base::AtomicTypeFromByteWidth<sizeof(T)>::type;
-  return static_cast<T>(
-      base::AsAtomicImpl<AtomicT>::Relaxed_Load(reinterpret_cast<AtomicT*>(
-          __builtin_align_up(field_address(offset), alignment))));
-}
-
-template <class T>
-void HeapObject::Relaxed_WriteFieldAlignUp(
-    size_t offset, T value, size_t alignment = alignof(max_align_t))
-  requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
-           !std::is_floating_point_v<T>)
-{
-  // Pointer compression causes types larger than kTaggedSize to be
-  // unaligned. Atomic stores must be aligned.
-  DCHECK_IMPLIES(COMPRESS_POINTERS_BOOL, sizeof(T) <= kTaggedSize);
-  using AtomicT = typename base::AtomicTypeFromByteWidth<sizeof(T)>::type;
-  base::AsAtomicImpl<AtomicT>::Relaxed_Store(
-      reinterpret_cast<AtomicT*>(
-          __builtin_align_up(field_address(offset), alignment)),
-      static_cast<AtomicT>(value));
-}
-
-template <class T>
-T HeapObject::Acquire_ReadFieldAlignUp(
-    size_t offset, size_t alignment = alignof(max_align_t)) const
+T HeapObject::Acquire_ReadFieldAlignUp(size_t offset, size_t alignment) const
   requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
            !std::is_floating_point_v<T>)
 {
@@ -453,7 +450,6 @@ T HeapObject::Acquire_ReadFieldAlignUp(
       base::AsAtomicImpl<AtomicT>::Acquire_Load(reinterpret_cast<AtomicT*>(
           __builtin_align_up(field_address(offset), alignment))));
 }
-#endif
 
 // static
 template <typename CompareAndSwapImpl>

@@ -263,6 +263,17 @@ class HeapObject : public TaggedImpl<HeapObjectReferenceType::STRONG, Address> {
   }
 
   template <class T>
+  inline T ReadFieldAlignUp(size_t offset,
+                            size_t alignment = alignof(max_align_t)) const
+    requires(std::is_arithmetic_v<T> || std::is_enum_v<T> ||
+             std::is_pointer_v<T>)
+  {
+    return ReadMaybeUnalignedValue<T>(
+        __builtin_align_up(field_address(offset), alignment));
+  }
+
+
+  template <class T>
   inline void WriteField(size_t offset, T value) const
     requires(std::is_arithmetic_v<T> || std::is_enum_v<T> ||
              std::is_pointer_v<T>)
@@ -270,10 +281,26 @@ class HeapObject : public TaggedImpl<HeapObjectReferenceType::STRONG, Address> {
     return WriteMaybeUnalignedValue<T>(field_address(offset), value);
   }
 
+  template <class T>
+  inline void WriteFieldAlignUp(size_t offset, T value,
+                                size_t alignment = alignof(max_align_t)) const
+    requires(std::is_arithmetic_v<T> || std::is_enum_v<T> ||
+             std::is_pointer_v<T>)
+  {
+    return WriteMaybeUnalignedValue<T>(
+        __builtin_align_up(field_address(offset), alignment), value);
+  }
+
   // Atomically reads a field using relaxed memory ordering. Can only be used
   // with integral types whose size is <= kTaggedSize (to guarantee alignment).
   template <class T>
   inline T Relaxed_ReadField(size_t offset) const
+    requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
+             !std::is_floating_point_v<T>);
+
+  template <class T>
+  inline T Relaxed_ReadFieldAlignUp(
+      size_t offset, size_t alignment = alignof(max_align_t)) const
     requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
              !std::is_floating_point_v<T>);
 
@@ -284,10 +311,22 @@ class HeapObject : public TaggedImpl<HeapObjectReferenceType::STRONG, Address> {
     requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
              !std::is_floating_point_v<T>);
 
+  template <class T>
+  inline void Relaxed_WriteFieldAlignUp(size_t offset, T value,
+                                        size_t alignment = alignof(max_align_t))
+    requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
+             !std::is_floating_point_v<T>);
+
   // Atomically reads a field using acquire memory ordering. Can only be used
   // with integral types whose size is <= kTaggedSize (to guarantee alignment).
   template <class T>
   inline T Acquire_ReadField(size_t offset) const
+    requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
+             !std::is_floating_point_v<T>);
+
+  template <class T>
+  inline T Acquire_ReadFieldAlignUp(
+      size_t offset, size_t alignment = alignof(max_align_t)) const
     requires((std::is_arithmetic_v<T> || std::is_enum_v<T>) &&
              !std::is_floating_point_v<T>);
 
