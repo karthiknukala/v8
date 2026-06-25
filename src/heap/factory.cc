@@ -267,7 +267,6 @@ Tagged<HeapObject> Factory::CodeBuilder::AllocateUninitializedInstructionStream(
   LocalHeap* heap = local_isolate_->heap();
   Tagged<HeapObject> result;
   const int object_size = InstructionStream::SizeFor(code_desc_.body_size());
-  HeapObject result;
   if (retry_allocation_or_fail) {
     // Only allowed to do `retry_allocation_or_fail` from the main thread.
     // TODO(leszeks): Remove the retrying allocation, always use TryBuild in
