@@ -69,6 +69,7 @@ static const char* const FLOAT32_TYPE_STRING = "float32";
 static const char* const FLOAT64_TYPE_STRING = "float64";
 static const char* const FLOAT64_OR_UNDEFINED_OR_HOLE_TYPE_STRING =
     "float64_or_undefined_or_hole";
+static const char* const CONST_UINT8_TYPE_STRING = "constexpr int8";
 static const char* const CONST_INT31_TYPE_STRING = "constexpr int31";
 static const char* const CONST_INT32_TYPE_STRING = "constexpr int32";
 static const char* const CONST_FLOAT64_TYPE_STRING = "constexpr float64";

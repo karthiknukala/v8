@@ -2243,10 +2243,21 @@ VisitResult ImplementationVisitor::Visit(StructExpression* expr) {
     // Implicitly convert values and thereby build the struct on the stack
     StackRange struct_range = assembler().TopRange(0);
     auto& fields = struct_type->fields();
-    for (size_t i = 0; i < values.size(); i++) {
-      values[i] =
-          GenerateImplicitConvert(fields[i].name_and_type.type, values[i]);
-      struct_range.Extend(values[i].stack_range());
+    size_t value_idx = 0;
+    CHECK_LE(values.size(), fields.size());
+    for (size_t i = 0; i < fields.size(); i++) {
+      if (ImplementationVisitor::IsInternal(fields[i])) {
+        VisitResult zero{TypeOracle::GetConstUint8Type(), "0"};
+        zero = GenerateImplicitConvert(fields[i].name_and_type.type, zero);
+        struct_range.Extend(zero.stack_range());
+        continue;
+      }
+      if (value_idx < values.size()) {
+        values[value_idx] = GenerateImplicitConvert(
+            fields[i].name_and_type.type, values[value_idx]);
+        struct_range.Extend(values[value_idx].stack_range());
+        value_idx++;
+      }
     }
 
     return stack_scope.Yield(VisitResult(struct_type, struct_range));

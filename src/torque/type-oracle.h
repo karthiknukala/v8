@@ -335,6 +335,10 @@ class TypeOracle : public base::ContextualClass<TypeOracle> {
     return Get().GetBuiltinType(NEVER_TYPE_STRING);
   }
 
+  static const Type* GetConstUint8Type() {
+    return Get().GetBuiltinType(CONST_UINT8_TYPE_STRING);
+  }
+
   static const Type* GetConstInt31Type() {
     return Get().GetBuiltinType(CONST_INT31_TYPE_STRING);
   }
