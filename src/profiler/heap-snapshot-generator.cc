@@ -1286,8 +1286,8 @@ class IndexedReferencesExtractor : public ObjectVisitorWithCageBases {
         parent_end_(parent_obj_->RawMaybeWeakField(
             RoundUp(parent_obj_->Size(cage_base()), kSystemPointerSize))),
 #else
-        parent_end_(parent_obj_->RawMaybeWeakField(
-            parent_obj_->Size(cage_base()), kSystemPointerSize)),
+        parent_end_(
+            parent_obj_->RawMaybeWeakField(parent_obj_->Size(cage_base()))),
 #endif
         parent_(parent),
         next_index_(0) {
