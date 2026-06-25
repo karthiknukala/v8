@@ -62,7 +62,7 @@ void ExternalEntityTable<Entry, size>::Initialize() {
                 kSegmentSize * kNumReadOnlySegments);
   Address first_segment = this->vas_->AllocatePages(
       this->vas_->base(), kSegmentSize * kNumReadOnlySegments, Base::kAlignment,
-      PagePermissions::kRead);
+      PagePermissions::kRead, PagePermissions::kReadWrite);
   if (first_segment != this->vas_->base()) {
     V8::FatalProcessOutOfMemory(
         nullptr,
@@ -154,7 +154,7 @@ void ExternalEntityTable<Entry, size>::UnsealReadOnlySegments() {
   DCHECK(this->is_initialized());
   bool success = this->vas_->SetPagePermissions(
       this->vas_->base(), kSegmentSize * kNumReadOnlySegments,
-      PagePermissions::kReadWrite);
+      PagePermissions::kReadWrite, PagePermissions::kReadWrite);
   CHECK(success);
 }
 
@@ -163,7 +163,7 @@ void ExternalEntityTable<Entry, size>::SealReadOnlySegments() {
   DCHECK(this->is_initialized());
   bool success = this->vas_->SetPagePermissions(
       this->vas_->base(), kSegmentSize * kNumReadOnlySegments,
-      PagePermissions::kRead);
+      PagePermissions::kRead, PagePermissions::kReadWrite);
   CHECK(success);
 }
 
