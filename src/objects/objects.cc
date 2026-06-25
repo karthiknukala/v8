@@ -1997,8 +1997,7 @@ SafeHeapObjectSize HeapObjectLayout::SafeSizeFromMap(Tagged<Map> map) const {
 }
 
 int HeapObject::SizeFromMap(Tagged<Map> map) const {
-  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !map.IsSmi() && !map.IsBigInt(),
-                 V8_CHERI_TAG_GET(map.ptr()));
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, V8_CHERI_TAG_GET(map.ptr()));
   int instance_size = map->instance_size();
   if (instance_size != kVariableSizeSentinel) return instance_size;
   // Only inline the most frequent cases.
