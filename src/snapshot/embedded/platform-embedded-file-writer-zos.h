@@ -28,7 +28,10 @@ class PlatformEmbeddedFileWriterZOS : public PlatformEmbeddedFileWriterBase {
   void AlignToDataAlignment() override;
 
   void DeclareUint32(const char* name, uint32_t value) override;
+  void DeclareCodePtr(const char* codeptr, const char* name) override;
+  void DeclareSymbolSize(const char* name, uint32_t value) override;
   void DeclareLabel(const char* name) override;
+  void DeclareType(const char* name, const char* which) override;
   void DeclareLabelProlog(const char* name) override;
   void DeclareLabelEpilogue() override;
   void SourceInfo(int fileid, const char* filename, int line) override;
