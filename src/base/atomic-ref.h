@@ -101,6 +101,9 @@ class atomic_ref {
   std::atomic<T>* ptr_;
 };
 
+template <typename T>
+atomic_ref(T&) -> atomic_ref<T>;
+
 }  // namespace base
 }  // namespace v8
 
