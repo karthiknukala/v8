@@ -366,13 +366,6 @@ struct is_capability {
       std::is_same<UintPtrT, T>::value || std::is_same<WordT, T>::value;
 };
 #endif
-#else
-template <class T>
-struct is_capability {
-  static const bool value = false;
-  static const bool maybe_tagged = false;
-};
-#endif
 template <class T1, class T2>
 struct is_capability<PairT<T1, T2>> {
   static const bool value =
@@ -387,6 +380,13 @@ struct is_capability<UnionOf<T1, T2>> {
   static const bool maybe_tagged =
       is_capability<T1>::maybe_tagged || is_capability<T2>::maybe_tagged;
 };
+#else
+template <class T>
+struct is_capability {
+  static const bool value = false;
+  static const bool maybe_tagged = false;
+};
+#endif
 
 using AnyTaggedT = UnionOf<Object, MaybeObject>;
 using ContextOrEmptyContext = UnionOf<Context, Smi>;
