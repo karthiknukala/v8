@@ -538,7 +538,7 @@ class SlotVerifyingVisitor : public HeapVisitor<SlotVerifyingVisitor> {
   void VisitPointers(Tagged<HeapObject> host, MaybeObjectSlot start,
                      MaybeObjectSlot end) final {
     for (MaybeObjectSlot slot = start; slot < end; ++slot) {
-      MaybeObject object = slot.load(cage_base());
+      Tagged<MaybeObject> object = slot.load(cage_base());
 #ifdef __CHERI_PURE_CAPABILITY__
       if (!V8_CHERI_TAG_GET(object.ptr()) &&
           ((object.ptr() & kZapValue) == object.ptr()))
