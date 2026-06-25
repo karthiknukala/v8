@@ -12551,9 +12551,9 @@ TryToCopyAndConvertArrayToCppBuffer<CTypeInfoBuilder<double>::Build().GetId(),
 
 std::string SourceLocation::ToString() const {
   if (!*this) return {};
-  return (std::ostringstream{} << loc_.function_name() << '@'
-                               << loc_.file_name() << ':' << loc_.line())
-      .str();
+  std::ostringstream oss;
+  oss << loc_.function_name() << '@' << loc_.file_name() << ':' << loc_.line();
+  return oss.str();
 }
 
 }  // namespace v8
