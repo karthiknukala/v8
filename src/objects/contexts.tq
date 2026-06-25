@@ -28,7 +28,7 @@ extern class ContextCell extends HeapObject {
   tagged_value: Object;
   dependent_code: DependentCode;
   state: int32;
-  @if(TAGGED_SIZE_8_BYTES) optional_padding: uint32;
+  @if(UNCOMPRESSED) optional_padding: uint32;
   double_value: float64;
 }
 
