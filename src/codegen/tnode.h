@@ -487,10 +487,8 @@ class TNode {
                                           is_capability_(other.is_capability_)
 #endif
   {
-    LazyTemplateChecks();
   }
 
-  TNode(const TNode& other) V8_NOEXCEPT : node_(other.node_) {}
   TNode() : node_(nullptr) {}
 
   TNode operator=(TNode other) {
