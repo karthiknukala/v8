@@ -612,7 +612,8 @@ uint8_t* CodeRange::RemapEmbeddedBuiltins(Isolate* isolate,
            embedded_blob_code_size);
   } else {
     if (!page_allocator()->SetPermissions(embedded_blob_code_copy, code_size,
-                                          PageAllocator::kReadWrite)) {
+                                          PageAllocator::kReadWrite,
+                                          PageAllocator::kReadWriteExecute)) {
       V8::FatalProcessOutOfMemory(isolate,
                                   "Re-embedded builtins: set permissions");
     }

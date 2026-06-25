@@ -818,7 +818,6 @@ void LiftoffAssembler::PrepareCall(const ValueKindSig* sig,
       LiftoffRegister new_target = free_regs.GetFirstRegSet();
       parallel_move.MoveRegister(new_target, LiftoffRegister(*target), kI32);
       *target = new_target.gp().C();
-#endif  // __CHERI_PURE_CAPABILITY__
     } else {
       stack_slots.Add(VarState(kI32, LiftoffRegister(*target), 0), param_slots);
       param_slots++;

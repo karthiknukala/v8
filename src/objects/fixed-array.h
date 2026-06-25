@@ -33,7 +33,8 @@ namespace v8::internal {
 // This could be larger, but the next power of two up would push the maximum
 // byte size of FixedDoubleArray out of int32 range.
 static constexpr int kMaxFixedArrayCapacity =
-    V8_LOWER_LIMITS_MODE_BOOL ? (16 * 1024 * 1024) : (128 * 1024 * 1024);
+    V8_LOWER_LIMITS_MODE_BOOL ? (16 * 1024 * 1024)
+                              : (128 * 1024 * 1024) / (kSystemPointerSize / 8);
 
 namespace detail {
 template <class Super, bool kLengthEqualsCapacity>
