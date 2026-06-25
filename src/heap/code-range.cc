@@ -53,6 +53,7 @@ bool RedZones::TryAdd(base::AddressRegion region) {
   // TODO(429538831): Once better understood, turn this into a regular
   // OOM.
   CHECK(allocator_->AllocatePagesAt(overlap.begin(), overlap.size(),
+                                    PageAllocator::kNoAccess,
                                     PageAllocator::kNoAccess));
   return true;
 }
@@ -94,6 +95,7 @@ bool RedZones::TryRemove(base::AddressRegion needle) {
                                       size_t red_zone_size) {
       CHECK_EQ(0, red_zone_size % allocate_page_size);
       CHECK(allocator_->AllocatePagesAt(red_zone_begin, red_zone_size,
+                                        PageAllocator::kNoAccess,
                                         PageAllocator::kNoAccess));
       new_red_zones.emplace_back(red_zone_begin, red_zone_size);
     };
@@ -303,9 +305,9 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
     if (non_allocatable_size < required_writable_area_size) {
       TRACE("=== Exclude the first page from allocatable area\n");
       excluded_allocatable_area_size = kPageSize;
-      CHECK(page_allocator_->AllocatePagesAt(page_allocator_->begin(),
-                                             excluded_allocatable_area_size,
-                                             PageAllocator::kNoAccess));
+      CHECK(page_allocator_->AllocatePagesAt(
+          page_allocator_->begin(), excluded_allocatable_area_size,
+          PageAllocator::kNoAccess, PageAllocator::kNoAccess));
     }
     // Commit required amount of writable memory.
     if (!reservation()->SetPermissions(base(), required_writable_area_size,
@@ -396,7 +398,8 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
         return false;
       }
     } else if (!params.page_allocator->SetPermissions(
-                   base, size, PageAllocator::kReadWriteExecute)) {
+                   base, size, PageAllocator::kReadWriteExecute,
+                   PageAllocator::kReadWriteExecute)) {
       return false;
     }
     if (immutable) {
@@ -533,13 +536,8 @@ uint8_t* CodeRange::RemapEmbeddedBuiltins(Isolate* isolate,
   embedded_blob_code_copy =
       reinterpret_cast<uint8_t*>(page_allocator()->AllocatePages(
           reinterpret_cast<void*>(blob_begin), allocate_code_size,
-          allocate_page_size,
-#ifdef __CHERI_PURE_CAPABILITY__
-          PageAllocator::kNoAccessWillJitLater,
+          allocate_page_size, PageAllocator::kNoAccessWillJitLater,
           PageAllocator::kReadWriteExecute));
-#else
-          PageAllocator::kNoAccessWillJitLater));
-#endif
   if (!embedded_blob_code_copy) {
     V8::FatalProcessOutOfMemory(
         isolate, "Can't allocate space for re-embedded builtins");
@@ -561,10 +559,7 @@ uint8_t* CodeRange::RemapEmbeddedBuiltins(Isolate* isolate,
       // support for kRecommitOnly though.
       void* result = page_allocator()->AllocatePages(
           reinterpret_cast<void*>(unreachable_start), unreachable_size,
-          allocate_page_size,
-#ifdef __CHERI_PURE_CAPABILITY__
-          PageAllocator::kNoAccess,
-#endif
+          allocate_page_size, PageAllocator::kNoAccess,
           PageAllocator::kNoAccess);
       CHECK_EQ(reinterpret_cast<Address>(result), unreachable_start);
     }
@@ -605,6 +600,7 @@ uint8_t* CodeRange::RemapEmbeddedBuiltins(Isolate* isolate,
     // iOS code pages are already RWX and don't need to be modified.
 #if !defined(V8_TARGET_OS_IOS)
     if (!page_allocator()->RecommitPages(embedded_blob_code_copy, code_size,
+                                         PageAllocator::kReadWriteExecute,
                                          PageAllocator::kReadWriteExecute)) {
       V8::FatalProcessOutOfMemory(isolate,
                                   "Re-embedded builtins: recommit pages");
@@ -624,7 +620,8 @@ uint8_t* CodeRange::RemapEmbeddedBuiltins(Isolate* isolate,
            embedded_blob_code_size);
 
     if (!page_allocator()->SetPermissions(embedded_blob_code_copy, code_size,
-                                          PageAllocator::kReadExecute)) {
+                                          PageAllocator::kReadExecute,
+                                          PageAllocator::kReadWriteExecute)) {
       V8::FatalProcessOutOfMemory(isolate,
                                   "Re-embedded builtins: set permissions");
     }

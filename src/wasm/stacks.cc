@@ -74,13 +74,10 @@ StackMemory::StackSegment::StackSegment(size_t pages) {
   // Reserve one guard page before and after the stack memory.
   limit_ = static_cast<uint8_t*>(allocator->AllocatePages(
       nullptr, size_ + 2 * page_size, allocator->AllocatePageSize(),
-#ifdef __CHERI_PURE_CAPABILITY__
       PageAllocator::kNoAccess, PageAllocator::kReadWrite));
-#else
-      PageAllocator::kNoAccess));
-#endif
-  if (limit_ == nullptr || !SetPermissions(allocator, limit_ + page_size, size_,
-                                           PageAllocator::kReadWrite)) {
+  if (limit_ == nullptr ||
+      !SetPermissions(allocator, limit_ + page_size, size_,
+                      PageAllocator::kReadWrite, PageAllocator::kReadWrite)) {
     V8::FatalProcessOutOfMemory(nullptr,
                                 "StackMemory::StackSegment::StackSegment");
   }

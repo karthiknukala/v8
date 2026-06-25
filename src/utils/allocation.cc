@@ -165,13 +165,8 @@ void* GetRandomMmapAddr() {
 }
 
 void* AllocatePages(v8::PageAllocator* page_allocator, size_t size,
-                    size_t alignment,
-#ifdef __CHERI_PURE_CAPABILITY__
-                    PageAllocator::Permission access,
+                    size_t alignment, PageAllocator::Permission access,
                     PageAllocator::Permission max_access,
-#else
-                    PageAllocator::Permission access,
-#endif
                     PageAllocator::AllocationHint hint) {
   DCHECK_NOT_NULL(page_allocator);
   DCHECK(IsAligned(reinterpret_cast<Address>(hint.Address()), alignment));
@@ -182,11 +177,8 @@ void* AllocatePages(v8::PageAllocator* page_allocator, size_t size,
   }
   void* result = nullptr;
   for (int i = 0; i < kAllocationTries; ++i) {
-#ifdef __CHERI_PURE_CAPABILITY__
-    result = page_allocator->AllocatePages(size, alignment, access, max_access, hint);
-#else
-    result = page_allocator->AllocatePages(size, alignment, access, hint);
-#endif
+    result = page_allocator->AllocatePages(size, alignment, access, max_access,
+                                           hint);
     if (V8_LIKELY(result != nullptr)) break;
     OnCriticalMemoryPressure();
   }
@@ -211,9 +203,10 @@ void ReleasePages(v8::PageAllocator* page_allocator, void* address, size_t size,
 }
 
 bool SetPermissions(v8::PageAllocator* page_allocator, void* address,
-                    size_t size, PageAllocator::Permission access) {
+                    size_t size, PageAllocator::Permission access,
+                    PageAllocator::Permission max_access) {
   DCHECK_NOT_NULL(page_allocator);
-  return page_allocator->SetPermissions(address, size, access);
+  return page_allocator->SetPermissions(address, size, access, max_access);
 }
 
 void OnCriticalMemoryPressure() {
@@ -234,15 +227,10 @@ VirtualMemory::VirtualMemory(v8::PageAllocator* page_allocator, size_t size,
   DCHECK(IsAligned(size, page_allocator_->CommitPageSize()));
   const size_t page_size = page_allocator_->AllocatePageSize();
   alignment = RoundUp(alignment, page_size);
-#ifdef __CHERI_PURE_CAPABILITY__
   // TODO(ds815): Actually check if permissions has a sensible value here.
   Address address = reinterpret_cast<Address>(
       AllocatePages(page_allocator_, RoundUp(size, page_size), alignment,
                     permissions, PageAllocator::kReadWriteExecute, hint));
-#else
-  Address address = reinterpret_cast<Address>(AllocatePages(
-      page_allocator_, RoundUp(size, page_size), alignment, permissions, hint));
-#endif
   if (address != kNullAddress) {
     DCHECK(IsAligned(address, alignment));
     region_ = base::AddressRegion(address, size);
@@ -261,10 +249,11 @@ void VirtualMemory::Reset() {
 }
 
 bool VirtualMemory::SetPermissions(Address address, size_t size,
-                                   PageAllocator::Permission access) {
+                                   PageAllocator::Permission access,
+                                   PageAllocator::Permission max_access) {
   CHECK(InVM(address, size));
   bool result = page_allocator_->SetPermissions(
-      reinterpret_cast<void*>(address), size, access);
+      reinterpret_cast<void*>(address), size, access, max_access);
   return result;
 }
 
