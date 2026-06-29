@@ -658,15 +658,6 @@ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void SharedFunctionInfo::
     CreateAndSetUncompiledData<LocalIsolate>(LocalIsolate* isolate,
                                              FunctionLiteral* lit);
 
-template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void SharedFunctionInfo::
-    CreateAndSetUncompiledData<Isolate>(Isolate* isolate,
-                                        Handle<SharedFunctionInfo> shared_info,
-                                        FunctionLiteral* lit);
-template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void SharedFunctionInfo::
-    CreateAndSetUncompiledData<LocalIsolate>(
-        LocalIsolate* isolate, Handle<SharedFunctionInfo> shared_info,
-        FunctionLiteral* lit);
-
 uint16_t SharedFunctionInfo::get_property_estimate_from_literal(
     FunctionLiteral* literal) {
   int estimate = literal->expected_property_count();
