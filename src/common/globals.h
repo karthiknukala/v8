@@ -592,8 +592,13 @@ using JSDispatchHandle = base::StrongAlias<JSDispatchHandleAliasTag, uint32_t>;
 
 constexpr JSDispatchHandle kNullJSDispatchHandle(0);
 
+#if V8_TARGET_CHERI
+constexpr int kJSDispatchTableEntrySize = 32;
+constexpr int kJSDispatchTableEntrySizeLog2 = 5;
+#else
 constexpr int kJSDispatchTableEntrySize = 16;
 constexpr int kJSDispatchTableEntrySizeLog2 = 4;
+#endif
 
 // The size of the virtual memory reservation for the JSDispatchTable.
 // As with the other tables, a maximum table size in combination with shifted
@@ -606,7 +611,11 @@ constexpr size_t kMaxJSDispatchEntries =
 
 #ifdef V8_TARGET_ARCH_64_BIT
 
+#if V8_TARGET_CHERI
+constexpr uint32_t kJSDispatchHandleShift = V8_LOWER_LIMITS_MODE_BOOL ? 13 : 9;
+#else
 constexpr uint32_t kJSDispatchHandleShift = V8_LOWER_LIMITS_MODE_BOOL ? 12 : 8;
+#endif
 static_assert((1 << (32 - kJSDispatchHandleShift)) == kMaxJSDispatchEntries,
               "kJSDispatchTableReservationSize and kJSDispatchEntryHandleShift "
               "don't match");
