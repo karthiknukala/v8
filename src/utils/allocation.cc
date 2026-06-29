@@ -258,19 +258,22 @@ bool VirtualMemory::SetPermissions(Address address, size_t size,
 }
 
 bool VirtualMemory::RecommitPages(Address address, size_t size,
-                                  PageAllocator::Permission access) {
+                                  PageAllocator::Permission access,
+                                  PageAllocator::Permission max_access) {
   CHECK(InVM(address, size));
   bool result = page_allocator_->RecommitPages(reinterpret_cast<void*>(address),
-                                               size, access);
+                                               size, access, max_access);
   return result;
 }
 
 bool VirtualMemory::Resize(Address address, size_t new_size,
-                           PageAllocator::Permission access) {
+                           PageAllocator::Permission access,
+                           PageAllocator::Permission max_access) {
   DCHECK(IsAligned(new_size, page_allocator_->CommitPageSize()));
   DCHECK_LE(region_.size(), new_size);
   if (!page_allocator_->ResizeAllocationAt(reinterpret_cast<void*>(address),
-                                           region_.size(), new_size, access)) {
+                                           region_.size(), new_size, access,
+                                           max_access)) {
     return false;
   }
   region_.set_size(new_size);

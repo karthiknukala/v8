@@ -261,6 +261,7 @@ void MemoryAllocator::PartialFreeMemory(BasePage* chunk, Address start_free,
       reservation->DiscardSystemPages(chunk->area_end(), page_size);
     } else {
       CHECK(reservation->SetPermissions(chunk->area_end(), page_size,
+                                        PageAllocator::kNoAccess,
                                         PageAllocator::kNoAccess));
     }
   }
@@ -566,6 +567,7 @@ bool MemoryAllocator::ResizeLargePage(LargePage* page, size_t old_object_size,
   DCHECK_LT(old_page_end, new_page_end);
 
   if (!page->reservation_.Resize(page->ChunkAddress(), new_page_size,
+                                 PageAllocator::kReadWrite,
                                  PageAllocator::kReadWrite)) {
     return false;
   }
@@ -689,10 +691,12 @@ bool MemoryAllocator::SetPermissionsOnExecutableMemoryChunk(VirtualMemory* vm,
     // The pages of the code range are already mapped RWX, we just need to
     // recommit them.
     return vm->RecommitPages(start, chunk_size,
+                             PageAllocator::kReadWriteExecute,
                              PageAllocator::kReadWriteExecute);
   } else {
     return vm->SetPermissions(start, chunk_size,
-                              MutablePage::GetCodeModificationPermission());
+                              MutablePage::GetCodeModificationPermission(),
+                              PageAllocator::kReadWriteExecute);
   }
 }
 

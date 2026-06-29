@@ -197,7 +197,7 @@ bool ConstantPool::ShouldEmitNow(Jump require_jump, size_t margin) const {
   if (EntryPtrCount() != 0) {
     // The pointer constants are always emitted before the 64-bit constants, so
     // we subtract the size of the 64-bit constants from {size}.
-    size_t dist_ptr = pool_end_ptr - first_use_ptr;
+    size_t dist_ptr = pool_end_ptr - first_use_ptr_;
     bool next_check_too_late =
         dist_ptr + 2 * kCheckInterval >= kMaxDistToPool64;
     bool opportune_emission_without_jump =
@@ -280,7 +280,7 @@ bool ConstantPool::IsInImmRangeIfEmittedAt(int pc_offset) {
       Entry64Count() == 0 || (pool_end_64 < first_use_64_ + kMaxDistToPool64);
   bool entries_in_range_ptr =
       EntryPtrCount() == 0 ||
-      (pool_end_ptr < first_use_ptr + kMaxDistToPoolPtr);
+      (pool_end_ptr < first_use_ptr_ + kMaxDistToPoolPtr);
   return entries_in_range_32 && entries_in_range_64 && entries_in_range_ptr;
 }
 

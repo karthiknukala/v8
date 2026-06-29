@@ -342,7 +342,7 @@ void RegExpMacroAssemblerARM64::CheckNotBackReferenceIgnoreCase(
     Label loop_check;
 
     Register capture_start_address = c12;
-    Register capture_end_addresss = c13;
+    Register capture_end_address = c13;
     Register current_position_address = c14;
 
     __ Add(capture_start_address,

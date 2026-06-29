@@ -170,15 +170,16 @@ void ReadOnlyPage::MakeHeaderRelocatableAndMarkAsSealed() {
   set_is_sealed_ro_space();
 }
 
-void ReadOnlySpace::SetPermissionsForPages(MemoryAllocator* memory_allocator,
-                                           PageAllocator::Permission access) {
+void ReadOnlySpace::SetPermissionsForPages(
+    MemoryAllocator* memory_allocator, PageAllocator::Permission access,
+    PageAllocator::Permission max_access) {
   for (BasePage* chunk : pages_) {
     // Read only pages don't have valid reservation object so we get proper
     // page allocator manually.
     v8::PageAllocator* page_allocator =
         memory_allocator->page_allocator(RO_SPACE);
     CHECK(SetPermissions(page_allocator, chunk->ChunkAddress(), chunk->size(),
-                         access));
+                         access, max_access));
   }
 }
 
@@ -219,7 +220,8 @@ void ReadOnlySpace::Seal(SealMode ro_mode) {
     }
   }
 
-  SetPermissionsForPages(memory_allocator, PageAllocator::kRead);
+  SetPermissionsForPages(memory_allocator, PageAllocator::kRead,
+                         PageAllocator::kRead);
 }
 
 bool ReadOnlySpace::ContainsSlow(Address addr) const {

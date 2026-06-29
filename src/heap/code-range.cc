@@ -311,7 +311,8 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
     }
     // Commit required amount of writable memory.
     if (!reservation()->SetPermissions(base(), required_writable_area_size,
-                                       PageAllocator::kReadWrite)) {
+                                       PageAllocator::kReadWrite,
+                                       PageAllocator::kReadWriteExecute)) {
       return false;
     }
 #if defined(V8_OS_WIN64)

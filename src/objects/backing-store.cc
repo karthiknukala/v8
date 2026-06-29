@@ -372,7 +372,7 @@ std::unique_ptr<BackingStore> BackingStore::TryAllocateAndPartiallyCommitMemory(
   auto commit_memory = [&] {
     return committed_byte_length == 0 ||
            SetPermissions(page_allocator, buffer_start, committed_byte_length,
-                          PageAllocator::kReadWrite);
+                          PageAllocator::kReadWrite, PageAllocator::kReadWrite);
   };
   if (!gc_retry(commit_memory)) {
     TRACE_BS("BSw:try   failed to set permissions (%p, %zu)\n", buffer_start,
@@ -552,7 +552,8 @@ std::optional<size_t> BackingStore::GrowWasmMemoryInPlace(Isolate* isolate,
 
     // Try to adjust the permissions on the memory.
     if (!i::SetPermissions(GetPlatformPageAllocator(), buffer_start_,
-                           new_length, PageAllocator::kReadWrite)) {
+                           new_length, PageAllocator::kReadWrite,
+                           PageAllocator::kReadWrite)) {
       // This is a nondeterministic failure; mark as such in the WasmEngine (for
       // differential fuzzing).
       wasm::WasmEngine::set_had_nondeterminism();
@@ -638,7 +639,7 @@ BackingStore::ResizeOrGrowResult BackingStore::ResizeInPlace(
               GetPlatformPageAllocator(),
               reinterpret_cast<uint8_t*>(buffer_start_) + new_committed_length,
               old_committed_length - new_committed_length,
-              PageAllocator::kNoAccess)) {
+              PageAllocator::kNoAccess, PageAllocator::kNoAccess)) {
         return kFailure;
       }
     }
@@ -657,7 +658,8 @@ BackingStore::ResizeOrGrowResult BackingStore::ResizeInPlace(
 
   // Try to adjust the permissions on the memory.
   if (!i::SetPermissions(GetPlatformPageAllocator(), buffer_start_,
-                         new_committed_length, PageAllocator::kReadWrite)) {
+                         new_committed_length, PageAllocator::kReadWrite,
+                         PageAllocator::kReadWrite)) {
     return kFailure;
   }
 
@@ -701,7 +703,8 @@ BackingStore::ResizeOrGrowResult BackingStore::GrowInPlace(
 
     // Try to adjust the permissions on the memory.
     if (!i::SetPermissions(GetPlatformPageAllocator(), buffer_start_,
-                           new_committed_length, PageAllocator::kReadWrite)) {
+                           new_committed_length, PageAllocator::kReadWrite,
+                           PageAllocator::kReadWrite)) {
       return kFailure;
     }
 

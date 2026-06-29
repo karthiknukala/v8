@@ -217,7 +217,8 @@ class ReadOnlySpace : public BaseSpace {
 
  protected:
   void SetPermissionsForPages(MemoryAllocator* memory_allocator,
-                              PageAllocator::Permission access);
+                              PageAllocator::Permission access,
+                              PageAllocator::Permission max_access);
 
   bool is_marked_read_only_ = false;
 

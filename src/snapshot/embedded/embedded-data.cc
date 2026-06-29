@@ -154,11 +154,13 @@ void OffHeapInstructionStream::CreateOffHeapOffHeapInstructionStream(
     FlushInstructionCache(allocated_code_bytes, d.code_size());
   }
   CHECK(SetPermissions(page_allocator, allocated_code_bytes,
-                       allocation_code_size, PageAllocator::kReadExecute));
+                       allocation_code_size, PageAllocator::kReadExecute,
+                       PageAllocator::kReadExecute));
 
   std::memcpy(allocated_data_bytes, d.data(), d.data_size());
   CHECK(SetPermissions(page_allocator, allocated_data_bytes,
-                       allocation_data_size, PageAllocator::kRead));
+                       allocation_data_size, PageAllocator::kRead,
+                       PageAllocator::kRead));
 
   *code = allocated_code_bytes;
   *code_size = d.code_size();

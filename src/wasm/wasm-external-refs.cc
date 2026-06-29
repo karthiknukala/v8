@@ -739,7 +739,7 @@ int32_t memory_init_wrapper(Address trusted_data_addr, uint32_t mem_index,
                             uintptr_t dst, uint32_t src, uint32_t seg_index,
                             uint32_t size) {
   DisallowGarbageCollection no_gc;
-  DCHECK_IMPLIES(V8_CHERI_PURECAP, V8_CHERI_TAG_GET(trusted_data_addr));
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, V8_CHERI_TAG_GET(trusted_data_addr));
   Tagged<WasmTrustedInstanceData> trusted_data =
       TrustedCast<WasmTrustedInstanceData>(Tagged<Object>{trusted_data_addr});
 

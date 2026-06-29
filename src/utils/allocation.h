@@ -183,11 +183,13 @@ void ReleasePages(v8::PageAllocator* page_allocator, void* address, size_t size,
 V8_EXPORT_PRIVATE
 V8_WARN_UNUSED_RESULT bool SetPermissions(v8::PageAllocator* page_allocator,
                                           void* address, size_t size,
-                                          PageAllocator::Permission access);
+                                          PageAllocator::Permission access,
+                                          PageAllocator::Permission max_access);
 inline bool SetPermissions(v8::PageAllocator* page_allocator, Address address,
-                           size_t size, PageAllocator::Permission access) {
+                           size_t size, PageAllocator::Permission access,
+                           PageAllocator::Permission max_access) {
   return SetPermissions(page_allocator, reinterpret_cast<void*>(address), size,
-                        access);
+                        access, max_access);
 }
 
 // Defines whether the address space reservation is going to be used for
@@ -270,19 +272,22 @@ class VirtualMemory final {
   // Sets permissions according to the access argument. address and size must be
   // multiples of CommitPageSize(). Returns true on success, otherwise false.
   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT bool SetPermissions(
-      Address address, size_t size, PageAllocator::Permission access);
+      Address address, size_t size, PageAllocator::Permission access,
+      PageAllocator::Permission max_access);
 
   // Recommits discarded pages in the given range with given permissions.
   // Discarded pages must be recommitted with their original permissions
   // before they are used again. |address| and |size| must be multiples of
   // CommitPageSize(). Returns true on success, otherwise false.
   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT bool RecommitPages(
-      Address address, size_t size, PageAllocator::Permission access);
+      Address address, size_t size, PageAllocator::Permission access,
+      PageAllocator::Permission max_access);
 
   // Resizes the reservation starting at |address| to |new_size| and commits the
   // additional memory range with the |access| permissions.
   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT bool Resize(
-      Address address, size_t new_size, PageAllocator::Permission access);
+      Address address, size_t new_size, PageAllocator::Permission access,
+      PageAllocator::Permission max_access);
 
   // Frees memory in the given [address, address + size) range. address and size
   // should be operating system page-aligned. The next write to this
