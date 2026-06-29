@@ -68,7 +68,7 @@ inline size_t ContentSize(const std::unordered_set<T, Hash>& set) {
 // When one of these checks fails, that probably means you've added fields to
 // a class guarded by it. Update the respective EstimateCurrentMemoryConsumption
 // function accordingly, and then update the check's expected size.
-#if V8_TARGET_ARCH_X64 && defined(__clang__) && V8_TARGET_OS_LINUX &&          \
+#if V8_TARGET_ARCH_X64 && defined(__clang__) && defined(V8_TARGET_OS_LINUX) && \
     !V8_USE_ADDRESS_SANITIZER && !V8_USE_MEMORY_SANITIZER && defined(DEBUG) && \
     defined(V8_COMPRESS_POINTERS) && !defined(V8_GC_MOLE) &&                   \
     defined(_LIBCPP_VERSION)
