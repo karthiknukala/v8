@@ -3312,7 +3312,7 @@ void MacroAssembler::CallDebugOnFunctionCall(Register fun, Register new_target,
   // meaningful; and we also don't need to, because its low bits are zero.
   static_assert(kJSDispatchHandleShift >= 1);
   SmiTag(actual_parameter_count);
-  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dispatch_table.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dispatch_handle.IsC());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, new_target.IsC());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, fun.IsC());
   Push(dispatch_handle, actual_parameter_count.C(), new_target, fun);
