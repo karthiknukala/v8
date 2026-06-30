@@ -427,7 +427,7 @@ class WasmLoweringReducer : public Next {
     V<Word32> padded_length = __ Word32BitwiseAnd(
         __ Word32Add(__ Word32Mul(length, element_type.value_kind_size()),
                      int32_t{kObjectAlignment - 1}),
-        int32_t{-kObjectAlignment});
+        int32_t{-static_cast<ssize_t>(kObjectAlignment)});
     Uninitialized<WasmArray> a = __ template Allocate<WasmArray>(
         __ ChangeUint32ToUintPtr(
             __ Word32Add(padded_length, WasmArray::kHeaderSize)),
