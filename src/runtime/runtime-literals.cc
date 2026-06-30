@@ -438,7 +438,7 @@ Handle<JSObject> CreateObjectLiteral(
           .Check();
     }
   }
-  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !V8_COMPRESS_POINTERS,
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL,
                  IsAligned(boilerplate.address(), kSystemPointerSize));
   return boilerplate;
 }
