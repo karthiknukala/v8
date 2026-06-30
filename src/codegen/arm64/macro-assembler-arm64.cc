@@ -538,7 +538,7 @@ void MacroAssembler::Mov(const Register& rd, const Operand& operand,
     if (rd != operand.reg() ||
         (rd.Is32Bits() && (discard_mode == kDontDiscardForSameWReg))) {
       if (rd.IsC() || operand.reg().IsC()) {
-        Assembler::cpy(rd.C(), operand.reg().C());
+        Assembler::capmov(rd.C(), operand.reg().C());
       } else {
         DCHECK(!operand.reg().IsC());
         Assembler::mov(rd, operand.reg());
