@@ -60,7 +60,6 @@ inline CPURegister GetRegFromType(const LiftoffRegister& reg, ValueKind kind) {
       return reg.gp().X();
     case kRef:
     case kRefNull:
-    case kRtt:
       return reg.gp().C();
     case kF32:
       return reg.fp().S();

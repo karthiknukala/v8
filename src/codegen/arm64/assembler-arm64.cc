@@ -262,7 +262,9 @@ bool RelocInfo::IsCodedSpecially() {
 
 bool RelocInfo::IsInConstantPool() {
   Instruction* instr = reinterpret_cast<Instruction*>(pc_);
+#if V8_TARGET_CHERI
   if (instr->IsLdrLiteralC()) return true;
+#endif
   if (instr->IsLdrLiteralX()) return true;
   if (!instr->IsLdrLiteralW()) return false;
 #ifdef DEBUG

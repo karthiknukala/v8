@@ -463,7 +463,7 @@ void Serializer::ObjectSerializer::SerializePrologue(SnapshotSpace space,
                                                      int size,
                                                      Tagged<Map> map) {
 #define PRINT_INSTANCE_TYPE(Name)                                   \
-  if (map.instance_type() == Name) {                                \
+  if (map->instance_type() == Name) {                               \
     PrintF("Serialize instance type: %s, size: %d\n", #Name, size); \
     has_type_name = true;                                           \
   }

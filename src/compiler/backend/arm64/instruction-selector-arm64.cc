@@ -876,8 +876,11 @@ std::tuple<InstructionCode, ImmediateMode> GetStoreOpcodeAndImmediate(
     case MemoryRepresentation::UncompressedTaggedPointer():
     case MemoryRepresentation::UncompressedTaggedSigned():
       CHECK(!paired);
-      return {V8_TARGET_CHERI_BOOL ? kArm64StrCapability : kArm64Str,
-              kLoadStoreImm64};
+#ifdef V8_TARGET_CHERI
+      return {kArm64StrCapability, kLoadStoreImm64};
+#else
+      return {kArm64Str, kLoadStoreImm64};
+#endif
     case MemoryRepresentation::ProtectedPointer():
       // We never store directly to protected pointers from generated code.
       UNREACHABLE();

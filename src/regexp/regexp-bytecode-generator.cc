@@ -322,7 +322,7 @@ void RegExpBytecodeGenerator::GoTo(Label* label) {
   Emit<RegExpBytecode::kGoTo>(label);
 }
 
-void RegExpBytecodeGenerator::Break() { Emit<RegExpBytecode::kBreak>(0); }
+void RegExpBytecodeGenerator::Break() { Emit<RegExpBytecode::kBreak>(); }
 
 void RegExpBytecodeGenerator::PushBacktrack(Label* label) {
   Emit<RegExpBytecode::kPushBacktrack>(label);
