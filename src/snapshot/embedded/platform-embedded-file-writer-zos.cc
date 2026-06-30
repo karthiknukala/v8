@@ -170,5 +170,20 @@ void PlatformEmbeddedFileWriterZOS::SectionRoData() {
   // Not used.
 }
 
+void PlatformEmbeddedFileWriterZOS::DeclareCodePtr(const char* codeptr,
+                                                   const char* name) {
+  // Not used.
+}
+
+void PlatformEmbeddedFileWriterZOS::DeclareSymbolSize(const char* name,
+                                                      uint32_t value) {
+  // Not used.
+}
+
+void PlatformEmbeddedFileWriterZOS::DeclareType(const char* name,
+                                                const char* which) {
+  // Not used.
+}
+
 }  // namespace internal
 }  // namespace v8
