@@ -2618,39 +2618,36 @@ void InstructionSelector::VisitDebugBreak(OpIndex node) {
 }
 
 #if V8_TARGET_CHERI
-void InstructionSelector::VisitAlignU(Node* node) {
+void InstructionSelector::VisitAlignU(OpIndex node) {
+  const Operation& op = Get(node);
   OperandGenerator g(this);
-  Node* to_boundary = node->InputAt(1);
-  DCHECK_EQ(to_boundary->opcode(), IrOpcode::kInt64Constant);
-  Emit(kArchAlignU, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
-       g.UseImmediate(to_boundary));
+  Emit(kArchAlignU, g.DefineAsRegister(node), g.UseRegister(op.input(0)),
+       g.UseImmediate(op.input(1)));
 }
 
-void InstructionSelector::VisitAlignD(Node* node) {
+void InstructionSelector::VisitAlignD(OpIndex node) {
+  const Operation& op = Get(node);
   OperandGenerator g(this);
-  Node* to_boundary = node->InputAt(1);
-  DCHECK_EQ(to_boundary->opcode(), IrOpcode::kInt64Constant);
-  Emit(kArchAlignD, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
-       g.UseImmediate(to_boundary));
+  Emit(kArchAlignD, g.DefineAsRegister(node), g.UseRegister(op.input(0)),
+       g.UseImmediate(op.input(1)));
 }
 
-void InstructionSelector::VisitSetBounds(Node* node) {
+void InstructionSelector::VisitSetBounds(OpIndex node) {
   OperandGenerator g(this);
   Emit(kArchSetBounds, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)), g.UseAny(node->InputAt(1)));
+       g.UseRegister(Get(node).input(0)), g.UseAny(Get(node).input(1)));
 }
 
-void InstructionSelector::VisitSealWithType(Node* node) {
+void InstructionSelector::VisitSealWithType(OpIndex node) {
   OperandGenerator g(this);
   Emit(kArchSealWithType, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)), g.UseAny(node->InputAt(1)));
+       g.UseRegister(Get(node).input(0)), g.UseAny(Get(node).input(1)));
 }
 #endif
 
-void InstructionSelector::VisitCapabilityIsTagged(Node* node) {
+void InstructionSelector::VisitCapabilityIsTagged(OpIndex node) {
   OperandGenerator g(this);
-  Emit(kArchCapabilityIsTagged, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  Emit(kArchCapabilityIsTagged, g.DefineAsRegister(node), g.UseRegister(node));
 }
 
 void InstructionSelector::VisitUnreachable(OpIndex node) {
