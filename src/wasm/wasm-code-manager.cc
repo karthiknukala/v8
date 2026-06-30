@@ -1363,7 +1363,6 @@ std::unique_ptr<WasmCode> NativeModule::AddCodeWithCodeSpace(
 
     // Apply the relocation delta by iterating over the RelocInfo.
     ScaledInt delta = dst_code_bytes.begin() - desc.buffer;
-    intptr_t delta = dst_code_bytes.begin() - desc.buffer;
     int mode_mask =
         RelocInfo::kApplyMask | RelocInfo::ModeMask(RelocInfo::WASM_CALL) |
         RelocInfo::ModeMask(RelocInfo::WASM_STUB_CALL) |
@@ -2288,7 +2287,7 @@ void WasmCodeManager::Commit(base::AddressRegion region) {
              region.begin(), region.end());
   bool success = GetPageAllocator()->RecommitPages(
       reinterpret_cast<void*>(region.begin()), region.size(),
-      PageAllocator::kReadWriteExecute);
+      PageAllocator::kReadWriteExecute, PageAllocator::kReadWriteExecute);
 
   if (V8_UNLIKELY(!success)) {
     auto oom_detail = base::FormattedString{} << "region size: "
@@ -2387,6 +2386,7 @@ VirtualMemory WasmCodeManager::TryAllocate(size_t size) {
 #endif
   } else {
     CHECK(SetPermissions(GetPageAllocator(), mem.address(), mem.size(),
+                         PageAllocator::kReadWriteExecute,
                          PageAllocator::kReadWriteExecute));
   }
   page_allocator->DiscardSystemPages(reinterpret_cast<void*>(mem.address()),
