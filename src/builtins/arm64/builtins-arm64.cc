@@ -4892,7 +4892,7 @@ void Builtins::Generate_CallApiCallbackImpl(MacroAssembler* masm,
   __ Mov(scratch, ER::isolate_address());
   __ LoadRoot(undef, RootIndex::kUndefinedValue);
 
-  DCHECK_IMPLIES(V8_TARGET_CHERI, func_templ.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, func_templ.IsC());
   __ Push(func_templ,  // kTargetIndex
           cp,          // kContextIndex
           undef.C(),   // kReturnValueIndex
