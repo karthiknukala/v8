@@ -4,7 +4,7 @@
 
 #include "src/wasm/wasm-objects.h"
 
-#if V8_TARGET_OS_LINUX
+#if V8_TARGET_OS_LINUX || V8_TARGET_OS_FREEBSD
 #include <sys/mman.h>
 #include <sys/stat.h>
 // `sys/mman.h defines `MAP_TYPE`, but `MAP_TYPE` also gets defined within V8.
@@ -1310,7 +1310,7 @@ DirectHandle<JSArrayBuffer> WasmMemoryObject::ToResizableBuffer(
 
 MaybeDirectHandle<WasmMemoryMapDescriptor>
 WasmMemoryMapDescriptor::NewFromAnonymous(Isolate* isolate, size_t length) {
-#if V8_TARGET_OS_LINUX
+#if V8_TARGET_OS_LINUX || V8_TARGET_OS_FREEBSD
   CHECK(v8_flags.experimental_wasm_memory_control);
   DirectHandle<JSFunction> descriptor_ctor(
       isolate->native_context()->wasm_memory_map_descriptor_constructor(),
@@ -1352,7 +1352,7 @@ WasmMemoryMapDescriptor::NewFromFileDescriptor(Isolate* isolate,
 
 size_t WasmMemoryMapDescriptor::MapDescriptor(
     DirectHandle<WasmMemoryObject> memory, size_t offset) {
-#if V8_TARGET_OS_LINUX
+#if V8_TARGET_OS_LINUX || V8_TARGET_OS_FREEBSD
   CHECK(v8_flags.experimental_wasm_memory_control);
   if (memory->array_buffer()->is_shared()) {
     // TODO(ahaas): Handle concurrent calls to `MapDescriptor`. To prevent
@@ -1398,7 +1398,7 @@ size_t WasmMemoryMapDescriptor::MapDescriptor(
 }
 
 bool WasmMemoryMapDescriptor::UnmapDescriptor() {
-#if V8_TARGET_OS_LINUX
+#if V8_TARGET_OS_LINUX || V8_TARGET_OS_FREEBSD
   CHECK(v8_flags.experimental_wasm_memory_control);
   DisallowGarbageCollection no_gc;
 

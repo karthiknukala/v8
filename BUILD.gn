@@ -1019,6 +1019,7 @@ external_v8_defines = [
   "V8_TARGET_OS_MACOS",
   "V8_TARGET_OS_WIN",
   "V8_TARGET_OS_CHROMEOS",
+  "V8_TARGET_OS_FREEBSD",
   "V8_TARGET_ARCH_ARM64",
   "V8_TARGET_ARCH_PPC64",
 ]
@@ -1092,6 +1093,9 @@ if (target_os == "android") {
 } else if (target_os == "linux") {
   enabled_external_v8_defines += [ "V8_HAVE_TARGET_OS" ]
   enabled_external_v8_defines += [ "V8_TARGET_OS_LINUX" ]
+} else if (target_os == "freebsd") {
+  enabled_external_v8_defines += [ "V8_HAVE_TARGET_OS" ]
+  enabled_external_v8_defines += [ "V8_TARGET_OS_FREEBSD" ]
 } else if (target_os == "mac") {
   enabled_external_v8_defines += [ "V8_HAVE_TARGET_OS" ]
   enabled_external_v8_defines += [ "V8_TARGET_OS_MACOS" ]
