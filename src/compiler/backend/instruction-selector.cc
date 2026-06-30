@@ -1222,7 +1222,6 @@ void InstructionSelector::InitializeCallBuffer(
       DCHECK(!call_use_fixed_target_reg);
       buffer->instruction_args.push_back(g.UseRegister(callee));
       break;
-    }
 #endif  // V8_ENABLE_WEBASSEMBLY
     case CallDescriptor::kCallBuiltinPointer: {
       // The common case for builtin pointers is to have the target in a
