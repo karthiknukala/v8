@@ -347,11 +347,7 @@ std::unique_ptr<BackingStore> BackingStore::TryAllocateAndPartiallyCommitMemory(
   auto allocate_pages = [&] {
     allocation_base =
         AllocatePages(page_allocator, reservation_size, page_size,
-#ifdef __CHERI_PURE_CAPABILITY__
                       PageAllocator::kNoAccess, PageAllocator::kReadWrite);
-#else
-                      PageAllocator::kNoAccess);
-#endif
     return allocation_base != nullptr;
   };
   if (!gc_retry(allocate_pages)) {

@@ -211,9 +211,7 @@ class ShellArrayBufferAllocator : public ArrayBufferAllocatorBase {
     size_t page_size = page_allocator->AllocatePageSize();
     size_t allocated = RoundUp(length, page_size);
     return i::AllocatePages(page_allocator, allocated, page_size,
-#ifdef __CHERI_PURE_CAPABILITY__
                             PageAllocator::kReadWrite,
-#endif
                             PageAllocator::kReadWrite);
   }
 

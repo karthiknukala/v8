@@ -154,12 +154,7 @@ V8_EXPORT_PRIVATE void* GetRandomMmapAddr();
 V8_EXPORT_PRIVATE
 V8_WARN_UNUSED_RESULT void* AllocatePages(
     v8::PageAllocator* page_allocator, size_t size, size_t alignment,
-#ifdef __CHERI_PURE_CAPABILITY__
-    PageAllocator::Permission access,
-    PageAllocator::Permission max_access,
-#else
-    PageAllocator::Permission access,
-#endif
+    PageAllocator::Permission access, PageAllocator::Permission max_access,
     v8::PageAllocator::AllocationHint hint = {});
 
 // Frees memory allocated by a call to AllocatePages. |address| and |size| must

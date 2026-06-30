@@ -120,10 +120,7 @@ void OffHeapInstructionStream::CreateOffHeapOffHeapInstructionStream(
   const uint32_t allocation_code_size = RoundUp(d.code_size(), alignment);
   uint8_t* allocated_code_bytes = static_cast<uint8_t*>(
       AllocatePages(page_allocator, allocation_code_size, alignment,
-                    PageAllocator::kReadWrite,
-#ifdef __CHERI_PURE_CAPABILITY__
-                    PageAllocator::kReadWriteExecute,
-#endif
+                    PageAllocator::kReadWrite, PageAllocator::kReadWriteExecute,
                     v8::PageAllocator::AllocationHint().WithAddress(
                         requested_allocation_code_address)));
   CHECK_NOT_NULL(allocated_code_bytes);
@@ -133,10 +130,7 @@ void OffHeapInstructionStream::CreateOffHeapOffHeapInstructionStream(
   const uint32_t allocation_data_size = RoundUp(d.data_size(), alignment);
   uint8_t* allocated_data_bytes = static_cast<uint8_t*>(
       AllocatePages(page_allocator, allocation_data_size, alignment,
-                    PageAllocator::kReadWrite,
-#ifdef __CHERI_PURE_CAPABILITY__
-                    PageAllocator::kReadWriteExecute,
-#endif
+                    PageAllocator::kReadWrite, PageAllocator::kReadWriteExecute,
                     v8::PageAllocator::AllocationHint().WithAddress(
                         requested_allocation_data_address)));
   CHECK_NOT_NULL(allocated_data_bytes);
