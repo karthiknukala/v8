@@ -145,6 +145,7 @@ class V8_EXPORT MemorySpan {
    public:
     using difference_type = std::ptrdiff_t;
     using value_type = T;
+    using element_type = T;
     using pointer = value_type*;
     using reference = value_type&;
     using iterator_category = std::random_access_iterator_tag;
