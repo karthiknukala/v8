@@ -598,7 +598,7 @@ void LiftoffAssembler::LoadTrustedPointer(Register dst, Register src_addr,
                                           int offset, IndirectPointerTag tag) {
   MemOperand src{src_addr, offset};
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, dst.IsC());
-  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, src.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, src_addr.IsC());
   LoadTrustedPointerField(dst, src, tag);
 }
 
