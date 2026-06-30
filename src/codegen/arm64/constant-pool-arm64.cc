@@ -273,7 +273,7 @@ bool ConstantPool::IsInImmRangeIfEmittedAt(int pc_offset) {
   size_t pool_end_32 =
       pc_offset + ComputeSize(Jump::kRequired, require_alignment);
   size_t pool_end_64 = pool_end_32 - Entry32Count() * kInt32Size;
-  size_t pool_entry_ptr = pool_end_64 - Entry64Count() * kDoubleSize;
+  size_t pool_end_ptr = pool_end_64 - Entry64Count() * kDoubleSize;
   bool entries_in_range_32 =
       Entry32Count() == 0 || (pool_end_32 < first_use_32_ + kMaxDistToPool32);
   bool entries_in_range_64 =
