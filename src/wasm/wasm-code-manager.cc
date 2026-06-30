@@ -1243,7 +1243,9 @@ void NativeModule::InitializeJumpTableForLazyCompilation(
   Address compile_lazy_address =
       code_space_data.far_jump_table->instruction_start() +
       JumpTableAssembler::FarJumpSlotIndexToOffset(
-          BuiltinLookup::JumptableIndexForBuiltin(Builtin::kWasmCompileLazy));
+          BuiltinLookup::JumptableIndexForBuiltin(Builtin::kWasmCompileLazy),
+          TableAlignmentFor(
+              code_space_data.far_jump_table->instruction_start()));
 
   JumpTableAssembler::GenerateLazyCompileTable(
       lazy_compile_table_->instruction_start(), num_wasm_functions,
@@ -1838,7 +1840,8 @@ void NativeModule::PatchJumpTableLocked(WritableJumpTablePair& jump_table_pair,
       code_space_data.jump_table->instruction_start() +
       JumpTableAssembler::JumpSlotIndexToOffset(slot_index);
   uint32_t far_jump_table_offset = JumpTableAssembler::FarJumpSlotIndexToOffset(
-      BuiltinLookup::BuiltinCount() + slot_index);
+      BuiltinLookup::BuiltinCount() + slot_index,
+      TableAlignmentFor(code_space_data.far_jump_table->instruction_start()));
   // Only pass the far jump table start if the far jump table actually has a
   // slot for this function index (i.e. does not only contain runtime stubs).
   bool has_far_jump_slot =
@@ -2159,7 +2162,8 @@ Builtin NativeModule::GetBuiltinInJumptableSlot(Address target) const {
       uint32_t index = JumpTableAssembler::FarJumpSlotOffsetToIndex(
           offset, far_table_alignment);
       if (index >= BuiltinLookup::BuiltinCount()) continue;
-      if (JumpTableAssembler::FarJumpSlotIndexToOffset(index) != offset) {
+      if (JumpTableAssembler::FarJumpSlotIndexToOffset(
+              index, far_table_alignment) != offset) {
         continue;
       }
       return BuiltinLookup::BuiltinForJumptableIndex(index);
