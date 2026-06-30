@@ -554,9 +554,6 @@ class MachineRepresentationChecker {
             CheckValueInputRepresentationIs(
                 node, 1, MachineType::PointerRepresentation());
             break;
-          case IrOpcode::kStorePair:
-            CheckValueInputIsTaggedOrPointer(node, 0);
-            CheckValueInputIsTaggedOrPointer(node, 1);
             break;
           case IrOpcode::kWord32AtomicPairAdd:
           case IrOpcode::kWord32AtomicPairSub:
