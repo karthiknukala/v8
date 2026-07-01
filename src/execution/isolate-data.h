@@ -379,6 +379,8 @@ class IsolateData final {
   // long tasks.
   size_t long_task_stats_counter_ = 0;
 
+  V8_NO_UNIQUE_ADDRESS uint8_t
+      thread_local_top_padding_[kThreadLocalTopPaddingSize];
   ThreadLocalTop thread_local_top_;
   HandleScopeData handle_scope_data_;
 
@@ -488,7 +490,8 @@ void IsolateData::AssertPredictableLayout() {
   static_assert(std::is_standard_layout_v<LinearAllocationArea>);
 #define V(PureName, Size, Name)                                             \
   static_assert(std::is_standard_layout_v<decltype(IsolateData::Name##_)>); \
-  static_assert(offsetof(IsolateData, Name##_) == k##PureName##Offset);
+  static_assert(offsetof(IsolateData, Name##_) == k##PureName##Offset,      \
+                "IsolateData layout mismatch at " #Name ": sizeof=" #Size);
   ISOLATE_DATA_FIELDS(V)
 #undef V
   static_assert(sizeof(IsolateData) == IsolateData::kSizeOffset);

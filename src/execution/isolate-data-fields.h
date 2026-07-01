@@ -61,6 +61,9 @@ static constexpr int kFastCCallAlignmentPaddingCount = 1;
   V(FastCCallCallerFP, kSystemPointerSize, fast_c_call_caller_fp)              \
   V(FastApiCallTarget, kSystemPointerSize, fast_api_call_target)               \
   V(LongTaskStatsCounter, kSizetSize, long_task_stats_counter)                 \
+  /* This padding aligns ThreadLocalTop to kSystemPointerSize bytes. */        \
+  PADDING_FIELD(kSystemPointerSize, V, ThreadLocalTopPadding,                  \
+                thread_local_top_padding)                                      \
   V(ThreadLocalTop, ThreadLocalTop::kSizeInBytes, thread_local_top)            \
   V(HandleScopeData, HandleScopeData::kSizeInBytes, handle_scope_data)         \
   V(EmbedderData, Internals::kNumIsolateDataSlots* kSystemPointerSize,         \
