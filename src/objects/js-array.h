@@ -148,8 +148,8 @@ class JSArray : public TorqueGeneratedJSArray<JSArray, JSObject> {
 
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
   static const int kInitialMaxFastElementArray =
-      (kMaxRegularHeapObjectSize - FixedArray::kHeaderSize - kHeaderSize -
-       AllocationMemento::kSize) >>
+      (kMaxRegularHeapObjectSize - sizeof(FixedArray) - kHeaderSize -
+       sizeof(AllocationMemento)) >>
       kSystemPointerSizeLog2;
 #else
   static const int kInitialMaxFastElementArray =
