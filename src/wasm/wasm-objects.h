@@ -545,52 +545,45 @@ class V8_EXPORT_PRIVATE WasmTrustedInstanceData : public ExposedTrustedObject {
   DECL_VERIFIER(WasmTrustedInstanceData)
 
 #ifdef __CHERI_PURE_CAPABILITY__
-#define WASM_INSTANCE_OBJECT_FIELDS(V)                                    \
+#define FIELD_LIST(V)                                                     \
   /* Often-accessed fields go first to minimize generated code size. */   \
   /* Less than system pointer sized fields come first. */                 \
-  V(kImportedFunctionRefsOffset, kTaggedSize)                             \
-  V(kIndirectFunctionTableRefsOffset, kTaggedSize)                        \
-  V(kIndirectFunctionTableSigIdsOffset, kTaggedSize)                      \
-  V(kIndirectFunctionTableTargetsOffset, kTaggedSize)                     \
+  V(kProtectedDispatchTable0Offset, kTaggedSize)                          \
+  V(kProtectedDispatchTableForImportsOffset, kTaggedSize)                 \
   V(kImportedMutableGlobalsOffset, kTaggedSize)                           \
-  V(kImportedFunctionTargetsOffset, kTaggedSize)                          \
-  V(kIndirectFunctionTableSizeOffset, kUInt32Size)                        \
+  IF_WASM_DRUMBRAKE(V, kImportedFunctionIndicesOffset, kTaggedSize)       \
   /* Optional padding to align system pointer size fields */              \
   V(kOptionalPaddingOffset, POINTER_SIZE_PADDING(kOptionalPaddingOffset)) \
   V(kMemory0StartOffset, kSystemPointerSize)                              \
   V(kMemory0SizeOffset, kSizetSize)                                       \
-  V(kMemory0Padding, POINTER_SIZE_PADDING(kMemory0Padding))               \
-  V(kStackLimitAddressOffset, kSystemPointerSize)                         \
-  V(kIsorecursiveCanonicalTypesOffset, kSystemPointerSize)                \
+  V(kMemory0PaddingOffset, POINTER_SIZE_PADDING(kMemory0PaddingOffset))   \
   V(kGlobalsStartOffset, kSystemPointerSize)                              \
   V(kJumpTableStartOffset, kSystemPointerSize)                            \
   /* End of often-accessed fields. */                                     \
   /* Continue with system pointer size fields to maintain alignment. */   \
-  V(kNewAllocationLimitAddressOffset, kSystemPointerSize)                 \
-  V(kNewAllocationTopAddressOffset, kSystemPointerSize)                   \
-  V(kOldAllocationLimitAddressOffset, kSystemPointerSize)                 \
-  V(kOldAllocationTopAddressOffset, kSystemPointerSize)                   \
-  V(kRealStackLimitAddressOffset, kSystemPointerSize)                     \
   V(kHookOnFunctionCallAddressOffset, kSystemPointerSize)                 \
   V(kTieringBudgetArrayOffset, kSystemPointerSize)                        \
   /* Less than system pointer size aligned fields are below. */           \
+  V(kProtectedMemoryBasesAndSizesOffset, kTaggedSize)                     \
   V(kDataSegmentStartsOffset, kTaggedSize)                                \
   V(kDataSegmentSizesOffset, kTaggedSize)                                 \
   V(kElementSegmentsOffset, kTaggedSize)                                  \
-  V(kModuleObjectOffset, kTaggedSize)                                     \
-  V(kExportsObjectOffset, kTaggedSize)                                    \
+  V(kInstanceObjectOffset, kTaggedSize)                                   \
   V(kNativeContextOffset, kTaggedSize)                                    \
-  V(kMemoryObjectOffset, kTaggedSize)                                     \
+  V(kProtectedSharedPartOffset, kTaggedSize)                              \
+  V(kMemoryObjectsOffset, kTaggedSize)                                    \
   V(kUntaggedGlobalsBufferOffset, kTaggedSize)                            \
   V(kTaggedGlobalsBufferOffset, kTaggedSize)                              \
   V(kImportedMutableGlobalsBuffersOffset, kTaggedSize)                    \
+  IF_WASM_DRUMBRAKE(V, kInterpreterObjectOffset, kTaggedSize)             \
   V(kTablesOffset, kTaggedSize)                                           \
-  V(kIndirectFunctionTablesOffset, kTaggedSize)                           \
+  V(kProtectedDispatchTablesOffset, kTaggedSize)                          \
   V(kTagsTableOffset, kTaggedSize)                                        \
-  V(kWasmInternalFunctionsOffset, kTaggedSize)                            \
+  V(kFuncRefsOffset, kTaggedSize)                                         \
   V(kManagedObjectMapsOffset, kTaggedSize)                                \
   V(kFeedbackVectorsOffset, kTaggedSize)                                  \
   V(kWellKnownImportsOffset, kTaggedSize)                                 \
+  V(kProtectedManagedNativeModuleOffset, kTaggedSize)                     \
   V(kBreakOnEntryOffset, kUInt8Size)                                      \
   /* More padding to make the header pointer-size aligned */              \
   V(kHeaderPaddingOffset, POINTER_SIZE_PADDING(kHeaderPaddingOffset))     \
@@ -645,10 +638,6 @@ class V8_EXPORT_PRIVATE WasmTrustedInstanceData : public ExposedTrustedObject {
 
   DEFINE_FIELD_OFFSET_CONSTANTS(ExposedTrustedObject::kHeaderSize, FIELD_LIST)
   static_assert(IsAligned(kHeaderSize, kTaggedSize));
-  // TODO(ishell, v8:8875): When pointer compression is enabled 8-byte size
-  // fields (external pointers, doubles and BigInt data) are only kTaggedSize
-  // aligned so checking for alignments of fields bigger than kTaggedSize
-  // doesn't make sense until v8:8875 is fixed.
 #define ASSERT_FIELD_ALIGNED(offset, size)                                 \
   static_assert(size == 0 || IsAligned(offset, size) ||                    \
                 (COMPRESS_POINTERS_BOOL && (size == kSystemPointerSize) && \
@@ -871,14 +860,24 @@ class WasmDispatchTable : public ExposedTrustedObject {
 
   static constexpr size_t kLengthOffset = kHeaderSize;
   static constexpr size_t kCapacityOffset = kLengthOffset + kUInt32Size;
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr size_t kProtectedOffheapDataOffset =
+      RoundUp(kCapacityOffset + kUInt32Size, kSystemPointerSize);
+#else
   static constexpr size_t kProtectedOffheapDataOffset =
       kCapacityOffset + kUInt32Size;
+#endif
   static constexpr size_t kProtectedUsesOffset =
       kProtectedOffheapDataOffset + kTaggedSize;
   static constexpr size_t kTableTypeOffset = kProtectedUsesOffset + kTaggedSize;
   static constexpr size_t kPaddingSize = TAGGED_SIZE_8_BYTES ? kUInt32Size : 0;
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr size_t kEntriesOffset = RoundUp(
+      kTableTypeOffset + kUInt32Size + kPaddingSize, kSystemPointerSize);
+#else
   static constexpr size_t kEntriesOffset =
       kTableTypeOffset + kUInt32Size + kPaddingSize;
+#endif
 
   // Entries consist of
   // - target (WasmCodePointer == entry in WasmCodePointerTable),
@@ -896,7 +895,12 @@ class WasmDispatchTable : public ExposedTrustedObject {
 #endif  // V8_ENABLE_DRUMBRAKE
   static_assert(sizeof(WasmCodePointer) == kUInt32Size);
   static constexpr size_t kSigBias = kTargetBias + kUInt32Size;
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr size_t kImplicitArgBias =
+      RoundUp(kSigBias + kUInt32Size, kSystemPointerSize);
+#else
   static constexpr size_t kImplicitArgBias = kSigBias + kUInt32Size;
+#endif
   static constexpr size_t kEntrySize = kImplicitArgBias + kTaggedSize;
 
   // Tagged fields must be tagged-size-aligned.
@@ -997,8 +1001,13 @@ class WasmDispatchTableForImports : public TrustedObject {
 
   static constexpr size_t kLengthOffset = kHeaderSize;
   static constexpr size_t kPaddingSize = TAGGED_SIZE_8_BYTES ? kUInt32Size : 0;
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr size_t kProtectedOffheapDataOffset =
+      RoundUp(kLengthOffset + kUInt32Size + kPaddingSize, kSystemPointerSize);
+#else
   static constexpr size_t kProtectedOffheapDataOffset =
       kLengthOffset + kUInt32Size + kPaddingSize;
+#endif
   static constexpr size_t kEntriesOffset =
       kProtectedOffheapDataOffset + kTaggedSize;
 
@@ -1017,8 +1026,13 @@ class WasmDispatchTableForImports : public TrustedObject {
   static constexpr size_t kEntryPaddingSize =
       TAGGED_SIZE_8_BYTES ? kUInt32Size : 0;
   static_assert(sizeof(WasmCodePointer) == kUInt32Size);
+#ifdef __CHERI_PURE_CAPABILITY__
+  static constexpr size_t kImplicitArgBias = RoundUp(
+      kTargetBias + kEntryPaddingSize + kUInt32Size, kSystemPointerSize);
+#else
   static constexpr size_t kImplicitArgBias =
       kTargetBias + kEntryPaddingSize + kUInt32Size;
+#endif
   static constexpr size_t kEntrySize = kImplicitArgBias + kTaggedSize;
 
   // Tagged fields must be tagged-size-aligned.
