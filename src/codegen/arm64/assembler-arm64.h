@@ -3072,7 +3072,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   }
 
 #if V8_TARGET_CHERI
-  static constexpr bool Assembler::IsImmAddSubCapability(int64_t immediate) {
+  static constexpr bool IsImmAddSubCapability(int64_t immediate) {
     return is_uint12(immediate) ||
            (is_uint12(immediate >> 12) && ((immediate & 0xFFF) == 0));
   }
@@ -3099,7 +3099,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
                                             bool is_cap = false);
 
 #if V8_TARGET_CHERI
-  static bool IsImmAddSubCapability(int64_t immediate);
   inline static Instr ImmAddSubCapability(int imm);
 #endif
 
