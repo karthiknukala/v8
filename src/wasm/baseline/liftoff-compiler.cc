@@ -86,25 +86,20 @@ struct assert_field_size {
       assert_field_size<WASM_TRUSTED_INSTANCE_DATA_FIELD_SIZE(name), \
                         load_size>::size);
 
-#define LOAD_TAGGED_PTR_INSTANCE_FIELD(dst, name, pinned)                     \
-  static_assert(WASM_INSTANCE_OBJECT_FIELD_SIZE(name) == kTaggedSize,         \
-                "field in WasmInstance does not have the expected size");     \
-  __ LoadTaggedPointerFromInstance(dst,                                       \
-                                   LoadInstanceIntoRegister(pinned, dst.C()), \
-                                   WASM_INSTANCE_OBJECT_FIELD_OFFSET(name));
-#else
+#define LOAD_TAGGED_PTR_INSTANCE_FIELD(dst, name, pinned)                  \
+  static_assert(                                                           \
+      WASM_TRUSTED_INSTANCE_DATA_FIELD_SIZE(name) == kTaggedSize,          \
+      "field in WasmTrustedInstanceData does not have the expected size"); \
+  __ LoadTaggedPointerFromInstance(                                        \
+      dst, LoadInstanceIntoRegister(pinned, dst.C()),                      \
+      WASM_TRUSTED_INSTANCE_DATA_FIELD_OFFSET(name));
+#else  // !V8_TARGET_CHERI
 #define LOAD_INSTANCE_FIELD(dst, name, load_size, pinned)            \
   __ LoadFromInstance(                                               \
       dst, LoadInstanceIntoRegister(pinned, dst),                    \
       WASM_TRUSTED_INSTANCE_DATA_FIELD_OFFSET(name),                 \
       assert_field_size<WASM_TRUSTED_INSTANCE_DATA_FIELD_SIZE(name), \
                         load_size>::size);
-
-#define LOAD_TAGGED_PTR_INSTANCE_FIELD(dst, name, pinned)                      \
-  static_assert(WASM_INSTANCE_OBJECT_FIELD_SIZE(name) == kTaggedSize,          \
-                "field in WasmInstance does not have the expected size");      \
-  __ LoadTaggedPointerFromInstance(dst, LoadInstanceIntoRegister(pinned, dst), \
-                                   WASM_INSTANCE_OBJECT_FIELD_OFFSET(name));
 
 #define LOAD_TAGGED_PTR_INSTANCE_FIELD(dst, name, pinned)                  \
   static_assert(                                                           \
@@ -113,7 +108,7 @@ struct assert_field_size {
   __ LoadTaggedPointerFromInstance(                                        \
       dst, LoadInstanceIntoRegister(pinned, dst),                          \
       WASM_TRUSTED_INSTANCE_DATA_FIELD_OFFSET(name));
-#endif
+#endif  // V8_TARGET_CHERI
 
 #define LOAD_TAGGED_PTR_FROM_INSTANCE(dst, name, instance)                 \
   static_assert(                                                           \
