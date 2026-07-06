@@ -2932,7 +2932,7 @@ constexpr bool NodeBase::Is<TerminalControlNode>() const {
 }
 
 // The Node class hierarchy contains all non-control nodes.
-class alignas(8) Node : public NodeBase {
+class alignas(kSystemPointerSize) Node : public NodeBase {
  public:
   inline ValueLocation& result();
 

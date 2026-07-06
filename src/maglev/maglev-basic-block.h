@@ -381,7 +381,7 @@ class BasicBlock {
 
 void BasicBlock::check_layout() {
   // Ensure non pointer sized values are nicely packed.
-  static_assert(offsetof(BasicBlock, nodes_) == 8);
+  static_assert(offsetof(BasicBlock, nodes_) == kSystemPointerSize);
 }
 
 inline base::SmallVector<BasicBlock*, 2> BasicBlock::successors() const {
