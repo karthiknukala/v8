@@ -3605,7 +3605,7 @@ FrameSummaries WasmFrame::Summarize(bool never_allocate) const {
   // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
   // The resulting capability could be invalid but it won't be
   // used as a pointer anyways.
-  int offset = static_cast<int>((maybe_unaunthenticated_pc() & ~1) -
+  int offset = static_cast<int>((maybe_unauthenticated_pc() & ~1) -
                                 code->instruction_start());
 #else
   int offset =
@@ -3659,10 +3659,11 @@ bool WasmFrame::at_to_number_conversion() const {
   if (wasm_code) {
     if (wasm_code->kind() != wasm::WasmCode::kWasmToJsWrapper) return false;
 #if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
-  // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
-  // The resulting capability could be invalid but it won't be
-  // used as a pointer anyways.
-  int offset = static_cast<int>((callee_pc() & ~1) - code->instruction_start());
+    // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
+    // The resulting capability could be invalid but it won't be
+    // used as a pointer anyways.
+    int offset =
+        static_cast<int>((callee_pc() & ~1) - wasm_code->instruction_start());
 #else
     int offset = static_cast<int>(callee_pc() - wasm_code->instruction_start());
 #endif
