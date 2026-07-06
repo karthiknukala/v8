@@ -2455,7 +2455,7 @@ Tagged<Map> Factory::InitializeMap(Tagged<Map> map, InstanceType type,
                        !IsAlwaysSharedSpaceJSObjectMap(*map),
                    !ReadOnlyHeap::Contains(map));
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    map.SetInObjectPropertiesStartInWords(
+    map->SetInObjectPropertiesStartInWords(
         RoundUp(instance_size, kSystemPointerSize) / kTaggedSize -
         inobject_properties);
 #else

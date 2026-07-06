@@ -3260,10 +3260,10 @@ void CreateFillerObjectAtImpl(const WritableFreeSpace& free_space, Heap* heap,
                  IsAligned(free_space.Address(), kObjectAlignment8GbHeap));
   DCHECK_IMPLIES(V8_COMPRESS_POINTERS_8GB_BOOL,
                  IsAligned(size, kObjectAlignment8GbHeap));
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-  DCHECK(IsAligned(addr, kTaggedSize));
-  DCHECK(IsAligned(size, kTaggedSize));
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
+                 IsAligned(free_space.Address(), kTaggedSize));
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
+                 IsAligned(size, kTaggedSize));
 
   // TODO(v8:13070): Filler sizes are irrelevant for 8GB+ heaps. Adding them
   // should be avoided in this mode.

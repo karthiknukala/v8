@@ -37,13 +37,14 @@ void MarkingWorklists::Print() {
   PrintWorklist("on_hold", &on_hold_);
   if (IsPerContextMode()) {
     PrintWorklist("other", &other_);
-    std::for_each(
-        context_worklists_.begin(), context_worklists_.end(),
-        [](auto& context_worklist) {
-          PrintWorklist(
-              ("context" + std::to_string(context_worklist.context)).c_str(),
-              context_worklist.worklist.get());
-        });
+    std::for_each(context_worklists_.begin(), context_worklists_.end(),
+                  [](auto& context_worklist) {
+                    PrintWorklist(
+                        ("context" + std::to_string(static_cast<ptraddr_t>(
+                                         context_worklist.context)))
+                            .c_str(),
+                        context_worklist.worklist.get());
+                  });
   }
 }
 

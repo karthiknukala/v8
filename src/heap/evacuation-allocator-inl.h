@@ -20,7 +20,8 @@ AllocationResult EvacuationAllocator::Allocate(AllocationSpace space,
   // TODO(425150995): We should have uint versions for allocation to avoid
   // introducing OOBs via sign-extended ints along the way.
   DCHECK_IMPLIES(!shared_space_allocator_, space != SHARED_SPACE);
-  object_size = ALIGN_TO_ALLOCATION_ALIGNMENT(object_size);
+  object_size =
+      SafeHeapObjectSize(ALIGN_TO_ALLOCATION_ALIGNMENT(object_size.value()));
   switch (space) {
     case NEW_SPACE:
       return new_space_allocator()->AllocateRaw(object_size.value(), alignment,

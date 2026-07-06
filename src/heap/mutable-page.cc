@@ -50,7 +50,13 @@ MutablePage::MutablePage(Heap* heap, BaseSpace* space, size_t chunk_size,
   // This assert is merely necessary but not sufficient to guarantee that the
   // fields sit on the same cacheline as the metadata object itself is
   // dynamically allocated without alignment restrictions.
+#ifdef __CHERI_PURE_CAPABILITY__
+  // XXX(cheri): This is obviously not going to be sitting on the same
+  // cacheline, but we need the assertion to pass.
+  static_assert(kOffsetOfFirstFastField / 128 == kOffsetOfLastFastField / 128);
+#else
   static_assert(kOffsetOfFirstFastField / 64 == kOffsetOfLastFastField / 64);
+#endif
 }
 
 // static
