@@ -780,7 +780,11 @@ void StringBuiltinsAssembler::GenerateSeqStringRelationalComparison(
   // Unrolled first iteration.
   GotoIf(IntPtrEqual(length, IntPtrConstant(0)), &if_done);
 
+#if V8_TARGET_CHERI
+  constexpr int kChunkSize = kSystemPointerAddrSize;
+#else
   constexpr int kChunkSize = kTaggedSize;
+#endif
   static_assert(
       kChunkSize == ElementSizeInBytes(MachineRepresentation::kWord64) ||
       kChunkSize == ElementSizeInBytes(MachineRepresentation::kWord32));
