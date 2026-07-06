@@ -3800,8 +3800,12 @@ DirectHandle<Object> WasmToJSObject(Isolate* isolate,
 // - objects-inl.h: HeapObject::RequiredAlignment
 // - wasm.tq: WasmAllocateSharedArray_Uninitialized
 // LINT.IfChange
+#ifdef __CHERI_PURE_CAPABILITY__
+static_assert(WasmArray::kHeaderSize % kTaggedSize == 0);
+#else
 static_assert(WasmArray::kHeaderSize % kDoubleSize ==
               (kTaggedSize != kDoubleSize ? 4 : 0));
+#endif
 // LINT.ThenChange(/src/objects/objects-inl.h, /src/builtins/wasm.tq)
 
 }  // namespace wasm
