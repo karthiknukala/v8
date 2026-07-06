@@ -4545,7 +4545,7 @@ void LiftoffAssembler::CallCWithStackBuffer(
   for (const VarState& arg : args) {
     liftoff::StoreToMemory(this, MemOperand{csp, arg_offset}, arg);
 #if V8_TARGET_CHERI
-    arg_offset += kSystemPointerSize
+    arg_offset += kSystemPointerSize;
 #else
     arg_offset += value_kind_size(arg.kind());
 #endif
