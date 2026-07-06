@@ -2614,7 +2614,7 @@ std::shared_ptr<NativeModule> WasmCodeManager::NewNativeModule(
   // so those two conditions can be interchanged. Think about which logic to use
   // once those diverge.
   static_assert(NativeModule::kNeedsFarJumpsBetweenCodeSpaces ==
-                (kSystemPointerSize == kInt64Size));
+                (kSystemPointerSize >= kInt64Size));
   if constexpr (!NativeModule::kNeedsFarJumpsBetweenCodeSpaces) {
     code_size_estimate /= 2;
   }
