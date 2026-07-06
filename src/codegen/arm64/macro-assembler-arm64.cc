@@ -1737,7 +1737,7 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
     SmiUntag(kJavaScriptCallArgCountRegister);
   }
 
-  static_assert(kJavaScriptCallCodeStartRegister == x2, "ABI mismatch");
+  static_assert(kJavaScriptCallCodeStartRegister == c2, "ABI mismatch");
 #ifndef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
   Move(kJavaScriptCallDispatchHandleRegister.W(),
        FieldMemOperand(kJavaScriptCallTargetRegister,
