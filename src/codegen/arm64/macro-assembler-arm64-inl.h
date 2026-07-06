@@ -243,7 +243,7 @@ void MacroAssembler::CapMov(const Register& cd, const Register& cn) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
   DCHECK(cn.IsC());
-  cpy(cd, cn);
+  capmov(cd, cn);
 }
 
 // Conditionally zero the destination capability register.

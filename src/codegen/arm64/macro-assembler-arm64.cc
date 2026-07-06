@@ -2540,7 +2540,7 @@ int MacroAssembler::CallCFunction(Register function, int num_of_reg_args,
     // assume that once the FP field is set, the PC is also set already.
     static_assert(IsolateData::GetOffset(IsolateFieldId::kFastCCallCallerFP) ==
                   IsolateData::GetOffset(IsolateFieldId::kFastCCallCallerPC) +
-                      8);
+                      kSystemPointerSize);
     Stp(pc_scratch, fp,
         ExternalReferenceAsOperand(IsolateFieldId::kFastCCallCallerPC));
   }
@@ -3036,7 +3036,7 @@ void MacroAssembler::ResolveWasmCodePointer(Register target,
     Pop(padreg, signature_hash_register);
   }
 #else
-  static_assert(sizeof(wasm::WasmCodePointerTableEntry) == 8);
+  static_assert(sizeof(wasm::WasmCodePointerTableEntry) == kSystemPointerSize);
   Add(target, scratch, Operand(target, LSL, 3));
 #endif
 
@@ -3544,7 +3544,7 @@ void MacroAssembler::Prologue() {
   ASM_CODE_COMMENT(this);
   Push<MacroAssembler::kSignLR>(lr, fp);
 #if V8_TARGET_CHERI
-  cpy(fp, csp);
+  Assembler::capmov(fp.C(), csp.C());
 #else
   mov(fp, sp);
 #endif

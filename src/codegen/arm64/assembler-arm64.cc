@@ -4830,7 +4830,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     if (addr.IsPreIndex()) {
 #if V8_TARGET_CHERI
       if (rt.IsC()) {
-        unsigned size = CalcLSDataSize(op, rt.IsC());
+        unsigned size = CalcLSDataSizeLog2(op, rt.IsC());
         Emit(LoadStorePreCapIndexFixed | memop | ImmLS(offset >> size));
         return;
       }
@@ -4840,7 +4840,7 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
       DCHECK(addr.IsPostIndex());
 #if V8_TARGET_CHERI
       if (rt.IsC()) {
-        unsigned size = CalcLSDataSize(op, rt.IsC());
+        unsigned size = CalcLSDataSizeLog2(op, rt.IsC());
         Emit(LoadStorePostCapIndexFixed | memop | ImmLS(offset >> size));
         return;
       }
