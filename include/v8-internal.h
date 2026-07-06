@@ -1046,7 +1046,13 @@ class Internals {
   static const int kStackGuardSize = 8 * kApiSystemPointerSize;
   static const int kNumberOfBooleanFlags = 6;
   static const int kErrorMessageParamSize = 1;
+#ifdef __CHERI_PURE_CAPABILITY__
+  // On CHERI: 1 byte for has_lazy_closures + alignment to kApiSystemPointerSize
+  // (8 uint8_t fields end at 152, need 8 bytes padding to reach 160)
+  static const int kTablesAlignmentPaddingSize = 9;
+#else
   static const int kTablesAlignmentPaddingSize = 1;
+#endif
   static const int kRegExpStaticResultOffsetsVectorSize = kApiSystemPointerSize;
   static const int kBuiltinTier0EntryTableSize = 7 * kApiSystemPointerSize;
   static const int kBuiltinTier0TableSize = 7 * kApiSystemPointerSize;
