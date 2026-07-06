@@ -4694,6 +4694,22 @@ void Isolate::CheckIsolateLayout() {
   static_assert(kCEntryFPCacheLine ==
                 RoundDown<kCacheLineSize>(
                     OFFSET_OF(IsolateData, thread_local_top_.context_)));
+#if defined(__CHERI_PURE_CAPABILITY__)
+  // On CHERI, 16-byte capabilities spread the ThreadLocalTop fields so that
+  // topmost_script_having_context_ and last_api_entry_ no longer share a cache
+  // line with c_entry_fp_. Verify that context_,
+  // topmost_script_having_context_, and last_api_entry_ (the three fields
+  // written together on API calls) still share a cache line.
+  constexpr size_t kApiFieldsCacheLine = RoundDown<kCacheLineSize>(
+      OFFSET_OF(IsolateData, thread_local_top_.context_));
+  static_assert(
+      kApiFieldsCacheLine ==
+      RoundDown<kCacheLineSize>(OFFSET_OF(
+          IsolateData, thread_local_top_.topmost_script_having_context_)));
+  static_assert(kApiFieldsCacheLine ==
+                RoundDown<kCacheLineSize>(
+                    OFFSET_OF(IsolateData, thread_local_top_.last_api_entry_)));
+#else
   static_assert(
       kCEntryFPCacheLine ==
       RoundDown<kCacheLineSize>(OFFSET_OF(
@@ -4701,6 +4717,7 @@ void Isolate::CheckIsolateLayout() {
   static_assert(kCEntryFPCacheLine ==
                 RoundDown<kCacheLineSize>(
                     OFFSET_OF(IsolateData, thread_local_top_.last_api_entry_)));
+#endif
 
   // Fields written on every MacroAssembler::CallCFunction call.
   static_assert(RoundDown<kCacheLineSize>(
