@@ -4519,9 +4519,6 @@ Isolate::Isolate(IsolateGroup* isolate_group)
   CHECK_EQ(kSystemPointerSize, 16);
 #endif
 
-#ifdef __CHERI_PURE_CAPABILITY__
-  DCHECK(V8_CHERI_TAG_GET(isolate_allocator_.get()));
-#endif  // __CHERI_PURE_CAPABILITY__
   CheckIsolateLayout();
 
   // ThreadManager is initialized early to support locking an isolate
