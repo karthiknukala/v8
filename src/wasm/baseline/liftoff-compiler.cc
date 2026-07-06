@@ -7156,7 +7156,7 @@ class LiftoffCompiler {
     LiftoffRegister result =
         GenerateCCall(kI32,
 #if V8_TARGET_CHERI
-                      {{kCapability64, LiftoffRegister{instance_data}, 0},
+                      {{kCapability64Kind, LiftoffRegister{instance_data}, 0},
 #else
                       {{kIntPtrKind, LiftoffRegister{instance_data}, 0},
 #endif
@@ -10142,7 +10142,7 @@ class LiftoffCompiler {
                            static_cast<int32_t>(~kWeakHeapObjectMask));
         } else {
 #if V8_TARGET_CHERI
-          __ And(real_rtt.reg().C(), real_rtt.reg().C(),
+          __ And(real_rtt.reg().gp().C(), real_rtt.reg().gp().C(),
                  static_cast<int32_t>(~kWeakHeapObjectMask));
 #else
           __ emit_i64_andi(real_rtt.reg(), real_rtt.reg(),
