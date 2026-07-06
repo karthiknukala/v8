@@ -374,12 +374,15 @@ struct is_capability<PairT<T1, T2>> {
   static const bool maybe_tagged =
       is_capability<T1>::maybe_tagged && is_capability<T2>::maybe_tagged;
 };
-template <class T1, class T2>
-struct is_capability<UnionOf<T1, T2>> {
-  static const bool value =
-      is_capability<T1>::value || is_capability<T2>::value;
-  static const bool maybe_tagged =
-      is_capability<T1>::maybe_tagged || is_capability<T2>::maybe_tagged;
+template <typename... Ts>
+struct is_capability<Union<Ts...>> {
+  static const bool value = (is_capability<Ts>::value || ...);
+  static const bool maybe_tagged = (is_capability<Ts>::maybe_tagged || ...);
+};
+template <class T>
+struct is_capability<MaybeWeak<T>> {
+  static const bool value = is_capability<T>::value;
+  static const bool maybe_tagged = is_capability<T>::maybe_tagged;
 };
 #else
 template <class T>
