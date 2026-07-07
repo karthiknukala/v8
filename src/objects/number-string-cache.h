@@ -87,7 +87,11 @@ V8_OBJECT class DoubleStringCache : public HeapObjectLayout {
   static constexpr Tagged<Smi> kEmptySentinel = Smi::zero();
 
   static constexpr int kInitialSize = 128;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  static constexpr int kMaxCapacity = 0x800;
+#else
   static constexpr int kMaxCapacity = TAGGED_SIZE_8_BYTES ? 0x1000 : 0x2000;
+#endif
 
   inline uint32_t capacity() const { return capacity_; }
 
