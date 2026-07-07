@@ -4084,16 +4084,8 @@ class ClassFieldOffsetGenerator : public FieldOffsetsGenerator {
     });
   }
   void WriteMarker(const std::string& marker) override {
-    hdr_ << "  static constexpr int " << marker << " = ";
-    if (marker == "kSize" && GlobalContext::cheri_abi() &&
-        !COMPRESS_POINTERS_BOOL) {
-      hdr_ << "((" << previous_field_end_ << ") + "
-           << TargetArchitecture::TaggedSize() << " - 1) & ~("
-           << TargetArchitecture::TaggedSize() << " - 1)";
-    } else {
-      hdr_ << previous_field_end_;
-    }
-    hdr_ << ";\n";
+    hdr_ << "  static constexpr int " << marker << " = " << previous_field_end_
+         << ";\n";
   }
 
  private:
@@ -4894,12 +4886,7 @@ void GenerateStructLayoutDescription(std::ostream& header,
            << CamelifyString(field.name_and_type.name)
            << "Offset = " << *field.offset << ";\n";
   }
-  size_t packed_size = type->PackedSize();
-  if (GlobalContext::cheri_abi() && !COMPRESS_POINTERS_BOOL) {
-    size_t alignment = TargetArchitecture::TaggedSize();
-    packed_size = (packed_size + alignment - 1) & ~(alignment - 1);
-  }
-  header << "  static constexpr int kSize = " << packed_size << ";\n";
+  header << "  static constexpr int kSize = " << type->PackedSize() << ";\n";
   header << "};\n\n";
 }
 
