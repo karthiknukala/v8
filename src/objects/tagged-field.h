@@ -79,7 +79,7 @@ class UnalignedValueMember {
   void set_value(T value) { base::WriteUnalignedValue(storage_, value); }
 
  protected:
-  alignas(alignof(Tagged_t)) char storage_[sizeof(T)];
+  alignas(kSystemPointerAddrSize) char storage_[sizeof(T)];
 };
 
 class UnalignedDoubleMember : public UnalignedValueMember<double> {
@@ -93,14 +93,8 @@ class UnalignedDoubleMember : public UnalignedValueMember<double> {
     base::WriteUnalignedValue(storage_, value);
   }
 };
-static_assert(alignof(UnalignedDoubleMember) == alignof(Tagged_t));
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-// sizeof must be a multiple of alignof, and since we align to 16 bytes, it must
-// be 16 bytes.
-static_assert(sizeof(UnalignedDoubleMember) == kSystemPointerSize);
-#else
+static_assert(alignof(UnalignedDoubleMember) == kSystemPointerAddrSize);
 static_assert(sizeof(UnalignedDoubleMember) == sizeof(double));
-#endif
 
 // FLEXIBLE_ARRAY_MEMBER(T, name) represents a marker for a variable-sized
 // suffix of members for a type.
