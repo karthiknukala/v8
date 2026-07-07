@@ -1941,9 +1941,9 @@ constexpr int kIeeeDoubleExponentWordOffset = 0;
   (((static_cast<i::Tagged_t>(value) &                \
      static_cast<size_t>(::i::kHeapObjectTagMask)) == \
     ::i::kWeakHeapObjectTag))
-#define OBJECT_POINTER_ALIGN(value)                \
-  (((value) + (size_t)::i::kObjectAlignmentMask) & \
-   (size_t) ~::i::kObjectAlignmentMask)
+#define OBJECT_POINTER_ALIGN(value)                                \
+  (((value) + static_cast<ptraddr_t>(::i::kObjectAlignmentMask)) & \
+   static_cast<ptraddr_t>(~::i::kObjectAlignmentMask))
 #else  // !__CHERI_PURE_CAPABILITY__
 #define HAS_SMI_TAG(value) \
   ((static_cast<i::Tagged_t>(value) & ::i::kSmiTagMask) == ::i::kSmiTag)
