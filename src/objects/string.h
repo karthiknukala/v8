@@ -783,6 +783,10 @@ V8_OBJECT class String : public Name {
 
  public:
   uint32_t length_;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint32_t optional_padding_1_ = 0;
+  uint32_t optional_padding_2_ = 0;
+#endif
 } V8_OBJECT_END;
 
 template <>
