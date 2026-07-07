@@ -130,6 +130,10 @@ V8_OBJECT class PreparseData : public HeapObjectLayout {
 
   int32_t data_length_;
   int32_t children_length_;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint32_t optional_padding_1_ = 0;
+  uint32_t optional_padding_2_ = 0;
+#endif
   FLEXIBLE_ARRAY_MEMBER(char, data_and_children);
 } V8_OBJECT_END;
 
@@ -191,6 +195,9 @@ V8_OBJECT class UncompiledDataWithPreparseData : public UncompiledData {
 
   class BodyDescriptor;
 
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint8_t __cheri_padding_[8] = {};
+#endif
   TaggedMember<PreparseData> preparse_data_;
 } V8_OBJECT_END;
 
@@ -208,6 +215,9 @@ V8_OBJECT class UncompiledDataWithoutPreparseDataWithJob
 
   class BodyDescriptor;
 
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint8_t __cheri_padding_[8] = {};
+#endif
   Address job_;
 } V8_OBJECT_END;
 
@@ -904,6 +914,11 @@ class SharedFunctionInfo
   FRIEND_TEST(PreParserTest, LazyFunctionLength);
 
   TQ_OBJECT_CONSTRUCTORS(SharedFunctionInfo)
+
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint32_t optional_padding_1_ = 0;
+  uint32_t optional_padding_2_ = 0;
+#endif
 
  private:
   inline Tagged<BytecodeArray> GetBytecodeArrayInternal(Isolate* isolate) const;
