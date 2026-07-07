@@ -15,8 +15,8 @@ extern class BytecodeArray extends ExposedTrustedObject {
   parameter_size: uint16;
   max_arguments: uint16;
   incoming_new_target_or_generator_register: int32;
-  @if(TAGGED_SIZE_8_BYTES) optional_padding: uint32;
-  @ifnot(TAGGED_SIZE_8_BYTES) optional_padding: void;
+  @if(UNCOMPRESSED) optional_padding: uint32;
+  @ifnot(UNCOMPRESSED) optional_padding: void;
   bytes[length]: uint8;
 }
 

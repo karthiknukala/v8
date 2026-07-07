@@ -944,9 +944,9 @@ V8_OBJECT class ContextCell : public HeapObjectLayout {
   TaggedMember<JSAny> tagged_value_;
   TaggedMember<DependentCode> dependent_code_;
   std::atomic<State> state_;
-#if TAGGED_SIZE_8_BYTES
+#ifndef V8_COMPRESS_POINTERS
   uint32_t optional_padding_;
-#endif  // TAGGED_SIZE_8_BYTES
+#endif
   UnalignedDoubleMember double_value_;
 } V8_OBJECT_END;
 
