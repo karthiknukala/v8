@@ -69,6 +69,9 @@ V8_OBJECT class Oddball : public PrimitiveHeapObject {
   friend class StringBuiltinsReducer;
 
   UnalignedDoubleMember to_number_raw_;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint8_t cheri_padding_[8] = {};
+#endif
   TaggedMember<String> to_string_;
   TaggedMember<Number> to_number_;
   TaggedMember<String> type_of_;

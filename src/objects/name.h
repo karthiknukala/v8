@@ -362,6 +362,9 @@ V8_OBJECT class Symbol : public Name {
   const char* PrivateSymbolToName() const;
 
   uint32_t flags_;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  uint8_t cheri_padding_[8] = {};
+#endif
   // String|Undefined
   // TODO(leszeks): Introduce a union type for this.
   TaggedMember<PrimitiveHeapObject> description_;

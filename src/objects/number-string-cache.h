@@ -76,6 +76,9 @@ V8_OBJECT class DoubleStringCache : public HeapObjectLayout {
   V8_OBJECT struct Entry {
     UnalignedDoubleMember key_;
     TaggedMember<UnionOf<Smi, String>> value_;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    uint8_t cheri_padding_[8] = {};
+#endif
   } V8_OBJECT_END;
 
   using Header = HeapObjectLayout;
