@@ -355,6 +355,7 @@ struct is_capability {
 template <class T>
 struct is_capability {
   static const bool value = (std::is_same<RawPtrT, T>::value ||
+                             std::is_base_of<HeapObjectLayout, T>::value ||
                              std::is_base_of<HeapObject, T>::value ||
                              std::is_base_of<MaybeObject, T>::value ||
                              std::is_same<ExternalReference, T>::value) &&

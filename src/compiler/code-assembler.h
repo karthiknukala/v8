@@ -543,10 +543,9 @@ static_assert(is_capability<RawPtrT>::value);
 static_assert(!is_capability<BInt>::value);
 static_assert(!is_capability<HeapObjectReference>::value);
 static_assert(!is_capability<BigInt>::value);
-#elif defined(__CHERI_PURE_CAPABILITY__)
+#elif V8_TARGET_CHERI
 static_assert(!is_capability<Smi>::value);
-static_assert(is_capability<Object>::value);
-static_assert(is_capability<MaybeObject>::value);
+static_assert(is_capability<HeapObjectLayout>::value);
 static_assert(is_capability<HeapObject>::value);
 static_assert(is_capability<Map>::value);
 static_assert(is_capability<FixedArray>::value);
