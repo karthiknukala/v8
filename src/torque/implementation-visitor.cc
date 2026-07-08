@@ -1351,7 +1351,8 @@ const Type* ImplementationVisitor::Visit(ReturnStatement* stmt) {
       }
     } else if (current_callable->IsBuiltin()) {
       assembler().Emit(ReturnInstruction{
-          LoweredSlotCount(current_callable->signature().return_type)});
+          LoweredSlotCount(current_callable->signature().return_type),
+          current_callable->signature().return_type});
     } else {
       UNREACHABLE();
     }

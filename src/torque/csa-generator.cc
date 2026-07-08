@@ -9,6 +9,7 @@
 #include "src/base/iterator.h"
 #include "src/common/globals.h"
 #include "src/torque/global-context.h"
+#include "src/torque/implementation-visitor.h"
 #include "src/torque/type-oracle.h"
 #include "src/torque/types.h"
 #include "src/torque/utils.h"
@@ -860,6 +861,25 @@ void CSAGenerator::EmitInstruction(const ReturnInstruction& instruction,
     out() << "    CodeStubAssembler(state_).Return(";
   }
   std::vector<std::string> values = stack->PopMany(instruction.count);
+  // On CHERI, struct padding fields sit between real return values on the
+  // stack. Pop all values, then filter padding by checking if the corresponding
+  // struct field is internal.
+  if (instruction.return_type) {
+    if (auto struct_type = instruction.return_type->StructSupertype()) {
+      const auto& fields = (*struct_type)->fields();
+      std::vector<std::string> filtered;
+      size_t field_idx = 0;
+      for (size_t i = 0; i < values.size() && field_idx < fields.size(); ++i) {
+        if (ImplementationVisitor::IsInternal(fields[field_idx])) {
+          ++field_idx;
+          continue;
+        }
+        filtered.push_back(std::move(values[i]));
+        ++field_idx;
+      }
+      values = std::move(filtered);
+    }
+  }
   PrintCommaSeparatedList(out(), values);
   out() << ");\n";
 }

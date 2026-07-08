@@ -707,10 +707,12 @@ inline std::ostream& operator<<(std::ostream& os,
 
 struct ReturnInstruction : InstructionBase {
   TORQUE_INSTRUCTION_BOILERPLATE()
-  explicit ReturnInstruction(size_t count) : count(count) {}
+  explicit ReturnInstruction(size_t count, const Type* return_type = nullptr)
+      : count(count), return_type(return_type) {}
   bool IsBlockTerminator() const override { return true; }
 
-  size_t count;  // How many values to return.
+  size_t count;             // How many values to return.
+  const Type* return_type;  // The return type (for CHERI padding filtering).
 };
 
 inline std::ostream& operator<<(std::ostream& os,
