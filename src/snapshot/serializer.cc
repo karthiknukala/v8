@@ -1333,9 +1333,15 @@ void Serializer::ObjectSerializer::VisitJSDispatchTableEntry(
   // first need to pass the slot address to this method (e.g. as part of a
   // JSDispatchHandleSlot struct).
 #if !defined(V8_COMPRESS_POINTERS) && defined(V8_TARGET_ARCH_64_BIT)
+#ifdef __CHERI_PURE_CAPABILITY__
+  static_assert(kJSDispatchHandleSize + JSFunction::kCheriPadding2OffsetEnd +
+                    1 - JSFunction::kPaddingOffset ==
+                kSystemPointerSize);
+#else
   static_assert(kJSDispatchHandleSize + JSFunction::kPaddingOffsetEnd + 1 -
                     JSFunction::kPaddingOffset ==
                 kSystemPointerSize);
+#endif
 #endif  // COMPRESS_POINTERS
   bytes_processed_so_far_ += RoundUp(kJSDispatchHandleSize, kTaggedSize);
 

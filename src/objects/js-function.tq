@@ -30,7 +30,9 @@ extern class JSWrappedFunction extends
 @highestInstanceTypeWithinParentClassRange
 extern class JSFunction extends JSFunctionOrBoundFunctionOrWrappedFunction {
   dispatch_handle: int32;
-  @if(TAGGED_SIZE_8_BYTES) padding: int32;
+  @if(UNCOMPRESSED) padding: int32;
+  @if(CHERI_PURECAP_UNCOMPRESSED) padding_cheri_1: int32;
+  @if(CHERI_PURECAP_UNCOMPRESSED) padding_cheri_2: int32;
   shared_function_info: SharedFunctionInfo;
   context: Context;
   feedback_cell: FeedbackCell;
