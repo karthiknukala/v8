@@ -1108,7 +1108,7 @@ class Internals {
       kOldAllocationInfoOffset + kApiSystemPointerSize;
 
   static const int kFastCCallAlignmentPaddingSize =
-      kApiSystemPointerSize == 8 ? 5 * kApiSystemPointerSize
+      kApiSystemPointerSize >= 8 ? 5 * kApiSystemPointerSize
                                  : 1 * kApiSystemPointerSize;
   static const int kIsolateFastCCallCallerPcOffset =
       kLastYoungAllocationOffset + kLinearAllocationAreaSize +
@@ -1120,8 +1120,11 @@ class Internals {
   static const int kIsolateLongTaskStatsCounterOffset =
       kIsolateFastApiCallTargetOffset + kApiSystemPointerSize;
 #if defined(__CHERI_PURE_CAPABILITY__)
+  static const int kIsolateLongTaskStatsCounterPaddingSize =
+      kApiSystemPointerSize - kApiSizetSize;
   static const int kIsolateThreadLocalTopOffset =
-      kIsolateLongTaskStatsCounterOffset + kApiSystemPointerSize;
+      kIsolateLongTaskStatsCounterOffset + kApiSizetSize +
+      kIsolateLongTaskStatsCounterPaddingSize;
 #else   // !__CHERI_PURE_CAPABILITY__
   static const int kIsolateThreadLocalTopOffset =
       kIsolateLongTaskStatsCounterOffset + kApiSizetSize;
