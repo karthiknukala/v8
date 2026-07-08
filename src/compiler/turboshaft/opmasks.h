@@ -167,9 +167,9 @@ using kWord64Add =
 using kWord64Sub =
     WordBinopMask::For<WordBinopOp::Kind::kSub, WordRepresentation::Word64()>;
 #if V8_TARGET_CHERI
-using kCapability64Add = WordBinopMask::For<WordBinOp::Kind::kAdd,
+using kCapability64Add = WordBinopMask::For<WordBinopOp::Kind::kAdd,
                                             WordRepresentation::Capability64()>;
-using kCapability64Sub = WordBinopMask::For<WordBinOp::Kind::kSub,
+using kCapability64Sub = WordBinopMask::For<WordBinopOp::Kind::kSub,
                                             WordRepresentation::Capability64()>;
 #endif
 using kWord64Mul =

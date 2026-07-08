@@ -1699,7 +1699,7 @@ struct MachineOperatorGlobalCache {
   CapabilitySeqCstLoad##Type##Kind##Operator kCapabilitySeqCstLoad##Type##Kind;
 #define ATOMIC_LOAD(Type)             \
   ATOMIC_LOAD_WITH_KIND(Type, Normal) \
-  ATOMIC_LOAD_WITH_KIND(Type, Protected)
+  ATOMIC_LOAD_WITH_KIND(Type, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_LOAD)
 #undef ATOMIC_LOAD_WITH_KIND
 #undef ATOMIC_LOAD
@@ -1764,7 +1764,7 @@ struct MachineOperatorGlobalCache {
       kCapabilitySeqCstStore##Type##Kind;
 #define ATOMIC_STORE(Type)             \
   ATOMIC_STORE_WITH_KIND(Type, Normal) \
-  ATOMIC_STORE_WITH_KIND(Type, Protected)
+  ATOMIC_STORE_WITH_KIND(Type, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_REPRESENTATION_LIST(ATOMIC_STORE)
 #undef ATOMIC_STORE_WITH_KIND
 #undef ATOMIC_STORE
@@ -1817,7 +1817,7 @@ struct MachineOperatorGlobalCache {
   ATOMIC_OP(CapabilityAtomicExchange, type, kind)
 #define ATOMIC_CAPABILITY_OP_LIST(type)             \
   ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, Normal) \
-  ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, Protected)
+  ATOMIC_CAPABILITY_OP_LIST_WITH_KIND(type, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_CAPABILITY_OP_LIST)
 #undef ATOMIC_CAPABILITY_OP_LIST_WITH_KIND
 #undef ATOMIC_CAPABILITY_OP_LIST
@@ -1884,7 +1884,7 @@ struct MachineOperatorGlobalCache {
       kCapabilityAtomicCompareExchange##Type##Kind;
 #define ATOMIC_COMPARE_EXCHANGE(Type)             \
   ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Normal) \
-  ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, Protected)
+  ATOMIC_COMPARE_EXCHANGE_WITH_KIND(Type, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_TYPE_LIST(ATOMIC_COMPARE_EXCHANGE)
 #undef ATOMIC_COMPARE_EXCHANGE_WITH_KIND
 #undef ATOMIC_COMPARE_EXCHANGE
@@ -2752,7 +2752,7 @@ const Operator* MachineOperatorBuilder::CapabilityAtomicLoad(
   }
 #define CACHED_LOAD(Type)             \
   CACHED_LOAD_WITH_KIND(Type, Normal) \
-  CACHED_LOAD_WITH_KIND(Type, Protected)
+  CACHED_LOAD_WITH_KIND(Type, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_TYPE_LIST(CACHED_LOAD)
 #undef CACHED_LOAD_WITH_KIND
 #undef CACHED_LOAD
@@ -2808,9 +2808,9 @@ const Operator* MachineOperatorBuilder::CapabilityAtomicStore(
       params.kind() == MemoryAccessKind::k##Kind) {             \
     return &cache_.kCapabilitySeqCstStore##kRep##Kind;          \
   }
-#define CACHED_STORE(kRep)            \
+#define CACHED_STORE(kRep)             \
   CACHED_STORE_WITH_KIND(kRep, Normal) \
-  CACHED_STORE_WITH_KIND(kRep, Protected)
+  CACHED_STORE_WITH_KIND(kRep, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_REPRESENTATION_LIST(CACHED_STORE)
 #undef CACHED_STORE_WITH_KIND
 #undef CACHED_STORE
@@ -2951,7 +2951,7 @@ const Operator* MachineOperatorBuilder::CapabilityAtomicCompareExchange(
   }
 #define OP(kType)             \
   OP_WITH_KIND(kType, Normal) \
-  OP_WITH_KIND(kType, Protected)
+  OP_WITH_KIND(kType, ProtectedByTrapHandler)
   ATOMIC_CAPABILITY_TYPE_LIST(OP)
 #undef OP_WITH_KIND
 #undef OP

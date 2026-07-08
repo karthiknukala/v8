@@ -1419,10 +1419,8 @@ void InstructionSelector::VisitSimd128ReverseBytes(OpIndex node) {
 #if V8_TARGET_CHERI
 // XXX(cheri): Probably not needed with some careful changes in the front of the
 // pipeline.
-void InstructionSelector::VisitUnalignedLoad(Node* node) {
-  VisitLoad(node);
-}
-void InstructionSelector::VisitUnalignedStore(Node* node) {
+void InstructionSelector::VisitUnalignedLoad(OpIndex node) { VisitLoad(node); }
+void InstructionSelector::VisitUnalignedStore(OpIndex node) {
   VisitStore(node);
 }
 #else
@@ -2528,15 +2526,11 @@ void InstructionSelector::VisitWord64Ctz(OpIndex node) {
 }
 
 #if V8_TARGET_CHERI
-void InstructionSelector::VisitCapAdd(Node* node) {
-  const WordBinOp& add = this->Get(node).Cast<WordBinOp>();
-  DCHECK(add.Is<Opmask::kCapability64Add>());
+void InstructionSelector::VisitCapAdd(OpIndex node) {
   VisitAddSub(this, node, kArm64AddCap, kArm64SubCap);
 }
 
-void InstructionSelector::VisitCapSub(Node* node) {
-  const WordBinOp& sub = this->Get(node).Cast<WordBinOp>();
-  DCHECK(sub.Is<Opmask::kCapability64Sub>());
+void InstructionSelector::VisitCapSub(OpIndex node) {
   VisitAddSub(this, node, kArm64SubCap, kArm64AddCap);
 }
 #endif
@@ -4599,11 +4593,11 @@ void InstructionSelector::VisitWord64AtomicStore(OpIndex node) {
 }
 
 #if V8_TARGET_CHERI
-void InstructionSelector::VisitCapabilityAtomicLoad(Node* node) {
+void InstructionSelector::VisitCapabilityAtomicLoad(OpIndex node) {
   VisitAtomicLoad(this, node, AtomicWidth::kCapability64);
 }
 
-void InstructionSelector::VisitCapabilityAtomicStore(Node* node) {
+void InstructionSelector::VisitCapabilityAtomicStore(OpIndex node) {
   VisitAtomicStore(this, node, AtomicWidth::kCapability64);
 }
 #endif

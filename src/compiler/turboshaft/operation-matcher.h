@@ -264,6 +264,26 @@ class OperationMatcher {
                                      constant);
   }
 
+#if V8_TARGET_CHERI
+  bool MatchCapability64Constant(V<Any> matched, uintptr_t* constant) const {
+    const ConstantOp* op = TryCast<ConstantOp>(matched);
+    if (!op || op->kind != ConstantOp::Kind::kCapability64) return false;
+    if (constant) {
+      *constant = op->capability64();
+    }
+    return true;
+  }
+
+  bool MatchCapability64Constant(V<Any> matched, intptr_t* constant) const {
+    const ConstantOp* op = TryCast<ConstantOp>(matched);
+    if (!op || op->kind != ConstantOp::Kind::kCapability64) return false;
+    if (constant) {
+      *constant = static_cast<intptr_t>(op->capability64());
+    }
+    return true;
+  }
+#endif
+
   bool MatchIntegralWord32Constant(V<Any> matched, uint32_t constant) const {
     if (uint64_t value; MatchIntegralWordConstant(
             matched, WordRepresentation::Word32(), &value)) {
@@ -289,11 +309,19 @@ class OperationMatcher {
   template <typename T = intptr_t>
   bool MatchIntegralWordPtrConstant(V<Any> matched, T* constant) const {
     if constexpr (Is64()) {
+#if V8_TARGET_CHERI
+      static_assert(sizeof(T) == sizeof(uintptr_t));
+      intptr_t v;
+      if (!MatchCapability64Constant(matched, &v)) return false;
+      *constant = static_cast<T>(v);
+      return true;
+#else
       static_assert(sizeof(T) == sizeof(int64_t));
       int64_t v;
       if (!MatchIntegralWord64Constant(matched, &v)) return false;
       *constant = static_cast<T>(v);
       return true;
+#endif
     } else {
       static_assert(sizeof(T) == sizeof(int32_t));
       int32_t v;

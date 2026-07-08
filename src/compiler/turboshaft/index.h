@@ -257,7 +257,9 @@ using Word64 = WordWithBits<64>;
 using WordPtr = std::conditional_t<Is64(), Word64, Word32>;
 #if V8_TARGET_CHERI
 static_assert(kSystemPointerSize == 16);
-using Capability64 = WordWithBits<128>;
+struct Capability64 : public WordWithBits<128> {
+  using WordWithBits<128>::WordWithBits;
+};
 #endif
 
 template <size_t Bits>
@@ -374,15 +376,16 @@ struct v_traits<Word64> {
 template <>
 struct v_traits<Capability64> {
   static constexpr bool is_abstract_tag = true;
-  static constexpr WordRepresentation rep = WordRepresentation::Capability64();
+  using rep_type = WordRepresentation;
+  static constexpr auto rep = WordRepresentation::Capability64();
   using constexpr_type = uintptr_t;
   static constexpr bool allows_representation(RegisterRepresentation rep) {
     return rep == RegisterRepresentation::Capability64();
   }
 
   template <typename U>
-  struct implicitly_convertible_to
-      : std::bool_constant<std::is_base_of_v<U, Capability64>> {};
+  struct implicitly_constructible_from
+      : std::bool_constant<std::is_base_of_v<Capability64, U>> {};
 };
 #endif
 

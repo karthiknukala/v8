@@ -1084,7 +1084,7 @@ class V8_EXPORT_PRIVATE InstructionSelector final
     MarkAsRepresentation(MachineRepresentation::kCompressed, node);
   }
 #if V8_TARGET_CHERI
-  void MarkAsCapability(Node* node) {
+  void MarkAsCapability(turboshaft::OpIndex node) {
     MarkAsRepresentation(MachineRepresentation::kCapability64, node);
   }
 #endif
@@ -1383,6 +1383,8 @@ class V8_EXPORT_PRIVATE InstructionSelector final
   DECLARE_GENERATOR_T(CapabilityIsTagged)
   IF_TARGET_CHERI(DECLARE_GENERATOR_T, CapAdd)
   IF_TARGET_CHERI(DECLARE_GENERATOR_T, CapSub)
+  IF_TARGET_CHERI(DECLARE_GENERATOR_T, CapabilityAtomicLoad)
+  IF_TARGET_CHERI(DECLARE_GENERATOR_T, CapabilityAtomicStore)
   IF_TARGET_CHERI(DECLARE_GENERATOR_T, AlignU)
   IF_TARGET_CHERI(DECLARE_GENERATOR_T, AlignD)
   IF_TARGET_CHERI(DECLARE_GENERATOR_T, SetBounds)

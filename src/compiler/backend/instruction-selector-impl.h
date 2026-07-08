@@ -360,7 +360,7 @@ class OperandGenerator : public turboshaft::OperationMatcher {
             return Constant(static_cast<int32_t>(constant->smi().ptr()));
           }
 #if V8_TARGET_CHERI
-        case IrOpcode::kCapability64Constant:
+        case Kind::kCapability64:
           return Constant(static_cast<intptr_t>(constant->capability64()));
 #endif
         case Kind::kHeapObject:
@@ -421,7 +421,7 @@ class OperandGenerator : public turboshaft::OperationMatcher {
       case turboshaft::ConstantOp::Kind::kWord64:
         return Constant(-static_cast<int64_t>(constant.word64()));
 #if V8_TARGET_CHERI
-      case IrOpcode::kCapability64Constant:
+      case turboshaft::ConstantOp::Kind::kCapability64:
         return Constant(-static_cast<intptr_t>(constant.capability64()));
 #endif
       case turboshaft::ConstantOp::Kind::kSmi:

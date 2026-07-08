@@ -2362,10 +2362,7 @@ class AssemblerOpInterface : public Next {
   }
 #if V8_TARGET_CHERI
   V<Capability64> Capability64Constant(uintptr_t value) {
-    if (V8_UNLIKELY(stack().generating_unreachable_operations())) {
-      return OpIndex::Invalid();
-    }
-    return stack().ReduceConstant(ConstantOp::Kind::kCapability64, value);
+    return ReduceIfReachableConstant(ConstantOp::Kind::kCapability64, value);
   }
 #endif
   V<WordPtr> WordPtrConstant(uintptr_t value) {

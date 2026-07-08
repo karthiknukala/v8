@@ -219,18 +219,28 @@ class FastApiCallLoweringReducer : public Next {
 
           constexpr int kAlign = alignof(FastOneByteString);
           constexpr int kSize = sizeof(FastOneByteString);
+#ifdef __CHERI_PURE_CAPABILITY__
+          static_assert(kAlign == kSystemPointerSize);
+          static_assert(kSize == 2 * sizeof(uintptr_t),
+                        "The size of "
+                        "FastOneByteString isn't equal to the sum of its "
+                        "expected members.");
+#else
           static_assert(kSize == sizeof(uintptr_t) + sizeof(size_t),
                         "The size of "
                         "FastOneByteString isn't equal to the sum of its "
                         "expected members.");
+#endif
           OpIndex stack_slot = __ StackSlot(kSize, kAlign);
           __ StoreOffHeap(stack_slot, data_ptr,
                           MemoryRepresentation::UintPtr());
           __ StoreOffHeap(stack_slot, length_in_bytes,
                           MemoryRepresentation::Uint32(), sizeof(size_t));
+#ifndef __CHERI_PURE_CAPABILITY__
           static_assert(sizeof(uintptr_t) == sizeof(size_t),
                         "The string length can't "
                         "fit the PointerRepresentation used to store it.");
+#endif
           return stack_slot;
         }
         default: {

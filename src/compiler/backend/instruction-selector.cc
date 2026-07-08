@@ -2673,10 +2673,8 @@ void InstructionSelector::VisitComment(OpIndex node) {
   OperandGenerator g(this);
   const CommentOp& comment =
       this->turboshaft_graph()->Get(node).template Cast<CommentOp>();
-  using ptrsize_int_t =
-      std::conditional_t<kSystemPointerSize == 8, int64_t, int32_t>;
   InstructionOperand operand = sequence()->AddImmediate(
-      Constant{reinterpret_cast<ptrsize_int_t>(comment.message)});
+      Constant{reinterpret_cast<intptr_t>(comment.message)});
   Emit(kArchComment, 0, nullptr, 1, &operand);
 }
 

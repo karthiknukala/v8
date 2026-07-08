@@ -249,6 +249,9 @@ class CodeAssemblerParameterizedLabel;
 
 #define CODE_ASSEMBLER_BINARY_OP_LIST(V)                                \
   CODE_ASSEMBLER_COMPARE_BINARY_OP_LIST(V)                              \
+  V(Float32Add, Float32T, Float32T, Float32T)                           \
+  V(Float32Sub, Float32T, Float32T, Float32T)                           \
+  V(Float32Mul, Float32T, Float32T, Float32T)                           \
   V(Float64Add, Float64T, Float64T, Float64T)                           \
   V(Float64Sub, Float64T, Float64T, Float64T)                           \
   V(Float64Mul, Float64T, Float64T, Float64T)                           \

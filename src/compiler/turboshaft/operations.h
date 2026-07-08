@@ -511,6 +511,10 @@ class InputsRepFactory {
       MaybeRegisterRepresentation::Word32(),
       MaybeRegisterRepresentation::Word64(),
       MaybeRegisterRepresentation::Word64(),
+#if V8_TARGET_CHERI
+      MaybeRegisterRepresentation::Capability64(),
+      MaybeRegisterRepresentation::Capability64(),
+#endif
       MaybeRegisterRepresentation::Float32(),
       MaybeRegisterRepresentation::Float32(),
       MaybeRegisterRepresentation::Float64(),

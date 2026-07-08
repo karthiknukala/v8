@@ -56,6 +56,11 @@ class MaybeRegisterRepresentation {
     return MaybeRegisterRepresentation(Enum::kWord64);
   }
 
+#if V8_TARGET_CHERI
+  static constexpr MaybeRegisterRepresentation Capability64() {
+    return MaybeRegisterRepresentation(Enum::kCapability64);
+  }
+#endif
   static constexpr MaybeRegisterRepresentation WordPtr() {
 #if V8_TARGET_CHERI
     return Capability64();
@@ -154,6 +159,10 @@ class MaybeRegisterRepresentation {
         return std::numeric_limits<uint32_t>::max();
       case Word64():
         return std::numeric_limits<uint64_t>::max();
+#if V8_TARGET_CHERI
+      case Enum::kCapability64:
+        return std::numeric_limits<uint64_t>::max();
+#endif
       case Enum::kFloat32:
       case Enum::kFloat64:
       case Enum::kTagged:
@@ -171,6 +180,10 @@ class MaybeRegisterRepresentation {
         return MachineRepresentation::kWord32;
       case Word64():
         return MachineRepresentation::kWord64;
+#if V8_TARGET_CHERI
+      case Enum::kCapability64:
+        return MachineRepresentation::kCapability64;
+#endif
       case Float32():
         return MachineRepresentation::kFloat32;
       case Float64():
@@ -194,6 +207,10 @@ class MaybeRegisterRepresentation {
         return 32;
       case Word64():
         return 64;
+#if V8_TARGET_CHERI
+      case Enum::kCapability64:
+        return 128;
+#endif
       case Float32():
         return 32;
       case Float64():
@@ -222,6 +239,10 @@ class RegisterRepresentation : public MaybeRegisterRepresentation {
   enum class Enum : uint8_t {
     kWord32 = static_cast<int>(MaybeRegisterRepresentation::Enum::kWord32),
     kWord64 = static_cast<int>(MaybeRegisterRepresentation::Enum::kWord64),
+#if V8_TARGET_CHERI
+    kCapability64 =
+        static_cast<int>(MaybeRegisterRepresentation::Enum::kCapability64),
+#endif
     kFloat32 = static_cast<int>(MaybeRegisterRepresentation::Enum::kFloat32),
     kFloat64 = static_cast<int>(MaybeRegisterRepresentation::Enum::kFloat64),
     kTagged = static_cast<int>(MaybeRegisterRepresentation::Enum::kTagged),
@@ -627,11 +648,15 @@ class MemoryRepresentation {
   }
 #endif
   static constexpr MemoryRepresentation UintPtr() {
+#if V8_TARGET_CHERI
+    return Capability64();
+#else
     if constexpr (Is64()) {
       return Uint64();
     } else {
       return Uint32();
     }
+#endif
   }
   static constexpr MemoryRepresentation Float16() {
     return MemoryRepresentation(Enum::kFloat16);
