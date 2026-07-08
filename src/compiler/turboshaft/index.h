@@ -603,7 +603,11 @@ struct v_traits<Tuple<Ts...>> {
             ...)> {};
 };
 
+#if V8_TARGET_CHERI
+using Word = UntaggedUnion<Word32, Word64, Capability64>;
+#else
 using Word = UntaggedUnion<Word32, Word64>;
+#endif
 using Float = UntaggedUnion<Float32, Float64>;
 using Float64OrWord32 = UntaggedUnion<Float64, Word32>;
 using Untagged = UntaggedUnion<Word, Float>;
