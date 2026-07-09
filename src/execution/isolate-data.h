@@ -222,7 +222,7 @@ class IsolateData final {
   template <typename T>
     requires(std::is_integral_v<T> || std::is_floating_point_v<T>)
   T GetRawArgument(uint32_t index) const {
-    static_assert(sizeof(T) <= kDoubleSize);
+    static_assert(sizeof(T) <= kSystemPointerSize);
     DCHECK_LT(index, GetRawArgumentCount());
     return *reinterpret_cast<const T*>(&raw_arguments_[index].storage_);
   }
@@ -288,11 +288,11 @@ class IsolateData final {
   // The recommended guideline is to put frequently-accessed fields close to
   // the beginning of IsolateData.
   // TODO(ds815): Check if this is OK for CHERI.
-#define FIELDS(V)                                        \
-  ISOLATE_DATA_FIELDS(V)                                 \
-  /* This padding aligns IsolateData size by 8 bytes. */ \
-  PADDING_FIELD(8, V, TrailingPadding, trailing_padding) \
-  /* Total size. */                                      \
+#define FIELDS(V)                                                         \
+  ISOLATE_DATA_FIELDS(V)                                                  \
+  /* This padding aligns IsolateData size by kSystemPointerSize bytes. */ \
+  PADDING_FIELD(kSystemPointerSize, V, TrailingPadding, trailing_padding) \
+  /* Total size. */                                                       \
   V(Size, 0)
 
   DEFINE_FIELD_OFFSET_CONSTANTS_WITH_PURE_NAME(0, FIELDS)
@@ -450,7 +450,7 @@ class IsolateData final {
 
   // Storage for raw values passed from CSA/Torque to runtime functions.
   struct RawArgument {
-    uint8_t storage_[kDoubleSize];
+    uint8_t storage_[kSystemPointerSize];
   } raw_arguments_[2] = {};
 
   // Counts deopt points if deopt_every_n_times is enabled.
@@ -488,12 +488,15 @@ void IsolateData::AssertPredictableLayout() {
   static_assert(std::is_standard_layout_v<ExternalReferenceTable>);
   static_assert(std::is_standard_layout_v<IsolateData>);
   static_assert(std::is_standard_layout_v<LinearAllocationArea>);
+  static_assert(alignof(IsolateData) == kSystemPointerSize);
 #define V(PureName, Size, Name)                                             \
   static_assert(std::is_standard_layout_v<decltype(IsolateData::Name##_)>); \
   static_assert(offsetof(IsolateData, Name##_) == k##PureName##Offset,      \
                 "IsolateData layout mismatch at " #Name ": sizeof=" #Size);
   ISOLATE_DATA_FIELDS(V)
 #undef V
+  static_assert(offsetof(IsolateData, raw_arguments_) % kSystemPointerSize ==
+                0);
   static_assert(sizeof(IsolateData) == IsolateData::kSizeOffset);
 }
 
