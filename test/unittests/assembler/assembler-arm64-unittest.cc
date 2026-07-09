@@ -3906,20 +3906,20 @@ TEST_F(AssemblerArm64Test, neon_ld2_lane) {
   __ Mov(x17, src_base);
 #endif
   __ Mov(c4, c17);
-  __ Ldr(q8, MemOperand(c172, 16, PostIndex));
-  __ Ldr(q9, MemOperand(c172));
+  __ Ldr(q8, MemOperand(c4, 16, PostIndex));
+  __ Ldr(q9, MemOperand(c4));
   __ Ld2(v8_.B(), v9.B(), 4, MemOperand(c17));
   __ Mov(c5, c17);
-  __ Ldr(q10, MemOperand(c173, 16, PostIndex));
-  __ Ldr(q11, MemOperand(c173));
+  __ Ldr(q10, MemOperand(c5, 16, PostIndex));
+  __ Ldr(q11, MemOperand(c5));
   __ Ld2(v10.H(), v11.H(), 3, MemOperand(c17));
   __ Mov(c6, c17);
-  __ Ldr(q12, MemOperand(c174, 16, PostIndex));
-  __ Ldr(q13, MemOperand(c174));
+  __ Ldr(q12, MemOperand(c6, 16, PostIndex));
+  __ Ldr(q13, MemOperand(c6));
   __ Ld2(v12.S(), v13.S(), 2, MemOperand(c17));
   __ Mov(c7, c17);
-  __ Ldr(q14, MemOperand(c175, 16, PostIndex));
-  __ Ldr(q15, MemOperand(c175));
+  __ Ldr(q14, MemOperand(c7, 16, PostIndex));
+  __ Ldr(q15, MemOperand(c7));
   __ Ld2(v14.D(), v15.D(), 1, MemOperand(c17));
 
   END();
@@ -5202,10 +5202,10 @@ TEST_F(AssemblerArm64Test, neon_ld4_lane_postindex) {
 #endif  // __CHERI_PURE_CAPABILITY__
   __ Mov(c4, c21);
 
-  __ Ldr(q16, MemOperand(tmp, 16, PostIndex));
-  __ Ldr(q17, MemOperand(tmp, 16, PostIndex));
-  __ Ldr(q18, MemOperand(tmp, 16, PostIndex));
-  __ Ldr(q19, MemOperand(tmp));
+  __ Ldr(q16, MemOperand(c4, 16, PostIndex));
+  __ Ldr(q17, MemOperand(c4, 16, PostIndex));
+  __ Ldr(q18, MemOperand(c4, 16, PostIndex));
+  __ Ldr(q19, MemOperand(c4));
   __ Ld4(v16.B(), v17.B(), v18.B(), v19.B(), 4,
          MemOperand(c21, x25, PostIndex));
   __ Add(x25, x25, 1);
@@ -5433,31 +5433,31 @@ TEST_F(AssemblerArm64Test, neon_st1_lane) {
   __ Scbndse(c17, c17, x0);
 #endif  // __CHERI_PURE_CAPABILITY__
   __ Mov(x19, -16);
-  __ Ldr(q0, MemOperand(reg));
+  __ Ldr(q0, MemOperand(c17));
 
   for (int i = 15; i >= 0; i--) {
-    __ St1(v0.B(), i, MemOperand(reg));
-    __ Add(reg, reg, 1);
+    __ St1(v0.B(), i, MemOperand(c17));
+    __ Add(c17, c17, 1);
   }
-  __ Ldr(q1, MemOperand(reg, x19));
+  __ Ldr(q1, MemOperand(c17, x19));
 
   for (int i = 7; i >= 0; i--) {
-    __ St1(v0.H(), i, MemOperand(reg));
-    __ Add(reg, reg, 2);
+    __ St1(v0.H(), i, MemOperand(c17));
+    __ Add(c17, c17, 2);
   }
-  __ Ldr(q2, MemOperand(reg, x19));
+  __ Ldr(q2, MemOperand(c17, x19));
 
   for (int i = 3; i >= 0; i--) {
-    __ St1(v0.S(), i, MemOperand(reg));
-    __ Add(reg, reg, 4);
+    __ St1(v0.S(), i, MemOperand(c17));
+    __ Add(c17, c17, 4);
   }
-  __ Ldr(q3, MemOperand(reg, x19));
+  __ Ldr(q3, MemOperand(c17, x19));
 
   for (int i = 1; i >= 0; i--) {
-    __ St1(v0.D(), i, MemOperand(reg));
-    __ Add(reg, reg, 8);
+    __ St1(v0.D(), i, MemOperand(c17));
+    __ Add(c17, c17, 8);
   }
-  __ Ldr(q4, MemOperand(reg, x19));
+  __ Ldr(q4, MemOperand(c17, x19));
 
   END();
 
