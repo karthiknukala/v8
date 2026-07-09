@@ -71,7 +71,7 @@ class RecordingVisitor final : public RootVisitor {
 #endif
 
  private:
-  static constexpr int kSize = 256;
+  static constexpr int kSize = 17 * kTaggedSize + 1;
   static constexpr int kMaxInnerPointerOffset = 17 * kTaggedSize;
   // The code object's size is `kObjectSize` bytes and the maximum offset for
   // inner pointers should fall inside.

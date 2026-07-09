@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "include/cppgc/allocation.h"
+#include "src/base/atomic-ref.h"
 #include "src/base/atomic-utils.h"
 #include "src/base/macros.h"
 #include "src/base/platform/platform.h"
@@ -136,7 +137,7 @@ class ConcurrentGCThread final : public v8::base::Thread {
   void Run() final {
     while (header_->IsInConstruction<AccessMode::kAtomic>()) {
     }
-    USE(std::atomic_ref<size_t>(const_cast<size_t&>(payload_->value))
+    USE(v8::base::atomic_ref<size_t>(const_cast<size_t&>(payload_->value))
             .load(std::memory_order_relaxed));
   }
 
