@@ -1334,7 +1334,7 @@ void Serializer::ObjectSerializer::VisitJSDispatchTableEntry(
   // JSDispatchHandleSlot struct).
 #if !defined(V8_COMPRESS_POINTERS) && defined(V8_TARGET_ARCH_64_BIT)
 #ifdef __CHERI_PURE_CAPABILITY__
-  static_assert(kJSDispatchHandleSize + JSFunction::kCheriPadding2OffsetEnd +
+  static_assert(kJSDispatchHandleSize + JSFunction::kPaddingCheri2OffsetEnd +
                     1 - JSFunction::kPaddingOffset ==
                 kSystemPointerSize);
 #else
