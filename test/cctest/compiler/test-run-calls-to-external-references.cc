@@ -156,7 +156,7 @@ void TestExternalReference_BinOp(ExternalReference ref,
     for (Type input2 : inputs) {
       WriteUnalignedValue<Type>(buffer_addr, input1);
       WriteUnalignedValue<Type>(buffer_addr + element_size, input2);
-      CHECK_EQ(4356, m->Call());
+      CHECK_EQ(4356, m.Call());
       Type output = ReadUnalignedValue<Type>(buffer_addr);
 
       WriteUnalignedValue<Type>(buffer_addr, input1);
@@ -190,7 +190,7 @@ void TestExternalReference_BinOpWithReturn(ExternalReference ref,
     for (Type input2 : inputs) {
       WriteUnalignedValue<Type>(buffer_addr, input1);
       WriteUnalignedValue<Type>(buffer_addr + element_size, input2);
-      int32_t ret = m->Call();
+      int32_t ret = m.Call();
       Type output = ReadUnalignedValue<Type>(buffer_addr);
 
       WriteUnalignedValue<Type>(buffer_addr, input1);
