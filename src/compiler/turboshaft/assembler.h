@@ -2522,7 +2522,8 @@ class AssemblerOpInterface : public Next {
 
   V<Word32> RelocatableWasmIndirectCallTarget(uint32_t function_index) {
     return ReduceIfReachableConstant(
-        ConstantOp::Kind::kRelocatableWasmIndirectCallTarget, function_index);
+        ConstantOp::Kind::kRelocatableWasmIndirectCallTarget,
+        static_cast<uint64_t>(function_index));
   }
 
   V<Context> NoContextConstant() {
