@@ -58,7 +58,8 @@ class TestingAssemblerBuffer : public AssemblerBuffer {
 
     if (protection_reconfiguration_is_allowed_) {
       bool result = SetPermissions(GetPlatformPageAllocator(), start(), size(),
-                                   v8::PageAllocator::kReadExecute);
+                                   v8::PageAllocator::kReadExecute,
+                                   v8::PageAllocator::kReadWriteExecute);
       CHECK(result);
     }
   }
@@ -66,13 +67,15 @@ class TestingAssemblerBuffer : public AssemblerBuffer {
   void MakeWritable() {
     if (protection_reconfiguration_is_allowed_) {
       bool result = SetPermissions(GetPlatformPageAllocator(), start(), size(),
-                                   v8::PageAllocator::kReadWrite);
+                                   v8::PageAllocator::kReadWrite,
+                                   v8::PageAllocator::kReadWriteExecute);
       CHECK(result);
     }
   }
 
   void MakeWritableAndExecutable() {
     bool result = SetPermissions(GetPlatformPageAllocator(), start(), size(),
+                                 v8::PageAllocator::kReadWriteExecute,
                                  v8::PageAllocator::kReadWriteExecute);
     CHECK(result);
     // Once buffer protection is set to RWX it might not be allowed to be

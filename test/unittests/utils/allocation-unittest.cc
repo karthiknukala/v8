@@ -108,13 +108,8 @@ class MemoryAllocationPermissionsTest : public TestWithPlatform {
     v8::PageAllocator* page_allocator =
         v8::internal::GetPlatformPageAllocator();
     const size_t page_size = page_allocator->AllocatePageSize();
-#ifdef __CHERI_PURE_CAPABILITY__
     int* buffer = static_cast<int*>(AllocatePages(
         page_allocator, page_size, page_size, permission, permission));
-#else
-    int* buffer = static_cast<int*>(
-        AllocatePages(page_allocator, page_size, page_size, permission));
-#endif
     ProbeMemory(buffer, MemoryAction::kRead, can_read);
     ProbeMemory(buffer, MemoryAction::kWrite, can_write);
     FreePages(page_allocator, buffer, page_size);
@@ -155,9 +150,7 @@ TEST_F(AllocationTest, AllocateAndFree) {
   void* mem_addr =
       v8::internal::AllocatePages(page_allocator, kAllocationSize, page_size,
                                   PageAllocator::Permission::kReadWrite,
-#ifdef __CHERI_PURE_CAPABILITY__
                                   PageAllocator::Permission::kReadWrite,
-#endif
                                   PageAllocator::AllocationHint().WithAddress(
                                       page_allocator->GetRandomMmapAddr()));
   CHECK_NOT_NULL(mem_addr);
@@ -168,9 +161,7 @@ TEST_F(AllocationTest, AllocateAndFree) {
   void* aligned_mem_addr = v8::internal::AllocatePages(
       page_allocator, kAllocationSize, kBigAlignment,
       PageAllocator::Permission::kReadWrite,
-#ifdef __CHERI_PURE_CAPABILITY__
       PageAllocator::Permission::kReadWrite,
-#endif
       PageAllocator::AllocationHint().WithAddress(
           AlignedAddress(page_allocator->GetRandomMmapAddr(), kBigAlignment)));
   CHECK_NOT_NULL(aligned_mem_addr);
@@ -185,20 +176,20 @@ TEST_F(AllocationTest, ReserveMemory) {
   void* mem_addr =
       v8::internal::AllocatePages(page_allocator, kAllocationSize, page_size,
                                   PageAllocator::Permission::kReadWrite,
-#ifdef __CHERI_PURE_CAPABILITY__
                                   PageAllocator::Permission::kReadWrite,
-#endif
                                   PageAllocator::AllocationHint().WithAddress(
                                       page_allocator->GetRandomMmapAddr()));
   CHECK_NE(0, page_size);
   CHECK_NOT_NULL(mem_addr);
   size_t commit_size = page_allocator->CommitPageSize();
   CHECK(v8::internal::SetPermissions(page_allocator, mem_addr, commit_size,
+                                     PageAllocator::Permission::kReadWrite,
                                      PageAllocator::Permission::kReadWrite));
   // Check whether we can write to memory.
   int* addr = static_cast<int*>(mem_addr);
   addr[v8::internal::KB - 1] = 2;
   CHECK(v8::internal::SetPermissions(page_allocator, mem_addr, commit_size,
+                                     PageAllocator::Permission::kNoAccess,
                                      PageAllocator::Permission::kNoAccess));
   v8::internal::FreePages(page_allocator, mem_addr, kAllocationSize);
 }
@@ -220,6 +211,7 @@ TEST_F(AllocationTest, ResizeMemory) {
 
   const Address allocate_at = bpa.begin() + 8 * NormalPage::kPageSize;
   CHECK(bpa.AllocatePagesAt(allocate_at, NormalPage::kPageSize,
+                            PageAllocator::Permission::kReadWrite,
                             PageAllocator::Permission::kReadWrite));
   VirtualMemory allocation(&bpa, allocate_at, NormalPage::kPageSize);
   uint8_t* byte_address = reinterpret_cast<uint8_t*>(
@@ -227,9 +219,11 @@ TEST_F(AllocationTest, ResizeMemory) {
 
   // Not enough space to resize the allocation to 3 pages.
   CHECK(!allocation.Resize(allocate_at, 3 * NormalPage::kPageSize,
+                           PageAllocator::Permission::kReadWrite,
                            PageAllocator::Permission::kReadWrite));
   // Just enough space to resize the allocation to 2 pages.
   CHECK(allocation.Resize(allocate_at, 2 * NormalPage::kPageSize,
+                          PageAllocator::Permission::kReadWrite,
                           PageAllocator::Permission::kReadWrite));
   CHECK_EQ(*byte_address, 0);
 
@@ -241,6 +235,7 @@ TEST_F(AllocationTest, ResizeMemory) {
   CHECK(allocation.Release(allocate_at + NormalPage::kPageSize - page_size));
   // Resize back to slightly below 2 pages.
   CHECK(allocation.Resize(allocate_at, 2 * NormalPage::kPageSize - page_size,
+                          PageAllocator::Permission::kReadWrite,
                           PageAllocator::Permission::kReadWrite));
   // Growing the allocation back again should still result in zero-initialized
   // memory.

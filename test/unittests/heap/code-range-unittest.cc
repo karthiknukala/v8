@@ -19,7 +19,8 @@ constexpr size_t kReservationSize = kNumPagesInReservation * kPageSize;
 
 Address AllocatePage(v8::PageAllocator& allocator) {
   return reinterpret_cast<Address>(allocator.AllocatePages(
-      nullptr, kPageSize, kPageSize, PageAllocator::Permission::kNoAccess));
+      nullptr, kPageSize, kPageSize, PageAllocator::Permission::kNoAccess,
+      PageAllocator::Permission::kReadWriteExecute));
 }
 
 bool FreePage(v8::PageAllocator& allocator, Address page) {

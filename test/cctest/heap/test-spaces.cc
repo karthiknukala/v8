@@ -199,6 +199,7 @@ TEST(MutablePage) {
       page_freeing_mode = base::PageFreeingMode::kDiscard;
       void* base = reinterpret_cast<void*>(code_range_reservation.address());
       CHECK(page_allocator->SetPermissions(base, code_range_size,
+                                           PageAllocator::kReadWriteExecute,
                                            PageAllocator::kReadWriteExecute));
       CHECK(page_allocator->DiscardSystemPages(base, code_range_size));
     }
@@ -635,12 +636,12 @@ class FailingPageAllocator : public v8::PageAllocator {
   bool ReleasePages(void* address, size_t length, size_t new_length) override {
     return false;
   }
-  bool SetPermissions(void* address, size_t length,
-                      Permission permissions) override {
+  bool SetPermissions(void* address, size_t length, Permission permissions,
+                      Permission max_permissions) override {
     return false;
   }
-  bool RecommitPages(void* address, size_t length,
-                     Permission permissions) override {
+  bool RecommitPages(void* address, size_t length, Permission permissions,
+                     Permission max_permissions) override {
     return false;
   }
   bool DecommitPages(void* address, size_t length) override { return false; }

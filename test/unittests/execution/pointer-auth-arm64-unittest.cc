@@ -156,15 +156,13 @@ TEST_F(PointerAuthArm64Test, ReplacePCAfterGC) {
   // page that was reclaimed after a GC.
   auto hint = PageAllocator::AllocationHint().WithAddress(
       page_allocator->GetRandomMmapAddr());
-  Address pc = reinterpret_cast<Address>(
-      v8::internal::AllocatePages(page_allocator, page_size, page_size,
-                                  PageAllocator::Permission::kReadWrite,
-#ifdef __CHERI_PURE_CAPABILITY__
-                                  PageAllocator::Permission::kReadWrite,
-#endif
-                                  hint));
+  Address pc = reinterpret_cast<Address>(v8::internal::AllocatePages(
+      page_allocator, page_size, page_size,
+      PageAllocator::Permission::kReadWrite,
+      PageAllocator::Permission::kReadWriteExecute, hint));
   CHECK(SetPermissions(page_allocator, pc, page_size,
-                       PageAllocator::Permission::kNoAccess));
+                       PageAllocator::Permission::kNoAccess,
+                       PageAllocator::Permission::kReadWriteExecute));
 
   // Replacing the signed PC on the stack should work even when the previous PC
   // points to an inaccessible page.

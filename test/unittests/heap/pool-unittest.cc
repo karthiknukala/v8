@@ -111,8 +111,10 @@ class TrackingPageAllocator : public ::v8::PageAllocator {
   }
 
   bool RecommitPages(void* address, size_t size,
-                     PageAllocator::Permission access) override {
-    bool result = page_allocator_->RecommitPages(address, size, access);
+                     PageAllocator::Permission access,
+                     PageAllocator::Permission max_access) override {
+    bool result =
+        page_allocator_->RecommitPages(address, size, access, max_access);
     if (result) {
       // Check that given range had given access permissions.
       CheckPagePermissions(reinterpret_cast<Address>(address), size, access,
@@ -143,8 +145,10 @@ class TrackingPageAllocator : public ::v8::PageAllocator {
   }
 
   bool SetPermissions(void* address, size_t size,
-                      PageAllocator::Permission access) override {
-    bool result = page_allocator_->SetPermissions(address, size, access);
+                      PageAllocator::Permission access,
+                      PageAllocator::Permission max_access) override {
+    bool result =
+        page_allocator_->SetPermissions(address, size, access, max_access);
     if (result) {
       bool committed = access != kNoAccess && access != kNoAccessWillJitLater;
       UpdatePagePermissions(reinterpret_cast<Address>(address), size, access,
