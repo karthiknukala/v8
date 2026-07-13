@@ -1381,6 +1381,33 @@ OpIndex GraphBuilder::Process(
     case IrOpcode::kRetain:
       __ Retain(Map(node->InputAt(0)));
       return OpIndex::Invalid();
+    case IrOpcode::kCapabilityIsTagged:
+#if V8_TARGET_CHERI
+      return __ CapabilityIsTagged(Map<WordPtr>(node->InputAt(0)));
+#else
+      // On non-CHERI, all values are considered tagged.
+      return __ Word32Constant(1);
+#endif
+#if V8_TARGET_CHERI
+    case IrOpcode::kCapAdd:
+      return __ CapAdd(Map<WordPtr>(node->InputAt(0)),
+                       Map<Word64>(node->InputAt(1)));
+    case IrOpcode::kCapSub:
+      return __ CapSub(Map<WordPtr>(node->InputAt(0)),
+                       Map<Word64>(node->InputAt(1)));
+    case IrOpcode::kAlignU:
+      return __ AlignU(Map<WordPtr>(node->InputAt(0)),
+                       Map<Word64>(node->InputAt(1)));
+    case IrOpcode::kAlignD:
+      return __ AlignD(Map<WordPtr>(node->InputAt(0)),
+                       Map<Word64>(node->InputAt(1)));
+    case IrOpcode::kSetBounds:
+      return __ SetBounds(Map<WordPtr>(node->InputAt(0)),
+                          Map<Word64>(node->InputAt(1)));
+    case IrOpcode::kSealWithType:
+      return __ SealWithType(Map<WordPtr>(node->InputAt(0)),
+                             Map<WordPtr>(node->InputAt(1)));
+#endif
     case IrOpcode::kStackPointerGreaterThan:
       return __ StackPointerGreaterThan(Map<WordPtr>(node->InputAt(0)),
                                         StackCheckKindOf(op));

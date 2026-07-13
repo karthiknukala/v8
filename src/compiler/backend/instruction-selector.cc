@@ -3368,6 +3368,22 @@ void InstructionSelector::VisitNode(OpIndex node) {
     }
     case Opcode::kStackPointerGreaterThan:
       return VisitStackPointerGreaterThan(node);
+    case Opcode::kCapabilityIsTagged:
+      return VisitCapabilityIsTagged(node);
+#if V8_TARGET_CHERI
+    case Opcode::kCapAdd:
+      return VisitCapAdd(node);
+    case Opcode::kCapSub:
+      return VisitCapSub(node);
+    case Opcode::kAlignU:
+      return VisitAlignU(node);
+    case Opcode::kAlignD:
+      return VisitAlignD(node);
+    case Opcode::kSetBounds:
+      return VisitSetBounds(node);
+    case Opcode::kSealWithType:
+      return VisitSealWithType(node);
+#endif
     case Opcode::kComparison: {
       const ComparisonOp& comparison = op.Cast<ComparisonOp>();
       using Kind = ComparisonOp::Kind;

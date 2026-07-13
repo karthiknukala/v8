@@ -310,6 +310,13 @@ using Variable = SnapshotTable<OpIndex, VariableData>::Key;
   V(Parameter)                               \
   V(OsrValue)                                \
   V(StackPointerGreaterThan)                 \
+  V(CapabilityIsTagged)                      \
+  IF_TARGET_CHERI(V, CapAdd)                 \
+  IF_TARGET_CHERI(V, CapSub)                 \
+  IF_TARGET_CHERI(V, AlignU)                 \
+  IF_TARGET_CHERI(V, AlignD)                 \
+  IF_TARGET_CHERI(V, SetBounds)              \
+  IF_TARGET_CHERI(V, SealWithType)           \
   V(StackSlot)                               \
   V(FrameConstant)                           \
   V(DeoptimizeIf)                            \
@@ -3857,6 +3864,164 @@ struct StackPointerGreaterThanOp
 
   auto options() const { return std::tuple{kind}; }
 };
+
+struct CapabilityIsTaggedOp : FixedArityOperationT<1, CapabilityIsTaggedOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::Word32()>();
+  }
+
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    return MaybeRepVector<MaybeRegisterRepresentation::WordPtr()>();
+  }
+
+  V<WordPtr> value() const { return input<WordPtr>(0); }
+
+  CapabilityIsTaggedOp(V<WordPtr> value) : Base(value) {}
+
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::Word32());
+    return std::tuple{};
+  }
+};
+
+#if V8_TARGET_CHERI
+struct CapAddOp : FixedArityOperationT<2, CapAddOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::WordPtr()>();
+  }
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    storage.resize(2);
+    storage[0] = MaybeRegisterRepresentation::WordPtr();
+    storage[1] = MaybeRegisterRepresentation::Word64();
+    return base::VectorOf(storage);
+  }
+
+  V<WordPtr> left() const { return input<WordPtr>(0); }
+  V<Word64> right() const { return input<Word64>(1); }
+
+  CapAddOp(V<WordPtr> a, V<Word64> b) : Base(a, b) {}
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::WordPtr());
+    return std::tuple{};
+  }
+};
+
+struct CapSubOp : FixedArityOperationT<2, CapSubOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::WordPtr()>();
+  }
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    storage.resize(2);
+    storage[0] = MaybeRegisterRepresentation::WordPtr();
+    storage[1] = MaybeRegisterRepresentation::Word64();
+    return base::VectorOf(storage);
+  }
+
+  V<WordPtr> left() const { return input<WordPtr>(0); }
+  V<Word64> right() const { return input<Word64>(1); }
+
+  CapSubOp(V<WordPtr> a, V<Word64> b) : Base(a, b) {}
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::WordPtr());
+    return std::tuple{};
+  }
+};
+
+struct AlignUOp : FixedArityOperationT<2, AlignUOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::WordPtr()>();
+  }
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    storage.resize(2);
+    storage[0] = MaybeRegisterRepresentation::WordPtr();
+    storage[1] = MaybeRegisterRepresentation::Word64();
+    return base::VectorOf(storage);
+  }
+
+  V<WordPtr> value() const { return input<WordPtr>(0); }
+  V<Word64> alignment() const { return input<Word64>(1); }
+
+  AlignUOp(V<WordPtr> value, V<Word64> alignment) : Base(value, alignment) {}
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::WordPtr());
+    return std::tuple{};
+  }
+};
+
+struct AlignDOp : FixedArityOperationT<2, AlignDOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::WordPtr()>();
+  }
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    storage.resize(2);
+    storage[0] = MaybeRegisterRepresentation::WordPtr();
+    storage[1] = MaybeRegisterRepresentation::Word64();
+    return base::VectorOf(storage);
+  }
+
+  V<WordPtr> value() const { return input<WordPtr>(0); }
+  V<Word64> alignment() const { return input<Word64>(1); }
+
+  AlignDOp(V<WordPtr> value, V<Word64> alignment) : Base(value, alignment) {}
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::WordPtr());
+    return std::tuple{};
+  }
+};
+
+struct SetBoundsOp : FixedArityOperationT<2, SetBoundsOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::WordPtr()>();
+  }
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    storage.resize(2);
+    storage[0] = MaybeRegisterRepresentation::WordPtr();
+    storage[1] = MaybeRegisterRepresentation::Word64();
+    return base::VectorOf(storage);
+  }
+
+  V<WordPtr> pointer() const { return input<WordPtr>(0); }
+  V<Word64> bounds() const { return input<Word64>(1); }
+
+  SetBoundsOp(V<WordPtr> pointer, V<Word64> bounds) : Base(pointer, bounds) {}
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::WordPtr());
+    return std::tuple{};
+  }
+};
+
+struct SealWithTypeOp : FixedArityOperationT<2, SealWithTypeOp> {
+  static constexpr OpEffects effects = OpEffects();
+  base::Vector<const RegisterRepresentation> outputs_rep() const {
+    return RepVector<RegisterRepresentation::WordPtr()>();
+  }
+  base::Vector<const MaybeRegisterRepresentation> inputs_rep(
+      ZoneVector<MaybeRegisterRepresentation>& storage) const {
+    return InputsRepFactory::PairOf(RegisterRepresentation::WordPtr());
+  }
+
+  V<WordPtr> pointer() const { return input<WordPtr>(0); }
+  V<WordPtr> type() const { return input<WordPtr>(1); }
+
+  SealWithTypeOp(V<WordPtr> pointer, V<WordPtr> type) : Base(pointer, type) {}
+  auto options() const {
+    DCHECK_EQ(outputs_rep()[0], RegisterRepresentation::WordPtr());
+    return std::tuple{};
+  }
+};
+#endif  // V8_TARGET_CHERI
 
 // Allocate a piece of memory in the current stack frame. Every operation
 // in the IR is a separate stack slot, but repeated execution in a loop

@@ -3456,6 +3456,31 @@ class AssemblerOpInterface : public Next {
     return ReduceIfReachableStackPointerGreaterThan(limit, kind);
   }
 
+  V<Word32> CapabilityIsTagged(V<WordPtr> value) {
+    return ReduceIfReachableCapabilityIsTagged(value);
+  }
+
+#if V8_TARGET_CHERI
+  V<WordPtr> CapAdd(V<WordPtr> a, V<Word64> b) {
+    return ReduceIfReachableCapAdd(a, b);
+  }
+  V<WordPtr> CapSub(V<WordPtr> a, V<Word64> b) {
+    return ReduceIfReachableCapSub(a, b);
+  }
+  V<WordPtr> AlignU(V<WordPtr> value, V<Word64> alignment) {
+    return ReduceIfReachableAlignU(value, alignment);
+  }
+  V<WordPtr> AlignD(V<WordPtr> value, V<Word64> alignment) {
+    return ReduceIfReachableAlignD(value, alignment);
+  }
+  V<WordPtr> SetBounds(V<WordPtr> pointer, V<Word64> bounds) {
+    return ReduceIfReachableSetBounds(pointer, bounds);
+  }
+  V<WordPtr> SealWithType(V<WordPtr> pointer, V<WordPtr> type) {
+    return ReduceIfReachableSealWithType(pointer, type);
+  }
+#endif
+
   V<Smi> StackCheckOffset() {
     return ReduceIfReachableFrameConstant(
         FrameConstantOp::Kind::kStackCheckOffset);
