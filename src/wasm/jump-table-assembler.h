@@ -331,19 +331,11 @@ class V8_EXPORT_PRIVATE JumpTableAssembler {
 
 #if V8_TARGET_CHERI
   Address pc() const { return pc_; }
-
-  void NopBytes(int count) {
-    for (int i = 0; i < count; i += kInstrSize) {
-      emit<uint32_t>(0xD503201F);
-    }
-  }
 #else
   static_assert(kFarJumpTablePaddingSize == 0);
   Address pc() const { return pc_; }
-  void NopBytes(int count) {
-    // Not used.
-  }
 #endif
+  void NopBytes(int count);
 
   template <typename V>
   void emit(V value);

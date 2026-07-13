@@ -887,6 +887,18 @@ void JumpTableAssembler::SkipUntil(int offset) {
 #error Unknown architecture.
 #endif
 
+#if V8_TARGET_CHERI
+void JumpTableAssembler::NopBytes(int count) {
+  for (int i = 0; i < count; i += kInstrSize) {
+    emit<uint32_t>(0xD503201F);
+  }
+}
+#else
+void JumpTableAssembler::NopBytes(int count) {
+  // Not used.
+}
+#endif
+
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8
