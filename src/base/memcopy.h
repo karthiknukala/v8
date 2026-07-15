@@ -15,8 +15,9 @@
 #include "src/base/bits.h"
 #include "src/base/macros.h"
 
-#if defined(V8_TARGET_ARCH_ARM64) && \
-    (defined(__ARM_NEON) || defined(__ARM_NEON__))
+#if defined(V8_TARGET_ARCH_ARM64) &&                  \
+    (defined(__ARM_NEON) || defined(__ARM_NEON__)) && \
+    !defined(__CHERI_PURE_CAPABILITY__)
 #define V8_OPTIMIZE_WITH_NEON
 #include <arm_neon.h>
 #endif
