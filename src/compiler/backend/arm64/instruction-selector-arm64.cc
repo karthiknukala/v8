@@ -2527,11 +2527,17 @@ void InstructionSelector::VisitWord64Ctz(OpIndex node) {
 
 #if V8_TARGET_CHERI
 void InstructionSelector::VisitCapAdd(OpIndex node) {
-  VisitAddSub(this, node, kArm64AddCap, kArm64SubCap);
+  Arm64OperandGenerator g(this);
+  const CapAddOp& op = this->Get(node).Cast<CapAddOp>();
+  Emit(kArm64AddCap, g.DefineAsRegister(node),
+       g.UseRegister(op.left()), g.UseRegister(op.right()));
 }
 
 void InstructionSelector::VisitCapSub(OpIndex node) {
-  VisitAddSub(this, node, kArm64SubCap, kArm64AddCap);
+  Arm64OperandGenerator g(this);
+  const CapSubOp& op = this->Get(node).Cast<CapSubOp>();
+  Emit(kArm64SubCap, g.DefineAsRegister(node),
+       g.UseRegister(op.left()), g.UseRegister(op.right()));
 }
 #endif
 
