@@ -1461,6 +1461,34 @@ class MachineOptimizationReducer : public Next {
           }
           break;
         }
+#if V8_TARGET_CHERI
+        case RegisterRepresentation::Capability64(): {
+          const ConstantOp* l = matcher_.TryCast<ConstantOp>(left);
+          const ConstantOp* r = matcher_.TryCast<ConstantOp>(right);
+          if (l && r) {
+            // We don't need to actually use the full capability here.
+            uint64_t k1 =
+                static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()));
+            uint64_t k2 =
+                static_cast<uint64_t>(V8_CHERI_ADDR_GET(r->capability64()));
+            switch (kind) {
+              case ComparisonOp::Kind::kEqual:
+                return __ Word32Constant(k1 == k2);
+              case ComparisonOp::Kind::kSignedLessThan:
+                return __ Word32Constant(
+                    static_cast<int64_t>(k1) < static_cast<int64_t>(k2));
+              case ComparisonOp::Kind::kSignedLessThanOrEqual:
+                return __ Word32Constant(
+                    static_cast<int64_t>(k1) <= static_cast<int64_t>(k2));
+              case ComparisonOp::Kind::kUnsignedLessThan:
+                return __ Word32Constant(k1 < k2);
+              case ComparisonOp::Kind::kUnsignedLessThanOrEqual:
+                return __ Word32Constant(k1 <= k2);
+            }
+          }
+          break;
+        }
+#endif
         case RegisterRepresentation::Float32(): {
           if (float k1, k2; matcher_.MatchFloat32Constant(left, &k1) &&
                             matcher_.MatchFloat32Constant(right, &k2)) {
@@ -1660,6 +1688,45 @@ class MachineOptimizationReducer : public Next {
     }
 
     using Kind = ShiftOp::Kind;
+#if V8_TARGET_CHERI
+    if (rep == WordRepresentation::Capability64()) {
+      if (auto* l = matcher_.TryCast<ConstantOp>(left)) {
+        if (uint32_t amount;
+            matcher_.MatchIntegralWord32Constant(right, &amount)) {
+          amount = amount & (rep.bit_width() - 1);
+          // We don't want to be shifting valid capabilities because we're going
+          // to invalidate them in the process, so better to fail early.
+          CHECK_IMPLIES(V8_CHERI_PURECAP_BOOL,
+                        !V8_CHERI_TAG_GET(l->capability64()));
+          uint64_t addr =
+              static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()));
+          switch (kind) {
+            case Kind::kShiftRightArithmeticShiftOutZeros:
+              if (base::bits::CountTrailingZeros(static_cast<int64_t>(addr)) <
+                  amount) {
+                __ Unreachable();
+                return V<Word>::Invalid();
+              }
+              [[fallthrough]];
+            case Kind::kShiftRightArithmetic:
+              return __ WordConstant(
+                  static_cast<uint64_t>(static_cast<int64_t>(addr) >> amount),
+                  rep);
+            case Kind::kShiftRightLogical:
+              return __ WordConstant(addr >> amount, rep);
+            case Kind::kShiftLeft:
+              return __ WordConstant(addr << amount, rep);
+            case Kind::kRotateRight:
+              return __ WordConstant(
+                  base::bits::RotateRight64(addr, amount), rep);
+            case Kind::kRotateLeft:
+              return __ WordConstant(
+                  base::bits::RotateLeft64(addr, amount), rep);
+          }
+        }
+      }
+    }
+#endif
     uint64_t c_unsigned;
     int64_t c_signed;
     if (matcher_.MatchIntegralWordConstant(left, rep, &c_unsigned, &c_signed)) {
@@ -2380,6 +2447,21 @@ class MachineOptimizationReducer : public Next {
             }
             break;
           }
+#if V8_TARGET_CHERI
+          case RegisterRepresentation::Capability64(): {
+            const ConstantOp* l = matcher_.TryCast<ConstantOp>(left);
+            const ConstantOp* r = matcher_.TryCast<ConstantOp>(right);
+            if (l && r) {
+              // Don't need to use the full capability here.
+              uint64_t k1 =
+                  static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()));
+              uint64_t k2 =
+                  static_cast<uint64_t>(V8_CHERI_ADDR_GET(r->capability64()));
+              return __ Word32Constant(k1 == k2);
+            }
+            break;
+          }
+#endif
           case RegisterRepresentation::Float32(): {
             if (float k1, k2; matcher_.MatchFloat32Constant(left, &k1) &&
                               matcher_.MatchFloat32Constant(right, &k2)) {

@@ -3521,6 +3521,14 @@ void InstructionSelector::VisitNode(OpIndex node) {
           } else {
             return VisitBitcastTaggedToWord(node);
           }
+#if V8_TARGET_CHERI
+        case multi(Rep::Tagged(), Rep::WordPtr()):
+          MarkAsRepresentation(MachineRepresentation::kCapability64, node);
+          return VisitBitcastTaggedToWord(node);
+        case multi(Rep::WordPtr(), Rep::Tagged()):
+          MarkAsTagged(node);
+          return VisitBitcastWordToTagged(node);
+#endif
         default:
           UNIMPLEMENTED();
       }

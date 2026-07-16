@@ -675,6 +675,11 @@ constexpr bool IsValidTypeFor(RegisterRepresentation repr) {
       return std::is_same_v<T, Simd128>;
     case RegisterRepresentation::Enum::kSimd256:
       return std::is_same_v<T, Simd256>;
+#if V8_TARGET_CHERI
+    case RegisterRepresentation::Enum::kCapability64:
+      return std::is_same_v<T, Word> || std::is_same_v<T, WordPtr> ||
+             std::is_same_v<T, Untagged>;
+#endif
   }
 }
 
