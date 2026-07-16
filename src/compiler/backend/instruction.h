@@ -1346,7 +1346,8 @@ class V8_EXPORT_PRIVATE Constant final {
   explicit Constant(Float64 v) : type_(kFloat64), value_(v.get_bits()) {}
   explicit Constant(ExternalReference ref)
       : type_(kExternalReference), value_(base::bit_cast<intptr_t>(ref.raw())) {
-    DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, V8_CHERI_TAG_GET(value_));
+    DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !ref.IsIsolateFieldId(),
+                   V8_CHERI_TAG_GET(value_));
   }
   explicit Constant(IndirectHandle<HeapObject> obj, bool is_compressed = false)
       : type_(is_compressed ? kCompressedHeapObject : kHeapObject),
