@@ -1089,14 +1089,19 @@ inline void Assembler::LoadStoreWRegOffset(Instr memop,
 inline void Assembler::DataProcPlainRegister(const Register& rd,
                                              const Register& rn,
                                              const Register& rm, Instr op) {
-  DCHECK(AreSameSizeAndType(rd, rn, rm));
+  if (V8_TARGET_CHERI_BOOL)
+    DCHECK(AreSameSizeAndType(rd, rn));
+  else
+    DCHECK(AreSameSizeAndType(rd, rn, rm));
   Emit(SF(rd) | AddSubShiftedFixed | op | Rm(rm) | Rn(rn) | Rd(rd));
 }
 
 inline void Assembler::CmpPlainRegister(const Register& rn,
                                         const Register& rm) {
-  DCHECK(AreSameSizeAndType(rn, rm));
-  Emit(SF(rn) | AddSubShiftedFixed | SUB | Flags(SetFlags) | Rm(rm) | Rn(rn) |
+  Register xn = rn.IsC() ? rn.X() : rn;
+  Register xm = rm.IsC() ? rm.X() : rm;
+  DCHECK(AreSameSizeAndType(xn, xm));
+  Emit(SF(xn) | AddSubShiftedFixed | SUB | Flags(SetFlags) | Rm(xm) | Rn(xn) |
        Rd(xzr));
 }
 

@@ -1136,7 +1136,8 @@ void MacroAssembler::LoadStoreMacroComplex(const CPURegister& rt,
   } else if (addr.IsImmediateOffset()) {
     // Load/stores with immediate offset addressing should have been handled by
     // the caller.
-    DCHECK(!IsImmLSScaled(offset, CalcLSDataSizeLog2(op)) && !is_imm_unscaled);
+    DCHECK(!IsImmLSScaled(offset, CalcLSDataSizeLog2(op, rt.IsC())) &&
+           !is_imm_unscaled);
     UseScratchRegisterScope temps(this);
     Register temp = addr.base().IsC() ? temps.AcquireX()
                                       : temps.AcquireSameSizeAs(addr.base());
@@ -3163,7 +3164,6 @@ void MacroAssembler::CallForDeoptimization(
 void MacroAssembler::LoadStackLimit(Register destination, StackLimitKind kind) {
   ASM_CODE_COMMENT(this);
   DCHECK(root_array_available());
-  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, destination.IsC());
   ScaledInt offset = kind == StackLimitKind::kRealStackLimit
                          ? IsolateData::real_jslimit_offset()
                          : IsolateData::jslimit_offset();
@@ -3378,15 +3378,15 @@ void MacroAssembler::InvokeFunctionCode(
   // On function call, call into the debugger if necessary.
   Label debug_hook, continue_after_hook;
   {
-    Mov(x5, ExternalReference::debug_hook_on_function_call_address(isolate()));
-    Ldrsb(x5, MemOperand(x5));
+    Mov(c5, ExternalReference::debug_hook_on_function_call_address(isolate()));
+    Ldrsb(x5, MemOperand(c5));
     Cbnz(x5, &debug_hook);
   }
   bind(&continue_after_hook);
 
   // Clear the new.target register if not given.
   if (!new_target.is_valid()) {
-    LoadRoot(x3, RootIndex::kUndefinedValue);
+    LoadRoot(c3, RootIndex::kUndefinedValue);
   }
 
   Register scratch = x20;
@@ -3407,11 +3407,11 @@ void MacroAssembler::InvokeFunctionCode(
       Call(kJavaScriptCallCodeStartRegister);
       break;
     case InvokeType::kJump:
-      // We jump through x17 here because for Branch Identification (BTI) we use
+      // We jump through c17 here because for Branch Identification (BTI) we use
       // "Call" (`bti c`) rather than "Jump" (`bti j`) landing pads for
       // tail-called code. See TailCallBuiltin for more information.
-      Mov(x17, kJavaScriptCallCodeStartRegister);
-      Jump(x17);
+      Mov(c17, kJavaScriptCallCodeStartRegister);
+      Jump(c17);
       break;
   }
   Label done;
@@ -4598,7 +4598,7 @@ void MacroAssembler::LoadEntrypointFromJSDispatchTable(Register destination,
   Register index = destination;
   CHECK(root_array_available());
   Ldr(scratch, ExternalReferenceAsOperand(IsolateFieldId::kJSDispatchTable));
-  Mov(index, Operand(dispatch_handle, LSR, kJSDispatchHandleShift));
+  Mov(index.X(), Operand(dispatch_handle.X(), LSR, kJSDispatchHandleShift));
   Add(scratch, scratch, Operand(index, LSL, kJSDispatchTableEntrySizeLog2));
   Ldr(destination, MemOperand(scratch, JSDispatchEntry::kEntrypointOffset));
 }
@@ -4632,7 +4632,7 @@ void MacroAssembler::LoadParameterCountFromJSDispatchTable(
   Register index = destination;
   CHECK(root_array_available());
   Ldr(scratch, ExternalReferenceAsOperand(IsolateFieldId::kJSDispatchTable));
-  Mov(index, Operand(dispatch_handle, LSR, kJSDispatchHandleShift));
+  Mov(index.X(), Operand(dispatch_handle.X(), LSR, kJSDispatchHandleShift));
   Add(scratch, scratch, Operand(index, LSL, kJSDispatchTableEntrySizeLog2));
   static_assert(JSDispatchEntry::kParameterCountMask == 0xffff);
   Ldrh(destination, MemOperand(scratch, JSDispatchEntry::kCodeObjectOffset));
@@ -4647,7 +4647,7 @@ void MacroAssembler::LoadEntrypointAndParameterCountFromJSDispatchTable(
   Register index = parameter_count;
   CHECK(root_array_available());
   Ldr(scratch, ExternalReferenceAsOperand(IsolateFieldId::kJSDispatchTable));
-  Mov(index, Operand(dispatch_handle, LSR, kJSDispatchHandleShift));
+  Mov(index.X(), Operand(dispatch_handle.X(), LSR, kJSDispatchHandleShift));
   Add(scratch, scratch, Operand(index, LSL, kJSDispatchTableEntrySizeLog2));
   Ldr(entrypoint, MemOperand(scratch, JSDispatchEntry::kEntrypointOffset));
   static_assert(JSDispatchEntry::kParameterCountMask == 0xffff);

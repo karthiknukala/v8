@@ -423,11 +423,10 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       // to be 16 bytes, so we don't need the extra padding to keep the frame
       // aligned.
       __ Push<MacroAssembler::kSignLR>(lr);
-      unwinding_info_writer_->MarkLinkRegisterOnTopOfStack(__ pc_offset(), csp);
 #else
       __ Push<MacroAssembler::kSignLR>(lr, padreg);
-      unwinding_info_writer_->MarkLinkRegisterOnTopOfStack(__ pc_offset(), sp);
 #endif
+      unwinding_info_writer_->MarkLinkRegisterOnTopOfStack(__ pc_offset(), csp);
     }
     if (mode_ == RecordWriteMode::kValueIsEphemeronKey) {
       __ CallEphemeronKeyBarrier(object_, offset_, save_fp_mode);
@@ -908,9 +907,9 @@ void CodeGenerator::AssembleCodeStartRegisterCheck() {
   UseScratchRegisterScope temps(masm());
   Register scratch = temps.AcquireC();
   __ ComputeCodeStartAddress(scratch);
-#if V8_TARGET_CHERI
   __ PrepareC64Jump(scratch);
   __ PrepareC64Jump(kJavaScriptCallCodeStartRegister);
+#if V8_TARGET_CHERI
   __ Cmp(scratch, kJavaScriptCallCodeStartRegister);
 #else
   __ cmp(scratch, kJavaScriptCallCodeStartRegister);
@@ -4581,7 +4580,7 @@ void CodeGenerator::AssembleConstructFrame() {
       __ Push<MacroAssembler::kSignLR>(lr, fp, scratch,
                                        kWasmImplicitArgRegister);
       static constexpr int kSPToFPDelta = 2 * kSystemPointerSize;
-      __ Add(fp, sp, kSPToFPDelta);
+      __ Add(fp, csp, kSPToFPDelta);
       if (call_descriptor->IsWasmCapiFunction()) {
         // The C-API function has one extra slot for the PC.
         required_slots++;
@@ -4597,9 +4596,9 @@ void CodeGenerator::AssembleConstructFrame() {
       Register scratch = temps.AcquireX();
       __ Mov(scratch,
              StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
-      __ Push<MacroAssembler::kSignLR>(lr, fp, scratch, padreg);
+      __ Push<MacroAssembler::kSignLR>(lr, fp, scratch.C(), padregc);
       static constexpr int kSPToFPDelta = 2 * kSystemPointerSize;
-      __ Add(fp, sp, kSPToFPDelta);
+      __ Add(fp, csp, kSPToFPDelta);
       // One of the extra slots has just been claimed when pushing the padreg.
       // We also know that we have at least one slot to claim here, as the typed
       // frame has an odd number of fixed slots, and all other parts of the
