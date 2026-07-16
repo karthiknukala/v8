@@ -9112,8 +9112,13 @@ class TurboshaftGraphBuildingInterface
   // We need this shift so that resulting OpIndex offsets are multiples of
   // `sizeof(OperationStorageSlot)`.
   static constexpr int kPositionFieldShift = 3;
+#if V8_TARGET_CHERI
+  static_assert(sizeof(compiler::turboshaft::OperationStorageSlot) ==
+                2 << kPositionFieldShift);
+#else
   static_assert(sizeof(compiler::turboshaft::OperationStorageSlot) ==
                 1 << kPositionFieldShift);
+#endif
   static constexpr int kPositionFieldSize = 23;
   static_assert(kV8MaxWasmFunctionSize < (1 << kPositionFieldSize));
   static constexpr int kInliningIdFieldSize = 6;

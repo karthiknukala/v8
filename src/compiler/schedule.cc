@@ -196,7 +196,10 @@ bool Schedule::SameBasicBlock(Node* a, Node* b) const {
 BasicBlock* Schedule::NewBasicBlock() {
   BasicBlock* block = zone_->New<BasicBlock>(
       zone_, BasicBlock::Id::FromSize(all_blocks_.size()));
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, V8_CHERI_TAG_GET(block));
   all_blocks_.push_back(block);
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL,
+                 V8_CHERI_TAG_GET(all_blocks_[all_blocks_.size() - 1]));
   return block;
 }
 

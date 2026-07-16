@@ -52,7 +52,7 @@ inline bool generating_unreachable_operations() {
 
 // Operations are stored in possibly multiple sequential storage slots.
 // TODO(ds815): uint64_t -> uintptr_t?
-using OperationStorageSlot = uint64_t;
+using OperationStorageSlot = uintptr_t;
 // Operations occupy at least 2 slots, therefore we assign one id per two slots.
 constexpr size_t kSlotsPerId = 2;
 
@@ -166,8 +166,9 @@ class OpIndex {
     DCHECK(valid());
     // The second lowest significant bit of the offset is used to store the
     // graph generation modulo 2. The lowest and 3rd lowest bits should always
-    // be 0 (as long as sizeof(OperationStorageSlot) is 8).
-    static_assert(sizeof(OperationStorageSlot) == 8);
+    // be 0 (as long as sizeof(OperationStorageSlot) is a power of 2).
+    static_assert(sizeof(OperationStorageSlot) >= 8);
+    static_assert((sizeof(OperationStorageSlot) & (sizeof(OperationStorageSlot) - 1)) == 0);
     return (offset_ & 0b101) == 0;
   }
 #endif
