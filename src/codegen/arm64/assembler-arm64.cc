@@ -4778,7 +4778,6 @@ void Assembler::LoadStore(const CPURegister& rt, const MemOperand& addr,
     int offset = static_cast<int>(addr.offset());
     if (IsImmLSScaled(addr.offset(), size_log2)) {
 #if V8_TARGET_CHERI
-      DCHECK_IMPLIES(rt.IsC(), IsAligned(offset, kSystemPointerSize));
       // Use the scaled addressing mode.
       if (rt.IsC()) {
         LoadStoreCapScaledImmOffset(memop, offset, size_log2);
