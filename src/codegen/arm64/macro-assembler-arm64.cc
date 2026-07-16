@@ -3661,10 +3661,10 @@ void MacroAssembler::LeaveExitFrame(const Register& scratch,
   if (v8_flags.debug_code) {
     // Also emit debug code to clear the cp in the top frame.
     static_assert(Context::kNoContext == 0);
-    Str(xzr, AsMemOperand(IsolateFieldId::kContext));
+    Str(czr, AsMemOperand(IsolateFieldId::kContext));
   }
   // Clear the frame pointer from the top frame.
-  Str(xzr, AsMemOperand(IsolateFieldId::kCEntryFP));
+  Str(czr, AsMemOperand(IsolateFieldId::kCEntryFP));
 
   // Pop the exit frame.
   //         fp[kCRegSize]: CallerPC (lr)
