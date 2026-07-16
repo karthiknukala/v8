@@ -315,10 +315,9 @@ class WriteBarrierCodeStubAssembler : public CodeStubAssembler {
     // or shared barrier slow path.
     Label generational_barrier(this), shared_barrier(this);
 
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, slot.IsCapability());
     TNode<IntPtrT> value = BitcastTaggedToWord(Load<HeapObject>(slot));
-#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    DCHECK(value.IsCapability());
-#endif  // __CHERI_PURE_CAPABILITY__ && !V8_COMPRESS_POINTERS
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, value.IsCapability());
 
     InYoungGeneration(value, &generational_barrier, &shared_barrier);
 

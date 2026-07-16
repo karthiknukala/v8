@@ -545,6 +545,7 @@ static_assert(!is_capability<HeapObjectReference>::value);
 static_assert(!is_capability<BigInt>::value);
 #elif V8_TARGET_CHERI
 static_assert(!is_capability<Smi>::value);
+static_assert(is_capability<Object>::value);
 static_assert(is_capability<HeapObjectLayout>::value);
 static_assert(is_capability<HeapObject>::value);
 static_assert(is_capability<Map>::value);
