@@ -5507,7 +5507,7 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, bool with_profiling,
   MemOperand level_mem_op = __ AsMemOperand(IsolateFieldId::kHandleScopeLevel);
 
   Register return_value = x0;
-  Register scratch = x4;
+  Register scratch = c4;
   Register scratch2 = x5;
 
   // Allocate HandleScope in callee-saved registers.
