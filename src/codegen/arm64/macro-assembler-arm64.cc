@@ -3365,7 +3365,8 @@ void MacroAssembler::InvokeFunctionCode(
   ASM_CODE_COMMENT(this);
   // You can't call a function without a valid frame.
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, function.IsC());
-  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, new_target.IsC());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL && new_target.is_valid(),
+                 new_target.IsC());
   DCHECK_IMPLIES(type == InvokeType::kCall, has_frame());
   DCHECK_EQ(function, c1);
   DCHECK_IMPLIES(new_target.is_valid(), new_target == c3);
@@ -3565,7 +3566,7 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
   } else {
       Register type_reg = temps.AcquireX();
       Mov(type_reg, StackFrame::TypeToMarker(type));
-      Register fourth_reg = padreg;
+      Register fourth_reg = padregc;
       if (type == StackFrame::CONSTRUCT || type == StackFrame::FAST_CONSTRUCT) {
         fourth_reg = cp;
       }
