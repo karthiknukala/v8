@@ -220,7 +220,11 @@ void MacroAssembler::LogicalMacro(const Register& rd, const Register& rn,
       immediate &= kWRegMask;
     }
 
-    DCHECK(rd.Is64Bits() || is_uint32(immediate));
+    if (V8_TARGET_CHERI_BOOL) {
+      DCHECK(rd.Is64Bits() || rd.IsC() || is_uint32(immediate));
+    } else {
+      DCHECK(rd.Is64Bits() || is_uint32(immediate));
+    }
 
     // Special cases for all set or all clear immediates.
     if (immediate == 0) {
