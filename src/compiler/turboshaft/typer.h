@@ -1416,6 +1416,9 @@ class Typer {
       case RegisterRepresentation::Word32():
         return TypeWord32Comparison(lhs, rhs, kind, zone);
       case RegisterRepresentation::Word64():
+#if V8_TARGET_CHERI
+      case RegisterRepresentation::Capability64():
+#endif
         return TypeWord64Comparison(lhs, rhs, kind, zone);
       case RegisterRepresentation::Float32():
         return TypeFloat32Comparison(lhs, rhs, kind, zone);
