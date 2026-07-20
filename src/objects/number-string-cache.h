@@ -75,9 +75,12 @@ V8_OBJECT class DoubleStringCache : public HeapObjectLayout {
  public:
   V8_OBJECT struct Entry {
     UnalignedDoubleMember key_;
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    uint8_t alignment_padding_[8] = {};
+#endif
     TaggedMember<UnionOf<Smi, String>> value_;
 #if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
-    uint8_t cheri_padding_[8] = {};
+    uint8_t cheri_padding_[16] = {};
 #endif
   } V8_OBJECT_END;
 
@@ -134,7 +137,14 @@ V8_OBJECT class DoubleStringCache : public HeapObjectLayout {
     return OBJECT_POINTER_ALIGN(OffsetOfElementAt(length));
   }
   static inline constexpr int OffsetOfElementAt(int index) {
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+    // Entries start after capacity_ + alignment padding to kTaggedSize
+    // boundary.
+    return sizeof(Header) + kUInt32Size + (kTaggedSize - kUInt32Size) +
+           index * sizeof(Entry);
+#else
     return sizeof(Header) + kUInt32Size + index * sizeof(Entry);
+#endif
   }
 
   class BodyDescriptor;
@@ -151,7 +161,10 @@ V8_OBJECT class DoubleStringCache : public HeapObjectLayout {
   inline const Entry* end() const { return &entries()[capacity_]; }
 
   uint32_t capacity_;
-#if TAGGED_SIZE_8_BYTES
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_COMPRESS_POINTERS)
+  // Align entries array to kTaggedSize boundary for capability alignment.
+  uint8_t entries_padding_[kTaggedSize - kUInt32Size] = {};
+#elif TAGGED_SIZE_8_BYTES
   uint32_t optional_padding_;
 #endif
   FLEXIBLE_ARRAY_MEMBER(Entry, entries);
