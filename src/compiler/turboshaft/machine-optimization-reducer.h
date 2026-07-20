@@ -385,6 +385,24 @@ class MachineOptimizationReducer : public Next {
     return Next::ReduceTaggedBitcast(input, from, to, kind);
   }
 
+#if V8_TARGET_CHERI
+  V<Word32> REDUCE(CapabilityIsTagged)(V<WordPtr> value) {
+    if (ShouldSkipOptimizationStep()) {
+      return Next::ReduceCapabilityIsTagged(value);
+    }
+    // Constant-fold: integer constants are never tagged capabilities.
+    if (auto* constant = matcher_.TryCast<ConstantOp>(value)) {
+      if (constant->kind == ConstantOp::Kind::kWord64 ||
+          constant->kind == ConstantOp::Kind::kWord32 ||
+          constant->kind == ConstantOp::Kind::kRelocatableWasmCall ||
+          constant->kind == ConstantOp::Kind::kRelocatableWasmStubCall) {
+        return __ Word32Constant(0);
+      }
+    }
+    return Next::ReduceCapabilityIsTagged(value);
+  }
+#endif
+
   V<Float> REDUCE(FloatUnary)(V<Float> input, FloatUnaryOp::Kind kind,
                               FloatRepresentation rep) {
     if (ShouldSkipOptimizationStep()) {
