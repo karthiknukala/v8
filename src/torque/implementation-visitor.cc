@@ -3681,6 +3681,25 @@ void ImplementationVisitor::GenerateBuiltinDefinitionsAndInterfaceDescriptors(
           size_t kFirstNonContextParameter = has_context_parameter ? 1 : 0;
           TypeVector return_types = LowerType(builtin->signature().return_type);
 
+          // On CHERI, struct return types may contain __cheri_padding_* fields
+          // that shouldn't be part of the interface descriptor's return count.
+          // Filter them out.
+          {
+            const Type* return_type = builtin->signature().return_type;
+            std::optional<const StructType*> s = return_type->StructSupertype();
+            TypeVector filtered_return_types;
+            if (s) {
+              for (const Field& field : (*s)->fields()) {
+                if (IsInternal(field)) continue;
+                for (const Type* lowered :
+                     LowerType(field.name_and_type.type)) {
+                  filtered_return_types.push_back(lowered);
+                }
+              }
+              return_types = filtered_return_types;
+            }
+          }
+
           interface_descriptors << "class " << descriptor_name
                                 << " : public StaticCallInterfaceDescriptor<"
                                 << descriptor_name << "> {\n";
