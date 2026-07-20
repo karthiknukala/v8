@@ -816,6 +816,10 @@ class MemoryRepresentation {
         return is_signed ? Int32() : Uint32();
       case RegisterRepresentation::Word64():
         return is_signed ? Int64() : Uint64();
+#if V8_TARGET_CHERI
+      case RegisterRepresentation::Capability64():
+        return Capability64();
+#endif
       case RegisterRepresentation::Float32():
         return Float32();
       case RegisterRepresentation::Float64():

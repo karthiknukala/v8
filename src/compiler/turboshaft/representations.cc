@@ -24,6 +24,10 @@ std::ostream& operator<<(std::ostream& os, MaybeRegisterRepresentation rep) {
       return os << "Simd128";
     case MaybeRegisterRepresentation::Simd256():
       return os << "Simd256";
+#if V8_TARGET_CHERI
+    case MaybeRegisterRepresentation::Capability64():
+      return os << "Capability64";
+#endif
     case MaybeRegisterRepresentation::None():
       return os << "None";
   }
@@ -71,6 +75,10 @@ std::ostream& operator<<(std::ostream& os, MemoryRepresentation rep) {
       return os << "IndirectPointer";
     case MemoryRepresentation::SandboxedPointer():
       return os << "SandboxedPointer";
+#if V8_TARGET_CHERI
+    case MemoryRepresentation::Capability64():
+      return os << "Capability64";
+#endif
     case MemoryRepresentation::Simd128():
       return os << "Simd128";
     case MemoryRepresentation::Simd256():

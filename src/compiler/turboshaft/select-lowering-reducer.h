@@ -74,6 +74,11 @@ class SelectLoweringReducer : public Next {
           case RegisterRepresentation::Enum::kSimd256:
             use_cmove = false;
             break;
+#if V8_TARGET_CHERI
+          case RegisterRepresentation::Enum::kCapability64:
+            use_cmove = false;
+            break;
+#endif
         }
     }
 

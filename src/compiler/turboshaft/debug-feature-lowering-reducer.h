@@ -66,6 +66,11 @@ class DebugFeatureLoweringReducer : public Next {
       case RegisterRepresentation::Tagged():
         CallDebugPrint<builtin::DebugPrintObject>(label, input);
         break;
+#if V8_TARGET_CHERI
+      case RegisterRepresentation::Capability64():
+        // FIXME(cheri): Print the full capability?
+        CallDebugPrint<builtin::DebugPrintWord64>(label, input);
+#endif
       default:
         // TODO(nicohartmann@): Support other representations.
         UNIMPLEMENTED();

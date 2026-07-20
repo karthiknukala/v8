@@ -2583,6 +2583,12 @@ struct SelectOp : FixedArityOperationT<3, SelectOp> {
         case RegisterRepresentation::Enum::kSimd128:
         case RegisterRepresentation::Enum::kSimd256:
           FATAL("CMove for Simd register not supported");
+#if V8_TARGET_CHERI
+        case RegisterRepresentation::Enum::kCapability64:
+          FATAL("CMove for Capability64 values isn't supported");
+#endif
+        default:
+          UNREACHABLE();
       }
     }
 #endif

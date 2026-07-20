@@ -149,6 +149,9 @@ class AssertTypesReducer
       case RegisterRepresentation::Compressed():
       case RegisterRepresentation::Simd128():
       case RegisterRepresentation::Simd256():
+#if V8_TARGET_CHERI
+      case RegisterRepresentation::Capability64():
+#endif
         // TODO(nicohartmann@): Handle remaining cases.
         break;
     }

@@ -4904,7 +4904,8 @@ bool Assembler::IsImmLLiteral(int64_t offset) {
 bool Assembler::IsImmLogical(uint64_t value, unsigned width, unsigned* n,
                              unsigned* imm_s, unsigned* imm_r) {
   DCHECK((n != nullptr) && (imm_s != nullptr) && (imm_r != nullptr));
-  DCHECK((width == kWRegSizeInBits) || (width == kXRegSizeInBits));
+  DCHECK((width == kWRegSizeInBits) || (width == kXRegSizeInBits) ||
+         (width == kCRegSizeInBits));
 
   bool negate = false;
 
