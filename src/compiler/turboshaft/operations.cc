@@ -773,8 +773,12 @@ void TaggedBitcastOp::Validate(const Graph& graph) const {
       // supported by the instruction selector and thus need to be bitcasted to
       // Tagged. This is safe for load elimination because we don't
       // load-eliminate atomic loads anyways.
+      // When kTaggedSize == kSystemPointerSize (pointer compression disabled),
+      // the bitcast is a no-op and safe regardless of the input.
+      constexpr bool kBitcastIsNoOp = (kTaggedSize == kSystemPointerSize);
       DCHECK(!graph.Get(input()).Is<LoadOp>() ||
-             graph.Get(input()).Cast<LoadOp>().kind.is_atomic);
+             graph.Get(input()).Cast<LoadOp>().kind.is_atomic ||
+             kBitcastIsNoOp);
     }
   }
 }
