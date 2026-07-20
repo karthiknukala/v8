@@ -1899,6 +1899,11 @@ struct OverflowCheckedBinopOp
       case WordRepresentation::Word64():
         return RepVector<RegisterRepresentation::Word64(),
                          RegisterRepresentation::Word32()>();
+#if V8_TARGET_CHERI
+      case WordRepresentation::Capability64():
+        return RepVector<RegisterRepresentation::Capability64(),
+                         RegisterRepresentation::Word32()>();
+#endif
     }
   }
 
@@ -1978,6 +1983,11 @@ struct OverflowCheckedUnaryOp
       case WordRepresentation::Word64():
         return RepVector<RegisterRepresentation::Word64(),
                          RegisterRepresentation::Word32()>();
+#if V8_TARGET_CHERI
+      case WordRepresentation::Capability64():
+        return RepVector<RegisterRepresentation::Capability64(),
+                         RegisterRepresentation::Word32()>();
+#endif
     }
   }
 

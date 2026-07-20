@@ -449,6 +449,17 @@ constexpr bool RegisterRepresentation::AllowImplicitRepresentationChangeTo(
         return true;
       }
       break;
+#if V8_TARGET_CHERI
+    case RegisterRepresentation::Capability64():
+      // On CHERI, Word64 can implicitly convert to Capability64.
+      if (*this == RegisterRepresentation::Word64()) {
+        return true;
+      }
+      if (*this == RegisterRepresentation::Tagged()) {
+        return true;
+      }
+      break;
+#endif
     default:
       break;
   }
