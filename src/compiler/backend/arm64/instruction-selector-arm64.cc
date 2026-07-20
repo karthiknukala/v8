@@ -875,6 +875,9 @@ std::tuple<InstructionCode, ImmediateMode> GetStoreOpcodeAndImmediate(
     case MemoryRepresentation::AnyUncompressedTagged():
     case MemoryRepresentation::UncompressedTaggedPointer():
     case MemoryRepresentation::UncompressedTaggedSigned():
+#if V8_TARGET_CHERI
+    case MemoryRepresentation::Capability64():
+#endif
       CHECK(!paired);
 #ifdef V8_TARGET_CHERI
       return {kArm64StrCapability, kLoadStoreImm64};
