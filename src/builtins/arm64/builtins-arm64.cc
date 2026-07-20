@@ -5400,7 +5400,11 @@ void Builtins::Generate_DeoptimizationEntry_LazyAfterFastCall(
   // trigger stack unwinding.
   Label no_exception;
   UseScratchRegisterScope temps(masm);
+#if V8_TARGET_CHERI
+  Register scratch = temps.AcquireC();
+#else
   Register scratch = temps.AcquireX();
+#endif
   __ Ldr(scratch, __ AsMemOperand(IsolateFieldId::kException));
   __ CompareRoot(scratch, RootIndex::kTheHoleValue);
   __ B(eq, &no_exception);
