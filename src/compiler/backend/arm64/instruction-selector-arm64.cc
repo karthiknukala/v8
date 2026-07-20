@@ -895,6 +895,7 @@ std::tuple<InstructionCode, ImmediateMode> GetStoreOpcodeAndImmediate(
     case MemoryRepresentation::Simd256():
       UNREACHABLE();
   }
+  UNREACHABLE();
 }
 
 }  // namespace
@@ -1234,6 +1235,7 @@ std::tuple<InstructionCode, ImmediateMode> GetLoadOpcodeAndImmediate(
     case MemoryRepresentation::Simd256():
       UNREACHABLE();
   }
+  UNREACHABLE();
 }
 
 void InstructionSelector::VisitLoad(OpIndex node) {
