@@ -2647,7 +2647,9 @@ void InstructionSelector::VisitSealWithType(OpIndex node) {
 
 void InstructionSelector::VisitCapabilityIsTagged(OpIndex node) {
   OperandGenerator g(this);
-  Emit(kArchCapabilityIsTagged, g.DefineAsRegister(node), g.UseRegister(node));
+  const auto& op = this->Get(node).Cast<CapabilityIsTaggedOp>();
+  Emit(kArchCapabilityIsTagged, g.DefineAsRegister(node),
+       g.UseRegister(op.value()));
 }
 
 void InstructionSelector::VisitUnreachable(OpIndex node) {
