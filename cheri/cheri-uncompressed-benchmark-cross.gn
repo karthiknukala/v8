@@ -1,0 +1,4 @@
+import("//cheri/cheri-uncompressed-cross.gn")
+
+# Benchmark ABI build: see 2023 Cambridge Performance Analysis TR for details
+v8_enable_cheri_benchmark_abi = true

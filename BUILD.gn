@@ -134,6 +134,9 @@ declare_args() {
   v8_enable_pointer_compression_shared_cage = ""
   v8_enable_31bit_smis_on_64bit_arch = false
 
+  # CHERI Benchmark ABI support (see 2023 Cambridge Performance TR for details)
+  v8_enable_cheri_benchmark_abi = false
+
   # Sets -dOBJECT_PRINT.
   v8_enable_object_print = ""
 
@@ -649,6 +652,18 @@ assert(!v8_enable_external_code_space || v8_enable_pointer_compression,
 
 assert(!v8_enable_pointer_compression_8gb || v8_enable_pointer_compression,
        "Pointer compression for 8GB cages requires pointer compression")
+
+assert(!v8_enable_cheri_benchmark_abi || is_cheri,
+       "The CHERI Benchmark ABI requires a CHERI target")
+
+assert(!v8_enable_cheri_benchmark_abi || v8_target_cpu == "arm64",
+       "The CHERI Benchmark ABI is only supported on arm64")
+
+assert(!v8_enable_cheri_benchmark_abi || !v8_enable_pointer_compression,
+       "The CHERI Benchmark ABI requires an uncompressed V8 build")
+
+assert(!v8_enable_cheri_benchmark_abi || target_os == "freebsd",
+       "The CHERI Benchmark ABI is only supported on CheriBSD")
 
 assert(!v8_enable_sandbox || v8_enable_pointer_compression_shared_cage,
        "The sandbox requires the shared pointer compression cage")
@@ -1229,6 +1244,9 @@ config("toolchain") {
     }
     if (is_cheri && current_toolchain == default_toolchain) {
       defines += [ "V8_TARGET_CHERI" ]
+      if (v8_enable_cheri_benchmark_abi) {
+        defines += [ "V8_CHERI_BENCHMARK_ABI" ]
+      }
     }
   }
 
@@ -2544,6 +2562,7 @@ action("v8_dump_build_config") {
     "asan=$is_asan",
     "atomic_object_field_writes=$v8_enable_atomic_object_field_writes",
     "cet_shadow_stack=$v8_enable_cet_shadow_stack",
+    "cheri_benchmark_abi=$v8_enable_cheri_benchmark_abi",
     "cfi=$is_cfi",
     "clang=$is_clang",
     "clang_coverage=$use_clang_coverage",

@@ -84,6 +84,13 @@ namespace internal {
 #define V8_TARGET_CHERI_BOOL false
 #endif
 
+// Determine whether CHERI Benchmark ABI control-flow emission is enabled.
+#ifdef V8_CHERI_BENCHMARK_ABI
+#define V8_CHERI_BENCHMARK_ABI_BOOL true
+#else
+#define V8_CHERI_BENCHMARK_ABI_BOOL false
+#endif
+
 // Determine if we are currently being compiled as a purecap binary.
 #ifdef __CHERI_PURE_CAPABILITY__
 #define V8_CHERI_PURECAP_BOOL true
