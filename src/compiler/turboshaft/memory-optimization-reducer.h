@@ -72,6 +72,12 @@ inline const AllocateOp* UnwrapAllocate(const Graph* graph,
                binop && binop->kind == any_of(WordBinopOp::Kind::kAdd,
                                               WordBinopOp::Kind::kSub)) {
       op = &graph->Get(binop->left());
+#if V8_TARGET_CHERI
+    } else if (const CapAddOp* capadd = op->TryCast<CapAddOp>()) {
+      op = &graph->Get(capadd->left());
+    } else if (const CapSubOp* capsub = op->TryCast<CapSubOp>()) {
+      op = &graph->Get(capsub->left());
+#endif
     } else {
       return nullptr;
     }
