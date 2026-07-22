@@ -1207,6 +1207,19 @@ std::tuple<InstructionCode, ImmediateMode> GetLoadOpcodeAndImmediate(
       }
       DCHECK_EQ(result_rep, RegisterRepresentation::Tagged());
       return {kArm64LdrDecompressTaggedSigned, kLoadStoreImm32};
+#if V8_TARGET_CHERI
+    case MemoryRepresentation::AnyUncompressedTagged():
+    case MemoryRepresentation::UncompressedTaggedPointer():
+    case MemoryRepresentation::UncompressedTaggedSigned():
+      DCHECK_EQ(result_rep, RegisterRepresentation::Tagged());
+      return {kArm64LdrCapability, kLoadStoreImm64};
+#else
+    case MemoryRepresentation::AnyUncompressedTagged():
+    case MemoryRepresentation::UncompressedTaggedPointer():
+    case MemoryRepresentation::UncompressedTaggedSigned():
+      DCHECK_EQ(result_rep, RegisterRepresentation::Tagged());
+      return {kArm64Ldr, kLoadStoreImm64};
+#endif
 #else
 #if V8_TARGET_CHERI
     case MemoryRepresentation::AnyTagged():
@@ -1214,18 +1227,23 @@ std::tuple<InstructionCode, ImmediateMode> GetLoadOpcodeAndImmediate(
     case MemoryRepresentation::TaggedSigned():
     case MemoryRepresentation::Capability64():
       return {kArm64LdrCapability, kLoadStoreImm64};
+    case MemoryRepresentation::AnyUncompressedTagged():
+    case MemoryRepresentation::UncompressedTaggedPointer():
+    case MemoryRepresentation::UncompressedTaggedSigned():
+      DCHECK_EQ(result_rep, RegisterRepresentation::Tagged());
+      return {kArm64LdrCapability, kLoadStoreImm64};
 #else
     case MemoryRepresentation::AnyTagged():
     case MemoryRepresentation::TaggedPointer():
     case MemoryRepresentation::TaggedSigned():
       return {kArm64Ldr, kLoadStoreImm64};
-#endif
-#endif
     case MemoryRepresentation::AnyUncompressedTagged():
     case MemoryRepresentation::UncompressedTaggedPointer():
     case MemoryRepresentation::UncompressedTaggedSigned():
       DCHECK_EQ(result_rep, RegisterRepresentation::Tagged());
       return {kArm64Ldr, kLoadStoreImm64};
+#endif
+#endif
     case MemoryRepresentation::ProtectedPointer():
       CHECK(V8_ENABLE_SANDBOX_BOOL);
       return {kArm64LdrDecompressProtected, kNoImmediate};
