@@ -2161,8 +2161,6 @@ TNode<String> StringBuiltinsAssembler::SubString(TNode<String> string,
   ToDirectStringAssembler to_direct(state(), string);
   Label end(this), runtime(this);
 
-  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, from.IsCapability());
-  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL, to.IsCapability());
   const TNode<IntPtrT> substr_length = IntPtrSub(to, from);
   const TNode<IntPtrT> string_length = LoadStringLengthAsWord(string);
 
