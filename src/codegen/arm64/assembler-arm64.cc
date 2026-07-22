@@ -4577,7 +4577,12 @@ void Assembler::Logical(const Register& rd, const Register& rn,
     }
   } else {
     DCHECK(operand.IsShiftedRegister());
-    DCHECK(operand.reg().SizeInBits() == rd.SizeInBits());
+    if (V8_TARGET_CHERI_BOOL) {
+      DCHECK((operand.reg().SizeInBits() == 64 && rd.IsC()) ||
+             (operand.reg().SizeInBits() == rd.SizeInBits()));
+    } else {
+      DCHECK(operand.reg().SizeInBits() == rd.SizeInBits());
+    }
     Instr dp_op = static_cast<Instr>(op | LogicalShiftedFixed);
     DataProcShiftedRegister(rd, rn, operand, LeaveFlags, dp_op);
   }

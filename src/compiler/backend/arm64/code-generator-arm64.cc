@@ -1380,7 +1380,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       break;
     case kArchRootPointer:
-      __ mov(i.OutputRegister(), kRootRegister);
+      __ mov(i.OutputCapabilityRegister(), kRootRegister);
       break;
 #if V8_ENABLE_WEBASSEMBLY
     case kArchStackPointer:
