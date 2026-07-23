@@ -73,6 +73,13 @@ class MaybeRegisterRepresentation {
     }
 #endif
   }
+  static constexpr MaybeRegisterRepresentation MachineWord() {
+    if constexpr (kSystemPointerSize == 4) {
+      return Word32();
+    } else {
+      return Word64();
+    }
+  }
 
   static constexpr MaybeRegisterRepresentation Float32() {
     return MaybeRegisterRepresentation(Enum::kFloat32);
@@ -282,6 +289,10 @@ class RegisterRepresentation : public MaybeRegisterRepresentation {
   static constexpr RegisterRepresentation WordPtr() {
     return RegisterRepresentation(MaybeRegisterRepresentation::WordPtr());
   }
+  // A machine word width integer.
+  static constexpr RegisterRepresentation MachineWord() {
+    return RegisterRepresentation(MaybeRegisterRepresentation::MachineWord());
+  }
   static constexpr RegisterRepresentation Float32() {
     return RegisterRepresentation(Enum::kFloat32);
   }
@@ -431,6 +442,17 @@ constexpr bool RegisterRepresentation::AllowImplicitRepresentationChangeTo(
           *this == RegisterRepresentation::Tagged()) {
         return true;
       }
+#if V8_TARGET_CHERI
+      // On CHERI, Capability64 (WordPtr) can implicitly convert to Word64.
+      if (*this == RegisterRepresentation::Capability64()) {
+        return true;
+      }
+      // On CHERI, Tagged values are capabilities or Smis which can convert to
+      // Word64.
+      if (*this == RegisterRepresentation::Tagged()) {
+        return true;
+      }
+#endif
       break;
     case RegisterRepresentation::Tagged():
       // We allow implicit untagged -> tagged conversions. This is only safe for
@@ -514,6 +536,10 @@ class WordRepresentation : public RegisterRepresentation {
 
   static constexpr WordRepresentation WordPtr() {
     return WordRepresentation(RegisterRepresentation::WordPtr());
+  }
+
+  static constexpr WordRepresentation MachineWord() {
+    return WordRepresentation(RegisterRepresentation::MachineWord());
   }
 
   constexpr Enum value() const {
