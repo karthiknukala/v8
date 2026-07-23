@@ -255,7 +255,7 @@ struct WordWithBits : public Any {
 
 using Word32 = WordWithBits<32>;
 using Word64 = WordWithBits<64>;
-using WordPtr = std::conditional_t<Is64(), Word64, Word32>;
+using MachineWord = std::conditional_t<Is64(), Word64, Word32>;
 #if V8_TARGET_CHERI
 static_assert(kSystemPointerSize == 16);
 struct Capability64 : public WordWithBits<128> {
