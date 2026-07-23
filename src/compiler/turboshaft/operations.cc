@@ -763,6 +763,8 @@ void TaggedBitcastOp::Validate(const Graph& graph) const {
            (from == RegisterRepresentation::Tagged() &&
             to == RegisterRepresentation::WordPtr()) ||
            (from == RegisterRepresentation::Compressed() &&
+            to == RegisterRepresentation::Word32()) ||
+           (from == RegisterRepresentation::Tagged() &&
             to == RegisterRepresentation::Word32()));
 
     if (to == RegisterRepresentation::Tagged() ||
