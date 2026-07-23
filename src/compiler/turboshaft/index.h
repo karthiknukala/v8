@@ -262,6 +262,11 @@ struct Capability64 : public WordWithBits<128> {
   using WordWithBits<128>::WordWithBits;
 };
 #endif
+#if V8_TARGET_CHERI
+using WordPtr = Capability64;
+#else
+using WordPtr = MachineWord;
+#endif
 
 template <size_t Bits>
 struct FloatWithBits : public Any {  // FloatAny {
@@ -644,7 +649,11 @@ using WasmStringRefNullable = Union<String, WasmNull>;
 template <typename T>
 constexpr bool IsWord() {
   return std::is_same_v<T, Word32> || std::is_same_v<T, Word64> ||
-         std::is_same_v<T, Word>;
+         std::is_same_v<T, Word>
+#if V8_TARGET_CHERI
+         || std::is_same_v<T, WordPtr>
+#endif
+      ;
 }
 
 template <typename T>
