@@ -369,15 +369,15 @@ class WasmShuffleReducer : public Next {
 #endif  // DEBUG
 
       V<WordPtr> base = __ MapToNewGraph(load.base());
-      V<WordPtr> index;
+      V<MachineWord> index;
       int offset = left.offset;
       if (load.index().has_value()) {
         index = __ MapToNewGraph(load.index().value());
         if (offset != 0) {
-          index = __ WordPtrAdd(index, offset);
+          index = __ MachineWordAdd(index, offset);
         }
       } else {
-        index = __ IntPtrConstant(offset);
+        index = __ MachineIntPtrConstant(offset);
       }
 
       OpIndex og_index = __ Simd128LoadPairDeinterleave(base, index, load.kind,
