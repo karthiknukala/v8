@@ -161,7 +161,7 @@ class LoadStoreSimplificationReducer : public Next,
 
     // Untag the pointer and remove the marking bit in one operation.
     decoded_ptr =
-        __ Word64BitwiseAnd(decoded_ptr, ~(tag | kTrustedPointerTableMarkBit));
+        __ WordPtrBitwiseAnd(decoded_ptr, ~(tag | kTrustedPointerTableMarkBit));
     // Bitcast to tagged to this gets scanned by the GC properly.
     return __ BitcastWordPtrToTagged(decoded_ptr);
   }
