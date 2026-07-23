@@ -2801,10 +2801,11 @@ class AssemblerOpInterface : public Next {
         BitcastSmiToWordPtr(input), kSmiShiftBits));
   }
 
-  V<WordPtr> LoadPageFlags(V<HeapObject> object) {
+  V<MachineWord> LoadPageFlags(V<HeapObject> object) {
     V<WordPtr> header = MemoryChunkFromAddress(BitcastTaggedToWordPtr(object));
-    return Load(header, {}, LoadOp::Kind::RawAligned(),
-                MemoryRepresentation::UintPtr(), MemoryChunk::FlagsOffset());
+    return V<MachineWord>::Cast(Load(header, {}, LoadOp::Kind::RawAligned(),
+                                     MemoryRepresentation::UintPtr(),
+                                     MemoryChunk::FlagsOffset()));
   }
 
   V<WordPtr> MemoryChunkFromAddress(V<WordPtr> address) {

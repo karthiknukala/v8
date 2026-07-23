@@ -664,10 +664,10 @@ class WasmLoweringReducer : public Next {
   }
 
   V<Word32> ObjectIsUnshared(V<HeapObject> object) {
-    V<WordPtr> flags = __ LoadPageFlags(object);
-    V<WordPtr> is_shared = __ WordPtrBitwiseAnd(
+    V<MachineWord> flags = __ LoadPageFlags(object);
+    V<MachineWord> is_shared = __ MachineWordBitwiseAnd(
         flags, static_cast<uintptr_t>(MemoryChunk::IN_WRITABLE_SHARED_SPACE));
-    return __ WordPtrEqual(is_shared, 0);
+    return __ MachineWordEqual(is_shared, 0);
   }
 
   void RejectSharedWasmObjectsIfUnshared(V<HeapObject> object,

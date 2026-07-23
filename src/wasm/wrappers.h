@@ -78,6 +78,7 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase<Assembler> {
   using Variable = compiler::turboshaft::Variable;
   using Word32 = compiler::turboshaft::Word32;
   using WordPtr = compiler::turboshaft::WordPtr;
+  using MachineWord = compiler::turboshaft::MachineWord;
 
  public:
   using WasmGraphBuilderBase<Assembler>::Asm;
@@ -452,16 +453,16 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase<Assembler> {
               GOTO(done, input);
             }
             // Bail out for already-shared objects.
-            V<WordPtr> flags = __ LoadPageFlags(V<HeapObject>::Cast(input));
-            V<WordPtr> page_flags = __ WordPtrBitwiseAnd(
+            V<MachineWord> flags = __ LoadPageFlags(V<HeapObject>::Cast(input));
+            V<MachineWord> page_flags = __ MachineWordBitwiseAnd(
                 flags, static_cast<uintptr_t>(MemoryChunk::kInSharedHeap));
 #else   // !CONTIGUOUS_COMPRESSED_READ_ONLY_SPACE_BOOL
-            V<WordPtr> flags = __ LoadPageFlags(V<HeapObject>::Cast(input));
-            V<WordPtr> page_flags = __ WordPtrBitwiseAnd(
+            V<MachineWord> flags = __ LoadPageFlags(V<HeapObject>::Cast(input));
+            V<MachineWord> page_flags = __ MachineWordBitwiseAnd(
                 flags, static_cast<uintptr_t>(
                            MemoryChunk::kIsReadOnlyOrSharedHeapMask));
 #endif  // !CONTIGUOUS_COMPRESSED_READ_ONLY_SPACE_BOOL
-            IF (UNLIKELY(__ WordPtrEqual(page_flags, 0))) {
+            IF (UNLIKELY(__ MachineWordEqual(page_flags, 0))) {
               // If it isn't shared, yet, use the runtime function.
               std::initializer_list<const OpIndex> inputs = {
                   input, __ IntPtrConstant(
