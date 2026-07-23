@@ -2544,6 +2544,23 @@ void InstructionSelector::VisitCapSub(OpIndex node) {
   Emit(kArm64SubCap, g.DefineAsRegister(node),
        g.UseRegister(op.left()), g.UseRegister(op.right()));
 }
+
+void InstructionSelector::VisitCapabilityWordBinop(OpIndex node) {
+  Arm64OperandGenerator g(this);
+  const WordBinopOp& binop = this->Get(node).Cast<WordBinopOp>();
+  switch (binop.kind) {
+    case WordBinopOp::Kind::kAdd:
+      Emit(kArm64AddCap, g.DefineAsRegister(node), g.UseRegister(binop.left()),
+           g.UseRegister(binop.right()));
+      break;
+    case WordBinopOp::Kind::kSub:
+      Emit(kArm64SubCap, g.DefineAsRegister(node), g.UseRegister(binop.left()),
+           g.UseRegister(binop.right()));
+      break;
+    default:
+      UNREACHABLE();
+  }
+}
 #endif
 
 void InstructionSelector::VisitInt32Add(OpIndex node) {

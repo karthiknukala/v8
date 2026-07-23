@@ -3021,7 +3021,11 @@ void InstructionSelector::VisitNode(OpIndex node) {
             return VisitSignExtendWord16ToInt32(node);
         }
       } else {
-        DCHECK_EQ(unop.rep, WordRepresentation::Word64());
+        DCHECK(unop.rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+               || unop.rep == WordRepresentation::Capability64()
+#endif
+        );
         MarkAsWord64(node);
         switch (unop.kind) {
           case WordUnaryOp::Kind::kReverseBytes:
@@ -3071,8 +3075,17 @@ void InstructionSelector::VisitNode(OpIndex node) {
             return VisitUint32Mod(node);
         }
       } else {
-        DCHECK_EQ(binop.rep, WordRepresentation::Word64());
-        MarkAsWord64(node);
+        DCHECK(binop.rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+               || binop.rep == WordRepresentation::Capability64()
+#endif
+        );
+        MarkAsRepresentation(binop.rep, node);
+#if V8_TARGET_CHERI
+        if (binop.rep == WordRepresentation::Capability64()) {
+          return VisitCapabilityWordBinop(node);
+        }
+#endif
         switch (binop.kind) {
           case WordBinopOp::Kind::kAdd:
             return VisitInt64Add(node);
@@ -3267,7 +3280,14 @@ void InstructionSelector::VisitNode(OpIndex node) {
             return VisitInt32SubWithOverflow(node);
         }
       } else {
-        DCHECK_EQ(binop.rep, WordRepresentation::Word64());
+        DCHECK(binop.rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+               || binop.rep == WordRepresentation::Capability64()
+#endif
+        );
+        // XXX(cheri): We should never be here with valid capabilities, only
+        // Smis and other forms of type confusion, so we can assume we can use
+        // integer opcodes here.
         MarkAsWord64(node);
         switch (binop.kind) {
           case OverflowCheckedBinopOp::Kind::kSignedAdd:
@@ -3289,7 +3309,14 @@ void InstructionSelector::VisitNode(OpIndex node) {
             return VisitInt32AbsWithOverflow(node);
         }
       } else {
-        DCHECK_EQ(unop.rep, WordRepresentation::Word64());
+        DCHECK(unop.rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+               || unop.rep == WordRepresentation::Capability64()
+#endif
+        );
+        // XXX(cheri): We should never be here with valid capabilities, only
+        // Smis and other forms of type confusion, so we can assume we can use
+        // integer opcodes here.
         MarkAsWord64(node);
         switch (unop.kind) {
           case OverflowCheckedUnaryOp::Kind::kAbs:
@@ -3316,7 +3343,14 @@ void InstructionSelector::VisitNode(OpIndex node) {
             return VisitWord32Rol(node);
         }
       } else {
-        DCHECK_EQ(shift.rep, RegisterRepresentation::Word64());
+        DCHECK(shift.rep == RegisterRepresentation::Word64()
+#if V8_TARGET_CHERI
+               || shift.rep == RegisterRepresentation::Capability64()
+#endif
+        );
+        // XXX(cheri): We shouldn't be here with valid capabilities, because if
+        // we are, we will invalidate them, so just assume that we are not for
+        // now.
         MarkAsWord64(node);
         switch (shift.kind) {
           case ShiftOp::Kind::kShiftRightArithmeticShiftOutZeros:
@@ -3403,6 +3437,14 @@ void InstructionSelector::VisitNode(OpIndex node) {
             return VisitWord64Equal(node);
           }
           return VisitWord32Equal(node);
+#if V8_TARGET_CHERI
+        case multi(Kind::kEqual, Rep::Capability64()):
+          return VisitWord64Equal(node);
+        case multi(Kind::kUnsignedLessThan, Rep::Capability64()):
+          return VisitUint64LessThan(node);
+        case multi(Kind::kUnsignedLessThanOrEqual, Rep::Capability64()):
+          return VisitUint64LessThanOrEqual(node);
+#endif
         case multi(Kind::kSignedLessThan, Rep::Word32()):
           return VisitInt32LessThan(node);
         case multi(Kind::kSignedLessThan, Rep::Word64()):
