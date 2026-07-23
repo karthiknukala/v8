@@ -816,8 +816,13 @@ OpIndex GraphBuilder::Process(
           // untagged load that would be unsound in presence of a GC.
           CHECK(load->loaded_rep == MemoryRepresentation::UintPtr() ||
                 load->loaded_rep == (Is64() ? MemoryRepresentation::Int64()
-                                            : MemoryRepresentation::Int32()));
-          CHECK_EQ(load->result_rep, RegisterRepresentation::WordPtr());
+                                            : MemoryRepresentation::Int32())
+#if V8_TARGET_CHERI
+                || load->loaded_rep == MemoryRepresentation::Capability64()
+#endif
+          );
+          CHECK(load->result_rep == RegisterRepresentation::WordPtr() ||
+                load->result_rep == RegisterRepresentation::Word64());
           // In this case we turn the load into a tagged load directly...
           load->loaded_rep = MemoryRepresentation::UncompressedTaggedPointer();
           load->result_rep = RegisterRepresentation::Tagged();
