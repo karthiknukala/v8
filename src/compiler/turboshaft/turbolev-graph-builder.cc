@@ -3026,9 +3026,9 @@ class GraphBuildingNodeProcessor {
   }
   maglev::ProcessResult Process(maglev::StringAt* node,
                                 const maglev::ProcessingState& state) {
-    V<Word32> char_code =
-        __ StringCharCodeAt(Map(node->StringInput()),
-                            __ ChangeUint32ToUintPtr(Map(node->IndexInput())));
+    V<Word32> char_code = __ StringCharCodeAt(
+        Map(node->StringInput()),
+        __ ChangeUint32ToMachineWord(Map(node->IndexInput())));
     SetMap(node, __ ConvertCharCodeToString(char_code));
     return maglev::ProcessResult::kContinue;
   }
@@ -3036,9 +3036,9 @@ class GraphBuildingNodeProcessor {
                                 const maglev::ProcessingState& state) {
     // TODO(leszeks): Change to seq-one-byte-specialized once
     // CheckSeqOneByteString checks for seq one-byte.
-    V<Word32> char_code =
-        __ StringCharCodeAt(Map(node->StringInput()),
-                            __ ChangeUint32ToUintPtr(Map(node->IndexInput())));
+    V<Word32> char_code = __ StringCharCodeAt(
+        Map(node->StringInput()),
+        __ ChangeUint32ToMachineWord(Map(node->IndexInput())));
     SetMap(node, __ ConvertCharCodeToString(char_code));
     return maglev::ProcessResult::kContinue;
   }
@@ -3071,14 +3071,14 @@ class GraphBuildingNodeProcessor {
                             Mode::kCharCodeAt) {
       SetMap(node, __ StringCharCodeAt(
                        Map(node->StringInput()),
-                       __ ChangeUint32ToUintPtr(Map(node->IndexInput()))));
+                       __ ChangeUint32ToMachineWord(Map(node->IndexInput()))));
     } else {
       DCHECK_EQ(node->mode(),
                 maglev::BuiltinStringPrototypeCharCodeOrCodePointAt::Mode::
                     kCodePointAt);
       SetMap(node, __ StringCodePointAt(
                        Map(node->StringInput()),
-                       __ ChangeUint32ToUintPtr(Map(node->IndexInput()))));
+                       __ ChangeUint32ToMachineWord(Map(node->IndexInput()))));
     }
     return maglev::ProcessResult::kContinue;
   }
@@ -3088,7 +3088,7 @@ class GraphBuildingNodeProcessor {
     // CheckSeqOneByteString checks for seq one-byte.
     SetMap(node, __ StringCharCodeAt(
                      Map(node->StringInput()),
-                     __ ChangeUint32ToUintPtr(Map(node->IndexInput()))));
+                     __ ChangeUint32ToMachineWord(Map(node->IndexInput()))));
     return maglev::ProcessResult::kContinue;
   }
   maglev::ProcessResult Process(maglev::ToString* node,
