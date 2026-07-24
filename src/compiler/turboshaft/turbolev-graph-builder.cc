@@ -2867,7 +2867,7 @@ class GraphBuildingNodeProcessor {
                                 const maglev::ProcessingState& state) {
     __ TransitionAndStoreArrayElement(
         Map(node->ArrayInput()),
-        __ ChangeInt32ToIntPtr(Map(node->IndexInput())),
+        __ ChangeInt32ToMachineWord(Map(node->IndexInput())),
         Map(node->ValueInput()),
         TransitionAndStoreArrayElementOp::Kind::kElement,
         node->fast_map().object(), node->double_map().object());
@@ -3459,14 +3459,14 @@ class GraphBuildingNodeProcessor {
 
   maglev::ProcessResult Process(maglev::LoadTypedArrayLength* node,
                                 const maglev::ProcessingState& state) {
-    V<WordPtr> length =
+    V<MachineWord> length = V<MachineWord>::Cast(
         __ LoadField<WordPtr>(Map<JSTypedArray>(node->ValueInput()),
-                              AccessBuilder::ForJSTypedArrayByteLength());
+                              AccessBuilder::ForJSTypedArrayByteLength()));
 
     int shift_size = ElementsKindToShiftSize(node->elements_kind());
     if (shift_size > 0) {
       DCHECK(shift_size == 1 || shift_size == 2 || shift_size == 3);
-      length = __ WordPtrShiftRightLogical(length, shift_size);
+      length = __ MachineWordShiftRightLogical(length, shift_size);
     }
     SetMap(node, length);
     return maglev::ProcessResult::kContinue;
