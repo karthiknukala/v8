@@ -1485,11 +1485,11 @@ class MachineLoweringReducer : public Next {
       case ConvertJSPrimitiveToUntaggedOrDeoptOp::UntaggedKind::kArrayIndex: {
         DCHECK_EQ(from_kind, ConvertJSPrimitiveToUntaggedOrDeoptOp::
                                  JSPrimitiveKind::kNumberOrString);
-        Label<WordPtr> done(this);
+        Label<MachineWord> done(this);
 
         IF (LIKELY(__ ObjectIsSmi(object))) {
-          // In the Smi case, just convert to intptr_t.
-          GOTO(done, __ ChangeInt32ToIntPtr(__ UntagSmi(V<Smi>::Cast(object))));
+          // In the Smi case, just convert to a machine word.
+          GOTO(done, __ ChangeInt32ToMachineWord(__ UntagSmi(V<Smi>::Cast(object))));
         } ELSE {
           V<Map> map = __ LoadMapField(object);
           IF (LIKELY(__ TaggedEqual(
@@ -1512,10 +1512,10 @@ class MachineLoweringReducer : public Next {
                                    DeoptimizeReason::kLostPrecisionOrNaN,
                                    feedback);
                 __ DeoptimizeIfNot(
-                    __ IntPtrLessThan(i64, kMaxSafeIntegerUint64), frame_state,
+                    __ Int64LessThan(i64, kMaxSafeIntegerUint64), frame_state,
                     DeoptimizeReason::kNotAnArrayIndex, feedback);
                 __ DeoptimizeIfNot(
-                    __ IntPtrLessThan(-kMaxSafeIntegerUint64, i64), frame_state,
+                    __ Int64LessThan(-kMaxSafeIntegerUint64, i64), frame_state,
                     DeoptimizeReason::kNotAnArrayIndex, feedback);
                 GOTO(done, i64);
               } else {
@@ -1552,9 +1552,9 @@ class MachineLoweringReducer : public Next {
             OpIndex callee = __ ExternalConstant(
                 ExternalReference::string_to_array_index_function());
             // NOTE: String::ToArrayIndex() currently returns int32_t.
-            V<WordPtr> index = __ ChangeInt32ToIntPtr(
+            V<MachineWord> index = __ ChangeInt32ToMachineWord(
                 V<Word32>::Cast(__ Call(callee, {object}, ts_desc)));
-            __ DeoptimizeIf(__ WordPtrEqual(index, -1), frame_state,
+            __ DeoptimizeIf(__ MachineWordEqual(index, -1), frame_state,
                             DeoptimizeReason::kNotAnArrayIndex, feedback);
             GOTO(done, index);
           }
