@@ -6447,11 +6447,11 @@ class GraphBuildingNodeProcessor {
                      SelectOp::Implementation::kForceBranch);
   }
 
-  V<Boolean> ConvertWordPtrToJSBool(V<WordPtr> b, bool flip = false) {
+  V<Boolean> ConvertWordPtrToJSBool(V<MachineWord> b, bool flip = false) {
     V<Boolean> true_idx = __ HeapConstant(local_factory_->true_value());
     V<Boolean> false_idx = __ HeapConstant(local_factory_->false_value());
     if (flip) std::swap(true_idx, false_idx);
-    return __ Select(__ WordPtrEqual(b, 0), false_idx, true_idx,
+    return __ Select(__ MachineWordEqual(b, 0), false_idx, true_idx,
                      RegisterRepresentation::Tagged(), BranchHint::kNone,
                      SelectOp::Implementation::kForceBranch);
   }
