@@ -2494,10 +2494,10 @@ class GraphBuildingNodeProcessor {
   maglev::ProcessResult Process(maglev::CheckIntPtrIsSmi* node,
                                 const maglev::ProcessingState& state) {
     GET_FRAME_STATE_MAYBE_ABORT(frame_state, node->eager_deopt_info());
-    __ DeoptimizeIfNot(
-        __ UintPtrLessThanOrEqual(Map(node->ValueInput()), Smi::kMaxValue),
-        frame_state, DeoptimizeReason::kNotASmi,
-        node->eager_deopt_info()->feedback_to_update());
+    __ DeoptimizeIfNot(__ MachineUintPtrLessThanOrEqual(Map(node->ValueInput()),
+                                                        Smi::kMaxValue),
+                       frame_state, DeoptimizeReason::kNotASmi,
+                       node->eager_deopt_info()->feedback_to_update());
     // TODO(388844115): Rename the IntPtr in Maglev to make it clear it's
     // non-negative.
     return maglev::ProcessResult::kContinue;
@@ -4855,8 +4855,8 @@ class GraphBuildingNodeProcessor {
     // TODO(388844115): Rename the IntPtr in Maglev to make it clear it's
     // non-negative.
     __ DeoptimizeIfNot(
-        __ UintPtrLessThanOrEqual(Map(node->ValueInput()),
-                                  std::numeric_limits<int32_t>::max()),
+        __ MachineUintPtrLessThanOrEqual(Map(node->ValueInput()),
+                                         std::numeric_limits<int32_t>::max()),
         frame_state, DeoptimizeReason::kNotInt32,
         node->eager_deopt_info()->feedback_to_update());
     SetMap(node, __ TypeHintInt32(
