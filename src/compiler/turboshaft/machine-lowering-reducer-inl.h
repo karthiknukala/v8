@@ -2402,7 +2402,7 @@ class MachineLoweringReducer : public Next {
     return CallBuiltinForBigIntOp(Builtin::kBigIntUnaryMinus, {input});
   }
 
-  V<Word32> REDUCE(StringAt)(V<String> string, V<WordPtr> pos,
+  V<Word32> REDUCE(StringAt)(V<String> string, V<MachineWord> pos,
                              StringAtOp::Kind kind) {
     if (kind == StringAtOp::Kind::kCharCode) {
       Label<Word32> done(this);
@@ -2424,8 +2424,8 @@ class MachineLoweringReducer : public Next {
             Handle<Map> expected_map = str.map(broker_).object();
             IF (__ TaggedEqual(dynamic_map, __ HeapConstant(expected_map))) {
               bool one_byte = str.IsOneByteRepresentation();
-              GOTO(done,
-                   LoadFromSeqString(string, pos, __ Word32Constant(one_byte)));
+              GOTO(done, LoadFromSeqString(string, V<WordPtr>::Cast(pos),
+                                           __ Word32Constant(one_byte)));
             }
           }
         }
@@ -2444,7 +2444,7 @@ class MachineLoweringReducer : public Next {
       // (SlicedString, ConsString and ThinString).
       LoopLabel<> loop(this);
       ScopedVar<String> receiver(this, string);
-      ScopedVar<WordPtr> position(this, pos);
+      ScopedVar<MachineWord> position(this, pos);
       GOTO(loop);
 
       BIND_LOOP(loop) {
@@ -2512,7 +2512,8 @@ class MachineLoweringReducer : public Next {
               __ Word32BitwiseAnd(instance_type, kStringEncodingMask),
               kOneByteStringTag);
 #endif
-          GOTO(done, LoadFromSeqString(receiver, position, is_one_byte));
+          GOTO(done, LoadFromSeqString(receiver, V<WordPtr>::Cast(position),
+                                       is_one_byte));
         }
 
         if (BIND(external_string)) {
@@ -2576,8 +2577,8 @@ class MachineLoweringReducer : public Next {
               receiver, AccessBuilder::ForSlicedStringOffset());
           receiver = __ template LoadField<String>(
               receiver, AccessBuilder::ForSlicedStringParent());
-          position = __ WordPtrAdd(position,
-                                   __ ChangeInt32ToIntPtr(__ UntagSmi(offset)));
+          position = __ MachineWordAdd(
+              position, __ ChangeInt32ToMachineWord(__ UntagSmi(offset)));
           GOTO(loop);
         }
 
@@ -2592,7 +2593,8 @@ class MachineLoweringReducer : public Next {
               V<Smi>::Cast(__ template CallRuntime<runtime::StringCharCodeAt>(
                   __ NoContextConstant(),
                   {.string = receiver,
-                   .index = __ TagSmi(__ TruncateWordPtrToWord32(position))})));
+                   .index =
+                       __ TagSmi(__ TruncateMachineWordToWord32(position))})));
           GOTO(done, value);
         }
       }
@@ -3813,7 +3815,8 @@ class MachineLoweringReducer : public Next {
   // code point. If the string's {length} is already available, it can be
   // passed, otherwise it will be loaded when required.
   V<Word32> LoadSurrogatePairAt(V<String> string, OptionalV<WordPtr> length,
-                                V<WordPtr> index, UnicodeEncoding encoding) {
+                                V<MachineWord> index,
+                                UnicodeEncoding encoding) {
     Label<Word32> done(this);
 
     V<Word32> first_code_unit = __ StringCharCodeAt(string, index);
@@ -3824,9 +3827,10 @@ class MachineLoweringReducer : public Next {
       length = __ ChangeUint32ToUintPtr(__ template LoadField<Word32>(
           string, AccessBuilder::ForStringLength()));
     }
-    V<WordPtr> next_index = __ WordPtrAdd(index, 1);
-    GOTO_IF_NOT(__ IntPtrLessThan(next_index, length.value()), done,
-                first_code_unit);
+    V<MachineWord> next_index = __ MachineWordAdd(index, 1);
+    GOTO_IF_NOT(__ MachineIntPtrLessThan(next_index,
+                                         V<MachineWord>::Cast(length.value())),
+                done, first_code_unit);
 
     V<Word32> second_code_unit = __ StringCharCodeAt(string, next_index);
     GOTO_IF_NOT(
