@@ -3496,7 +3496,7 @@ class GraphBuildingNodeProcessor {
                                 const maglev::ProcessingState& state) {
     GET_FRAME_STATE_MAYBE_ABORT(frame_state, node->eager_deopt_info());
     __ DeoptimizeIfNot(
-        __ UintPtrLessThan(__ ChangeUint32ToUintPtr(Map(node->IndexInput())),
+        __ MachineUintPtrLessThan(__ ChangeUint32ToMachineWord(Map(node->IndexInput())),
                            Map(node->LengthInput())),
         frame_state, DeoptimizeReason::kOutOfBounds,
         node->eager_deopt_info()->feedback_to_update());
@@ -3607,7 +3607,7 @@ class GraphBuildingNodeProcessor {
   maglev::ProcessResult Process(maglev::CheckJSDataViewBounds* node,
                                 const maglev::ProcessingState& state) {
     GET_FRAME_STATE_MAYBE_ABORT(frame_state, node->eager_deopt_info());
-    V<WordPtr> byte_length = Map<WordPtr>(node->ByteLengthInput());
+    V<MachineWord> byte_length = V<MachineWord>::Cast(Map(node->ByteLengthInput()));
 
     int element_size = ExternalArrayElementSize(node->element_type());
     if (element_size > 1) {
@@ -3618,14 +3618,14 @@ class GraphBuildingNodeProcessor {
       // just treat {element_size} as 1 and check if {index} is less than this
       // new {byte_length}.
       DCHECK(element_size == 2 || element_size == 4 || element_size == 8);
-      byte_length = __ WordPtrSub(byte_length, element_size - 1);
-      __ DeoptimizeIf(__ IntPtrLessThan(byte_length, 0), frame_state,
+      byte_length = __ MachineWordSub(byte_length, element_size - 1);
+      __ DeoptimizeIf(__ MachineIntPtrLessThan(byte_length, 0), frame_state,
                       DeoptimizeReason::kOutOfBounds,
                       node->eager_deopt_info()->feedback_to_update());
     }
     __ DeoptimizeIfNot(
         __ Uint32LessThan(Map<Word32>(node->IndexInput()),
-                          __ TruncateWordPtrToWord32(byte_length)),
+                          __ TruncateMachineWordToWord32(byte_length)),
         frame_state, DeoptimizeReason::kOutOfBounds,
         node->eager_deopt_info()->feedback_to_update());
     return maglev::ProcessResult::kContinue;
