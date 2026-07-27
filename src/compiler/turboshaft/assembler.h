@@ -1645,21 +1645,27 @@ class AssemblerOpInterface : public Next {
   DECL_SINGLE_REP_BINOP_V(Word32Add, WordBinop, Add, Word32)
   DECL_SINGLE_REP_BINOP_V(Word64Add, WordBinop, Add, Word64)
   DECL_SINGLE_REP_BINOP_V(WordPtrAdd, WordBinop, Add, WordPtr)
+  DECL_SINGLE_REP_BINOP_V(MachineWordAdd, WordBinop, Add, MachineWord)
 
   DECL_MULTI_REP_BINOP_V(WordMul, WordBinop, Mul, Word)
   DECL_SINGLE_REP_BINOP_V(Word32Mul, WordBinop, Mul, Word32)
   DECL_SINGLE_REP_BINOP_V(Word64Mul, WordBinop, Mul, Word64)
   DECL_SINGLE_REP_BINOP_V(WordPtrMul, WordBinop, Mul, WordPtr)
+  DECL_SINGLE_REP_BINOP_V(MachineWordMul, WordBinop, Mul, MachineWord)
 
   DECL_MULTI_REP_BINOP_V(WordBitwiseAnd, WordBinop, BitwiseAnd, Word)
   DECL_SINGLE_REP_BINOP_V(Word32BitwiseAnd, WordBinop, BitwiseAnd, Word32)
   DECL_SINGLE_REP_BINOP_V(Word64BitwiseAnd, WordBinop, BitwiseAnd, Word64)
   DECL_SINGLE_REP_BINOP_V(WordPtrBitwiseAnd, WordBinop, BitwiseAnd, WordPtr)
+  DECL_SINGLE_REP_BINOP_V(MachineWordBitwiseAnd, WordBinop, BitwiseAnd,
+                          MachineWord)
 
   DECL_MULTI_REP_BINOP_V(WordBitwiseOr, WordBinop, BitwiseOr, Word)
   DECL_SINGLE_REP_BINOP_V(Word32BitwiseOr, WordBinop, BitwiseOr, Word32)
   DECL_SINGLE_REP_BINOP_V(Word64BitwiseOr, WordBinop, BitwiseOr, Word64)
   DECL_SINGLE_REP_BINOP_V(WordPtrBitwiseOr, WordBinop, BitwiseOr, WordPtr)
+  DECL_SINGLE_REP_BINOP_V(MachineWordBitwiseOr, WordBinop, BitwiseOr,
+                          MachineWord)
 
   DECL_MULTI_REP_BINOP_V(WordBitwiseXor, WordBinop, BitwiseXor, Word)
   DECL_SINGLE_REP_BINOP_V(Word32BitwiseXor, WordBinop, BitwiseXor, Word32)
@@ -1669,6 +1675,7 @@ class AssemblerOpInterface : public Next {
   DECL_SINGLE_REP_BINOP_V(Word32Sub, WordBinop, Sub, Word32)
   DECL_SINGLE_REP_BINOP_V(Word64Sub, WordBinop, Sub, Word64)
   DECL_SINGLE_REP_BINOP_V(WordPtrSub, WordBinop, Sub, WordPtr)
+  DECL_SINGLE_REP_BINOP_V(MachineWordSub, WordBinop, Sub, MachineWord)
 
   DECL_MULTI_REP_BINOP_V(IntDiv, WordBinop, SignedDiv, Word)
   DECL_SINGLE_REP_BINOP_V(Int32Div, WordBinop, SignedDiv, Word32)
@@ -1790,6 +1797,8 @@ class AssemblerOpInterface : public Next {
                           ShiftRightArithmeticShiftOutZeros, Word64)
   DECL_SINGLE_REP_SHIFT_V(WordPtrShiftRightArithmeticShiftOutZeros,
                           ShiftRightArithmeticShiftOutZeros, WordPtr)
+  DECL_SINGLE_REP_SHIFT_V(MachineWordShiftRightArithmeticShiftOutZeros,
+                          ShiftRightArithmeticShiftOutZeros, MachineWord)
   DECL_MULTI_REP_SHIFT_V(ShiftRightArithmetic)
   DECL_SINGLE_REP_SHIFT_V(Word32ShiftRightArithmetic, ShiftRightArithmetic,
                           Word32)
@@ -1797,14 +1806,19 @@ class AssemblerOpInterface : public Next {
                           Word64)
   DECL_SINGLE_REP_SHIFT_V(WordPtrShiftRightArithmetic, ShiftRightArithmetic,
                           WordPtr)
+  DECL_SINGLE_REP_SHIFT_V(MachineWordShiftRightArithmetic, ShiftRightArithmetic,
+                          MachineWord)
   DECL_MULTI_REP_SHIFT_V(ShiftRightLogical)
   DECL_SINGLE_REP_SHIFT_V(Word32ShiftRightLogical, ShiftRightLogical, Word32)
   DECL_SINGLE_REP_SHIFT_V(Word64ShiftRightLogical, ShiftRightLogical, Word64)
   DECL_SINGLE_REP_SHIFT_V(WordPtrShiftRightLogical, ShiftRightLogical, WordPtr)
+  DECL_SINGLE_REP_SHIFT_V(MachineWordShiftRightLogical, ShiftRightLogical,
+                          MachineWord)
   DECL_MULTI_REP_SHIFT_V(ShiftLeft)
   DECL_SINGLE_REP_SHIFT_V(Word32ShiftLeft, ShiftLeft, Word32)
   DECL_SINGLE_REP_SHIFT_V(Word64ShiftLeft, ShiftLeft, Word64)
   DECL_SINGLE_REP_SHIFT_V(WordPtrShiftLeft, ShiftLeft, WordPtr)
+  DECL_SINGLE_REP_SHIFT_V(MachineWordShiftLeft, ShiftLeft, MachineWord)
   DECL_MULTI_REP_SHIFT_V(RotateRight)
   DECL_SINGLE_REP_SHIFT_V(Word32RotateRight, RotateRight, Word32)
   DECL_SINGLE_REP_SHIFT_V(Word64RotateRight, RotateRight, Word64)
@@ -1860,6 +1874,7 @@ class AssemblerOpInterface : public Next {
   DECL_SINGLE_REP_EQUAL_V(Word32Equal, Word32)
   DECL_SINGLE_REP_EQUAL_V(Word64Equal, Word64)
   DECL_SINGLE_REP_EQUAL_V(WordPtrEqual, WordPtr)
+  DECL_SINGLE_REP_EQUAL_V(MachineWordEqual, MachineWord)
   DECL_SINGLE_REP_EQUAL_V(Float32Equal, Float32)
   DECL_SINGLE_REP_EQUAL_V(Float64Equal, Float64)
 #undef DECL_SINGLE_REP_EQUAL_V
@@ -1876,12 +1891,16 @@ class AssemblerOpInterface : public Next {
   DECL_SINGLE_REP_COMPARISON_V(Int32LessThan, SignedLessThan, Word32)
   DECL_SINGLE_REP_COMPARISON_V(Int64LessThan, SignedLessThan, Word64)
   DECL_SINGLE_REP_COMPARISON_V(IntPtrLessThan, SignedLessThan, WordPtr)
+  DECL_SINGLE_REP_COMPARISON_V(MachineIntPtrLessThan, SignedLessThan,
+                               MachineWord)
 
   DECL_MULTI_REP_BINOP(UintLessThan, Comparison, RegisterRepresentation,
                        UnsignedLessThan)
   DECL_SINGLE_REP_COMPARISON_V(Uint32LessThan, UnsignedLessThan, Word32)
   DECL_SINGLE_REP_COMPARISON_V(Uint64LessThan, UnsignedLessThan, Word64)
   DECL_SINGLE_REP_COMPARISON_V(UintPtrLessThan, UnsignedLessThan, WordPtr)
+  DECL_SINGLE_REP_COMPARISON_V(MachineUintPtrLessThan, UnsignedLessThan,
+                               MachineWord)
   DECL_MULTI_REP_BINOP(FloatLessThan, Comparison, RegisterRepresentation,
                        SignedLessThan)
   DECL_SINGLE_REP_COMPARISON_V(Float32LessThan, SignedLessThan, Float32)
@@ -1895,6 +1914,8 @@ class AssemblerOpInterface : public Next {
                                Word64)
   DECL_SINGLE_REP_COMPARISON_V(IntPtrLessThanOrEqual, SignedLessThanOrEqual,
                                WordPtr)
+  DECL_SINGLE_REP_COMPARISON_V(MachineIntPtrLessThanOrEqual,
+                               SignedLessThanOrEqual, MachineWord)
   DECL_MULTI_REP_BINOP(UintLessThanOrEqual, Comparison, RegisterRepresentation,
                        UnsignedLessThanOrEqual)
   DECL_SINGLE_REP_COMPARISON_V(Uint32LessThanOrEqual, UnsignedLessThanOrEqual,
@@ -1903,6 +1924,8 @@ class AssemblerOpInterface : public Next {
                                Word64)
   DECL_SINGLE_REP_COMPARISON_V(UintPtrLessThanOrEqual, UnsignedLessThanOrEqual,
                                WordPtr)
+  DECL_SINGLE_REP_COMPARISON_V(MachineUintPtrLessThanOrEqual,
+                               UnsignedLessThanOrEqual, MachineWord)
   DECL_MULTI_REP_BINOP(FloatLessThanOrEqual, Comparison, RegisterRepresentation,
                        SignedLessThanOrEqual)
   DECL_SINGLE_REP_COMPARISON_V(Float32LessThanOrEqual, SignedLessThanOrEqual,
@@ -2070,18 +2093,23 @@ class AssemblerOpInterface : public Next {
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedAdd, Word32)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedAdd, Word64)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedAdd, WordPtr)
+  DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedAdd, MachineWord)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedSub, Word32)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedSub, Word64)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedSub, WordPtr)
+  DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedSub, MachineWord)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMul, Word32)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMul, Word64)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMul, WordPtr)
+  DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMul, MachineWord)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedDiv, Word32)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedDiv, Word64)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedDiv, WordPtr)
+  DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedDiv, MachineWord)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMod, Word32)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMod, Word64)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMod, WordPtr)
+  DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(SignedMod, MachineWord)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(UnsignedDiv, Word32)
   DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW(UnsignedMod, Word32)
 #undef DECL_SINGLE_REP_BINOP_DEOPT_OVERFLOW
@@ -2388,6 +2416,16 @@ class AssemblerOpInterface : public Next {
     return UintPtrConstant(static_cast<uintptr_t>(value));
   }
   V<WordPtr> UintPtrConstant(uintptr_t value) { return WordPtrConstant(value); }
+  V<MachineWord> MachineIntPtrConstant(intptr_t value) {
+    return MachineUintPtrConstant(static_cast<uintptr_t>(value));
+  }
+  V<MachineWord> MachineUintPtrConstant(uintptr_t value) {
+    return MachineWordConstant(static_cast<ScaledUint>(value));
+  }
+  V<MachineWord> MachineWordConstant(ScaledUint value) {
+    return V<MachineWord>::Cast(
+        WordConstant(value, WordRepresentation::MachineWord()));
+  }
   V<Smi> SmiConstant(i::Tagged<Smi> value) {
     return V<Smi>::Cast(
         ReduceIfReachableConstant(ConstantOp::Kind::kSmi, value));
@@ -2569,6 +2607,12 @@ class AssemblerOpInterface : public Next {
         TryChange(input, TryChangeOp::Kind::kind, V<from>::rep, V<to>::rep)); \
   }
 
+#if V8_TARGET_CHERI
+#define DECL_CHANGE_V_IF_CHERI DECL_CHANGE_V
+#else
+#define DECL_CHANGE_V_IF_CHERI(...)
+#endif
+
   DECL_CHANGE_V(BitcastWord32ToWord64, kBitcast, kNoAssumption, Word32, Word64)
   DECL_CHANGE_V(BitcastFloat32ToWord32, kBitcast, kNoAssumption, Float32,
                 Word32)
@@ -2611,51 +2655,86 @@ class AssemblerOpInterface : public Next {
                 Float64, Word32)
   DECL_CHANGE_V(TruncateWord64ToWord32, kTruncate, kNoAssumption, Word64,
                 Word32)
+  DECL_CHANGE_V_IF_CHERI(TruncateCapability64ToWord64, kTruncate, kNoAssumption,
+                         Capability64, Word64)
+  DECL_CHANGE_V_IF_CHERI(TruncateCapability64ToWord32, kTruncate, kNoAssumption,
+                         Capability64, Word32)
+  DECL_CHANGE_V_IF_CHERI(ChangeInt32ToCapability64, kSignExtend, kNoAssumption,
+                         Word32, Capability64)
+  DECL_CHANGE_V_IF_CHERI(ChangeUint32ToCapability64, kZeroExtend, kNoAssumption,
+                         Word32, Capability64)
   V<Word> ZeroExtendWord32ToRep(V<Word32> value, WordRepresentation rep) {
     if (rep == WordRepresentation::Word32()) return value;
-    DCHECK_EQ(rep, WordRepresentation::Word64());
-    return ChangeUint32ToUint64(value);
+    if (rep == WordRepresentation::Word64()) return ChangeUint32ToUint64(value);
+#if V8_TARGET_CHERI
+    DCHECK_EQ(rep, WordRepresentation::Capability64());
+    return V<Word>::Cast(ChangeUint32ToUintPtr(value));
+#else
+    UNREACHABLE();
+#endif
   }
   V<Word32> TruncateWordPtrToWord32(ConstOrV<WordPtr> input) {
-    if constexpr (Is64()) {
+    if constexpr (WordPtr::bits == Word64::bits) {
       return TruncateWord64ToWord32(input);
-    } else {
-      DCHECK_EQ(WordPtr::bits, Word32::bits);
+    } else if constexpr (WordPtr::bits == Word32::bits) {
       return V<Word32>::Cast(resolve(input));
+    } else {
+#if V8_TARGET_CHERI
+      // Only for CHERI.
+      return TruncateCapability64ToWord32(input);
+#else
+      UNREACHABLE();
+#endif
     }
   }
   V<WordPtr> ChangeInt32ToIntPtr(ConstOrV<Word32> input) {
-    if constexpr (Is64()) {
+    if constexpr (WordPtr::bits == Word64::bits) {
       return ChangeInt32ToInt64(input);
-    } else {
-      DCHECK_EQ(WordPtr::bits, Word32::bits);
+    } else if constexpr (WordPtr::bits == Word32::bits) {
       return V<WordPtr>::Cast(resolve(input));
+    } else {
+#if V8_TARGET_CHERI
+      // Only for CHERI.
+      return ChangeInt32ToCapability64(input);
+#else
+      UNREACHABLE();
+#endif
     }
   }
   V<WordPtr> ChangeUint32ToUintPtr(V<Word32> input) {
-    if constexpr (Is64()) {
+    if constexpr (WordPtr::bits == Word64::bits) {
       return ChangeUint32ToUint64(input);
-    } else {
-      DCHECK_EQ(WordPtr::bits, Word32::bits);
+    } else if constexpr (WordPtr::bits == Word32::bits) {
       return V<WordPtr>::Cast(input);
+    } else {
+#if V8_TARGET_CHERI
+      // Only for CHERI.
+      return ChangeUint32ToCapability64(input);
+#else
+      UNREACHABLE();
+#endif
     }
   }
 
   V<Word64> ChangeIntPtrToInt64(V<WordPtr> input) {
-    if constexpr (Is64()) {
-      DCHECK_EQ(WordPtr::bits, Word64::bits);
+    if constexpr (WordPtr::bits == Word64::bits) {
       return V<Word64>::Cast(input);
-    } else {
+    } else if constexpr (WordPtr::bits == Word32::bits) {
       return ChangeInt32ToInt64(input);
+    } else {
+      // Can just cast on CHERI.
+      return V<Word64>::Cast(input);
     }
   }
 
   V<Word64> ChangeUintPtrToUint64(V<WordPtr> input) {
-    if constexpr (Is64()) {
-      DCHECK_EQ(WordPtr::bits, Word64::bits);
+    if constexpr (WordPtr::bits == Word64::bits) {
       return V<Word64>::Cast(input);
-    } else {
+    } else if constexpr (WordPtr::bits == Word32::bits) {
       return ChangeUint32ToUint64(input);
+    } else {
+      // Can just cast on CHERI.
+      return V<Word64>::Cast(input);
     }
   }
 
@@ -2663,6 +2742,45 @@ class AssemblerOpInterface : public Next {
     DCHECK(Is64());
     return Word64ShiftRightArithmetic(input, 11);
   }
+
+  // MachineWord conversion functions — for integer-width operations.
+  V<Word32> TruncateMachineWordToWord32(ConstOrV<MachineWord> input) {
+    if constexpr (Is64()) {
+      return TruncateWord64ToWord32(input);
+    } else {
+      return V<Word32>::Cast(resolve(input));
+    }
+  }
+  V<MachineWord> ChangeInt32ToMachineWord(ConstOrV<Word32> input) {
+    if constexpr (Is64()) {
+      return V<MachineWord>::Cast(ChangeInt32ToInt64(input));
+    } else {
+      return V<MachineWord>::Cast(resolve(input));
+    }
+  }
+  V<MachineWord> ChangeUint32ToMachineWord(V<Word32> input) {
+    if constexpr (Is64()) {
+      return V<MachineWord>::Cast(ChangeUint32ToUint64(input));
+    } else {
+      return V<MachineWord>::Cast(input);
+    }
+  }
+  V<Word64> ChangeMachineWordToInt64(V<MachineWord> input) {
+    if constexpr (Is64()) {
+      return V<Word64>::Cast(input);
+    } else {
+      return ChangeInt32ToInt64(input);
+    }
+  }
+  V<Word64> ChangeMachineWordToUint64(V<MachineWord> input) {
+    if constexpr (Is64()) {
+      return V<Word64>::Cast(input);
+    } else {
+      return ChangeUint32ToUint64(input);
+    }
+  }
+  DECL_CHANGE_V(ChangeMachineWordToFloat64, kSignedToFloat, kNoAssumption,
+                MachineWord, Float64)
 
   V<Word64> TruncateInt64ToShiftedInt53(V<Word64> input) {
     DCHECK(Is64());
@@ -2836,7 +2954,7 @@ class AssemblerOpInterface : public Next {
         result_rep, input_rep, memory_access_kind, base_rep);
   }
 
-  OpIndex AtomicWord32Pair(V<WordPtr> base, OptionalV<WordPtr> index,
+  OpIndex AtomicWord32Pair(V<WordPtr> base, OptionalOpIndex index,
                            OptionalV<Word32> value_low,
                            OptionalV<Word32> value_high,
                            OptionalV<Word32> expected_low,
@@ -2847,26 +2965,26 @@ class AssemblerOpInterface : public Next {
                                              op_kind, offset);
   }
 
-  OpIndex AtomicWord32PairLoad(V<WordPtr> base, OptionalV<WordPtr> index,
+  OpIndex AtomicWord32PairLoad(V<WordPtr> base, OptionalOpIndex index,
                                int32_t offset) {
     return AtomicWord32Pair(base, index, {}, {}, {}, {},
                             AtomicWord32PairOp::Kind::kLoad, offset);
   }
-  OpIndex AtomicWord32PairStore(V<WordPtr> base, OptionalV<WordPtr> index,
+  OpIndex AtomicWord32PairStore(V<WordPtr> base, OptionalOpIndex index,
                                 V<Word32> value_low, V<Word32> value_high,
                                 int32_t offset) {
     return AtomicWord32Pair(base, index, value_low, value_high, {}, {},
                             AtomicWord32PairOp::Kind::kStore, offset);
   }
   OpIndex AtomicWord32PairCompareExchange(
-      V<WordPtr> base, OptionalV<WordPtr> index, V<Word32> value_low,
+      V<WordPtr> base, OptionalOpIndex index, V<Word32> value_low,
       V<Word32> value_high, V<Word32> expected_low, V<Word32> expected_high,
       int32_t offset = 0) {
     return AtomicWord32Pair(base, index, value_low, value_high, expected_low,
                             expected_high,
                             AtomicWord32PairOp::Kind::kCompareExchange, offset);
   }
-  OpIndex AtomicWord32PairBinop(V<WordPtr> base, OptionalV<WordPtr> index,
+  OpIndex AtomicWord32PairBinop(V<WordPtr> base, OptionalOpIndex index,
                                 V<Word32> value_low, V<Word32> value_high,
                                 AtomicRMWOp::BinOp bin_op, int32_t offset = 0) {
     return AtomicWord32Pair(base, index, value_low, value_high, {}, {},
@@ -3299,7 +3417,7 @@ class AssemblerOpInterface : public Next {
 
   template <typename Class, typename T>
   V<T> LoadElement(V<Class> object, const ElementAccessTS<Class, T>& access,
-                   V<WordPtr> index) {
+                   V<MachineWord> index) {
     return LoadElement<T>(object, access, index, access.is_array_buffer_load);
   }
 
@@ -3307,14 +3425,14 @@ class AssemblerOpInterface : public Next {
   // to `ElementAccess`.
   template <typename T = Any, typename Base>
   V<T> LoadArrayBufferElement(V<Base> object, const ElementAccess& access,
-                              V<WordPtr> index) {
+                              V<MachineWord> index) {
     return LoadElement<T>(object, access, index, true);
   }
   // TODO(nicohartmann): Remove `LoadNonArrayBufferElement` once fully
   // transitioned to `ElementAccess`.
   template <typename T = Any, typename Base>
   V<T> LoadNonArrayBufferElement(V<Base> object, const ElementAccess& access,
-                                 V<WordPtr> index) {
+                                 V<MachineWord> index) {
     return LoadElement<T>(object, access, index, false);
   }
   template <typename Base>
@@ -3326,25 +3444,25 @@ class AssemblerOpInterface : public Next {
 
   template <typename Base>
   void StoreArrayBufferElement(V<Base> object, const ElementAccess& access,
-                               V<WordPtr> index, V<Any> value) {
+                               V<MachineWord> index, V<Any> value) {
     return StoreElement(object, access, index, value, true);
   }
   template <typename Base>
   void StoreNonArrayBufferElement(V<Base> object, const ElementAccess& access,
-                                  V<WordPtr> index, V<Any> value) {
+                                  V<MachineWord> index, V<Any> value) {
     return StoreElement(object, access, index, value, false);
   }
 
   template <typename Class, typename T>
   void StoreElement(V<Class> object, const ElementAccessTS<Class, T>& access,
-                    ConstOrV<WordPtr> index, V<T> value) {
+                    ConstOrV<MachineWord> index, V<T> value) {
     StoreElement(object, access, index, value, access.is_array_buffer_load);
   }
 
   template <typename Class, typename T>
   void InitializeElement(Uninitialized<Class>& object,
                          const ElementAccessTS<Class, T>& access,
-                         ConstOrV<WordPtr> index, V<T> value) {
+                         ConstOrV<MachineWord> index, V<T> value) {
     StoreElement(object.object(), access, index, value,
                  access.is_array_buffer_load);
   }
@@ -3388,7 +3506,7 @@ class AssemblerOpInterface : public Next {
   }
 
   template <typename T = HeapObject>
-  Uninitialized<T> Allocate(ConstOrV<WordPtr> size, AllocationType type,
+  Uninitialized<T> Allocate(ConstOrV<MachineWord> size, AllocationType type,
                             AllocationAlignment alignment) {
     static_assert(is_subtype_v<T, HeapObject>);
     DCHECK(!in_object_initialization_);
@@ -3407,7 +3525,7 @@ class AssemblerOpInterface : public Next {
   V<HeapNumber> AllocateHeapNumberWithValue(V<Float64> value,
                                             Factory* factory) {
     auto result = __ template Allocate<HeapNumber>(
-        __ IntPtrConstant(sizeof(HeapNumber)), AllocationType::kYoung,
+        __ MachineIntPtrConstant(sizeof(HeapNumber)), AllocationType::kYoung,
         kTaggedAligned);
     __ InitializeField(result, AccessBuilder::ForMap(),
                        __ HeapConstant(factory->heap_number_map()));
@@ -4716,14 +4834,14 @@ class AssemblerOpInterface : public Next {
                                             right_high, kind);
   }
 
-  V<Word32> StringAt(V<String> string, V<WordPtr> position,
+  V<Word32> StringAt(V<String> string, V<MachineWord> position,
                      StringAtOp::Kind kind) {
     return ReduceIfReachableStringAt(string, position, kind);
   }
-  V<Word32> StringCharCodeAt(V<String> string, V<WordPtr> position) {
+  V<Word32> StringCharCodeAt(V<String> string, V<MachineWord> position) {
     return StringAt(string, position, StringAtOp::Kind::kCharCode);
   }
-  V<Word32> StringCodePointAt(V<String> string, V<WordPtr> position) {
+  V<Word32> StringCodePointAt(V<String> string, V<MachineWord> position) {
     return StringAt(string, position, StringAtOp::Kind::kCodePoint);
   }
 
@@ -4762,7 +4880,7 @@ class AssemblerOpInterface : public Next {
     return ReduceIfReachableStringIndexOf(string, search, position);
   }
 
-  V<String> StringFromCodePointAt(V<String> string, V<WordPtr> index) {
+  V<String> StringFromCodePointAt(V<String> string, V<MachineWord> index) {
     return ReduceIfReachableStringFromCodePointAt(string, index);
   }
 
@@ -4845,14 +4963,14 @@ class AssemblerOpInterface : public Next {
   }
 
   void TransitionAndStoreArrayElement(
-      V<JSArray> array, V<WordPtr> index, V<Any> value,
+      V<JSArray> array, V<MachineWord> index, V<Any> value,
       TransitionAndStoreArrayElementOp::Kind kind, MaybeHandle<Map> fast_map,
       MaybeHandle<Map> double_map) {
     ReduceIfReachableTransitionAndStoreArrayElement(array, index, value, kind,
                                                     fast_map, double_map);
   }
 
-  void StoreSignedSmallElement(V<JSArray> array, V<WordPtr> index,
+  void StoreSignedSmallElement(V<JSArray> array, V<MachineWord> index,
                                V<Word32> value) {
     TransitionAndStoreArrayElement(
         array, index, value,
@@ -4971,8 +5089,8 @@ class AssemblerOpInterface : public Next {
     return FindOrderedHashEntry(
         table, key, FindOrderedHashEntryOp::Kind::kFindOrderedHashSetEntry);
   }
-  V<WordPtr> FindOrderedHashMapEntryForInt32Key(V<Object> table,
-                                                V<Word32> key) {
+  V<MachineWord> FindOrderedHashMapEntryForInt32Key(V<Object> table,
+                                                    V<Word32> key) {
     return FindOrderedHashEntry(
         table, key,
         FindOrderedHashEntryOp::Kind::kFindOrderedHashMapEntryForInt32Key);
@@ -5245,7 +5363,7 @@ class AssemblerOpInterface : public Next {
 
 #if V8_ENABLE_WASM_DEINTERLEAVED_MEM_OPS
   V<Simd256> Simd128LoadPairDeinterleave(
-      V<WordPtr> base, V<WordPtr> index, LoadOp::Kind load_kind,
+      V<WordPtr> base, V<MachineWord> index, LoadOp::Kind load_kind,
       Simd128LoadPairDeinterleaveOp::Kind kind) {
     return ReduceIfReachableSimd128LoadPairDeinterleave(base, index, load_kind,
                                                         kind);
@@ -5263,7 +5381,7 @@ class AssemblerOpInterface : public Next {
   }
 
   V<Simd256> Simd256LoadTransform(
-      V<WordPtr> base, V<WordPtr> index,
+      V<WordPtr> base, V<MachineWord> index,
       Simd256LoadTransformOp::LoadKind load_kind,
       Simd256LoadTransformOp::TransformKind transform_kind, int offset) {
     return ReduceIfReachableSimd256LoadTransform(base, index, load_kind,
@@ -5374,6 +5492,12 @@ class AssemblerOpInterface : public Next {
   V<Smi> resolve(const ConstOrV<Smi>& v) {
     return v.is_constant() ? SmiConstant(v.constant_value()) : v.value();
   }
+#if V8_TARGET_CHERI
+  V<Capability64> resolve(const ConstOrV<Capability64>& v) {
+    return v.is_constant() ? Capability64Constant(v.constant_value())
+                           : v.value();
+  }
+#endif
 
   void CanonicalizeEmbeddedBuiltinsConstantIfNeeded(Handle<HeapObject> object) {
     Isolate* isolate = __ data() -> isolate();
@@ -5604,7 +5728,7 @@ class AssemblerOpInterface : public Next {
   // instead of LoadElement.
   template <typename T = Any, typename Base>
   V<T> LoadElement(V<Base> object, const ElementAccess& access,
-                   V<WordPtr> index, bool is_array_buffer) {
+                   V<MachineWord> index, bool is_array_buffer) {
     if constexpr (is_taggable_v<Base>) {
       DCHECK_EQ(access.base_is_tagged, BaseTaggedness::kTaggedBase);
     } else {
@@ -5623,7 +5747,7 @@ class AssemblerOpInterface : public Next {
   // instead of StoreElement.
   template <typename Base>
   void StoreElement(V<Base> object, const ElementAccess& access,
-                    ConstOrV<WordPtr> index, V<Any> value,
+                    ConstOrV<MachineWord> index, V<Any> value,
                     bool is_array_buffer) {
     if constexpr (is_taggable_v<Base>) {
       DCHECK_EQ(access.base_is_tagged, BaseTaggedness::kTaggedBase);

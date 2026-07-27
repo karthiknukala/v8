@@ -429,7 +429,7 @@ class WasmLoweringReducer : public Next {
                      int32_t{kObjectAlignment - 1}),
         int32_t{-static_cast<ssize_t>(kObjectAlignment)});
     Uninitialized<WasmArray> a = __ template Allocate<WasmArray>(
-        __ ChangeUint32ToUintPtr(
+        __ ChangeUint32ToMachineWord(
             __ Word32Add(padded_length, WasmArray::kHeaderSize)),
         is_shared ? AllocationType::kSharedOld : AllocationType::kYoung,
         is_shared ? kDoubleUnaligned : kTaggedAligned);

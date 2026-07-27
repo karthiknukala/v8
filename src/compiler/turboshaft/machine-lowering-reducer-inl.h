@@ -1884,7 +1884,7 @@ class MachineLoweringReducer : public Next {
 
     // Allocate the resulting ConsString.
     auto string = __ template Allocate<ConsString>(
-        __ IntPtrConstant(sizeof(ConsString)), AllocationType::kYoung,
+        __ MachineIntPtrConstant(sizeof(ConsString)), AllocationType::kYoung,
         kTaggedAligned);
     __ InitializeField(string, AccessBuilder::ForMap(), map);
     __ InitializeField(string, AccessBuilder::ForNameRawHashField(),
@@ -1895,11 +1895,12 @@ class MachineLoweringReducer : public Next {
     return __ FinishInitialization(std::move(string));
   }
 
-  V<AnyFixedArray> REDUCE(NewArray)(V<WordPtr> length, NewArrayOp::Kind kind,
+  V<AnyFixedArray> REDUCE(NewArray)(V<MachineWord> length,
+                                    NewArrayOp::Kind kind,
                                     AllocationType allocation_type) {
     Label<AnyFixedArray> done(this);
 
-    GOTO_IF(__ WordPtrEqual(length, 0), done,
+    GOTO_IF(__ MachineWordEqual(length, 0), done,
             __ HeapConstant(factory_->empty_fixed_array()));
 
     // Compute the effective size of the backing store.
@@ -1929,9 +1930,9 @@ class MachineLoweringReducer : public Next {
         break;
       }
     }
-    V<WordPtr> size =
-        __ WordPtrAdd(__ WordPtrShiftLeft(length, static_cast<int>(size_log2)),
-                      access.header_size);
+    V<MachineWord> size = __ MachineWordAdd(
+        __ MachineWordShiftLeft(length, static_cast<int>(size_log2)),
+        access.header_size);
 
     // Allocate the result and initialize the header.
     auto uninitialized_array = __ template Allocate<AnyFixedArray>(
@@ -1940,17 +1941,17 @@ class MachineLoweringReducer : public Next {
                        __ HeapConstant(array_map));
     __ InitializeField(uninitialized_array,
                        AccessBuilder::ForFixedArrayLength(),
-                       __ TagSmi(__ TruncateWordPtrToWord32(length)));
+                       __ TagSmi(__ TruncateMachineWordToWord32(length)));
     // TODO(nicohartmann@): Should finish initialization only after all elements
     // have been initialized.
     auto array = __ FinishInitialization(std::move(uninitialized_array));
 
-    ScopedVar<WordPtr> index(this, 0);
+    ScopedVar<MachineWord> index(this, 0);
 
-    WHILE(__ UintPtrLessThan(index, length)) {
+    WHILE(__ MachineUintPtrLessThan(index, length)) {
       __ StoreNonArrayBufferElement(array, access, index, the_hole_value);
       // Advance the {index}.
-      index = __ WordPtrAdd(index, 1);
+      index = __ MachineWordAdd(index, 1);
     }
 
     GOTO(done, array);
@@ -1966,23 +1967,23 @@ class MachineLoweringReducer : public Next {
     const bool is_max = kind == DoubleArrayMinMaxOp::Kind::kMax;
 
     // Iterate the elements and find the result.
-    V<WordPtr> array_length =
-        __ ChangeInt32ToIntPtr(__ UntagSmi(__ template LoadField<Smi>(
+    V<MachineWord> array_length =
+        __ ChangeInt32ToMachineWord(__ UntagSmi(__ template LoadField<Smi>(
             array, AccessBuilder::ForJSArrayLength(
                        ElementsKind::PACKED_DOUBLE_ELEMENTS))));
     V<Object> elements = __ template LoadField<Object>(
         array, AccessBuilder::ForJSObjectElements());
 
     ScopedVar<Float64> result(this, is_max ? -V8_INFINITY : V8_INFINITY);
-    ScopedVar<WordPtr> index(this, 0);
+    ScopedVar<MachineWord> index(this, 0);
 
-    WHILE(__ UintPtrLessThan(index, array_length)) {
+    WHILE(__ MachineUintPtrLessThan(index, array_length)) {
       V<Float64> element = __ template LoadNonArrayBufferElement<Float64>(
           elements, AccessBuilder::ForFixedDoubleArrayElement(), index);
 
       result = is_max ? __ Float64Max(result, element)
                       : __ Float64Min(result, element);
-      index = __ WordPtrAdd(index, 1);
+      index = __ MachineWordAdd(index, 1);
     }
 
     return __ ConvertFloat64ToNumber(result,
@@ -1997,29 +1998,29 @@ class MachineLoweringReducer : public Next {
     // disambiguate the zero out-of-line index from the zero inobject case.
     // The index itself is shifted up by one bit, the lower-most bit
     // signifying if the field is a mutable double box (1) or not (0).
-    V<WordPtr> index = __ ChangeInt32ToIntPtr(field_index);
+    V<MachineWord> index = __ ChangeInt32ToMachineWord(field_index);
 
     Label<> double_field(this);
     Label<Object> done(this);
 
     // Check if field is a mutable double field.
-    GOTO_IF(
-        UNLIKELY(__ Word32Equal(
-            __ Word32BitwiseAnd(__ TruncateWordPtrToWord32(index), 0x1), 0x1)),
-        double_field);
+    GOTO_IF(UNLIKELY(__ Word32Equal(
+                __ Word32BitwiseAnd(__ TruncateMachineWordToWord32(index), 0x1),
+                0x1)),
+            double_field);
 
     {
       // The field is a proper Tagged field on {object}. The {index} is
       // shifted to the left by one in the code below.
 
       // Check if field is in-object or out-of-object.
-      IF (__ IntPtrLessThan(index, 0)) {
+      IF (__ MachineIntPtrLessThan(index, 0)) {
         // The field is located in the properties backing store of {object}.
         // The {index} is equal to the negated out of property index plus 1.
         V<Object> properties = __ template LoadField<Object>(
             object, AccessBuilder::ForJSObjectPropertiesOrHashKnownPointer());
 
-        V<WordPtr> out_of_object_index = __ WordPtrSub(0, index);
+        V<MachineWord> out_of_object_index = __ MachineWordSub(0, index);
         V<Object> result =
             __ Load(properties, out_of_object_index,
                     LoadOp::Kind::Aligned(BaseTaggedness::kTaggedBase),
@@ -2040,15 +2041,16 @@ class MachineLoweringReducer : public Next {
     if (BIND(double_field)) {
       // If field is a Double field, either unboxed in the object on 64 bit
       // architectures, or a mutable HeapNumber.
-      V<WordPtr> double_index = __ WordPtrShiftRightArithmetic(index, 1);
+      V<MachineWord> double_index =
+          __ MachineWordShiftRightArithmetic(index, 1);
       Label<Object> loaded_field(this);
 
       // Check if field is in-object or out-of-object.
-      IF (__ IntPtrLessThan(double_index, 0)) {
+      IF (__ MachineIntPtrLessThan(double_index, 0)) {
         V<Object> properties = __ template LoadField<Object>(
             object, AccessBuilder::ForJSObjectPropertiesOrHashKnownPointer());
 
-        V<WordPtr> out_of_object_index = __ WordPtrSub(0, double_index);
+        V<MachineWord> out_of_object_index = __ MachineWordSub(0, double_index);
         V<Object> result = __ Load(
             properties, out_of_object_index,
             LoadOp::Kind::Aligned(BaseTaggedness::kTaggedBase),
@@ -2424,8 +2426,8 @@ class MachineLoweringReducer : public Next {
             Handle<Map> expected_map = str.map(broker_).object();
             IF (__ TaggedEqual(dynamic_map, __ HeapConstant(expected_map))) {
               bool one_byte = str.IsOneByteRepresentation();
-              GOTO(done, LoadFromSeqString(string, V<WordPtr>::Cast(pos),
-                                           __ Word32Constant(one_byte)));
+              GOTO(done,
+                   LoadFromSeqString(string, pos, __ Word32Constant(one_byte)));
             }
           }
         }
@@ -2512,8 +2514,7 @@ class MachineLoweringReducer : public Next {
               __ Word32BitwiseAnd(instance_type, kStringEncodingMask),
               kOneByteStringTag);
 #endif
-          GOTO(done, LoadFromSeqString(receiver, V<WordPtr>::Cast(position),
-                                       is_one_byte));
+          GOTO(done, LoadFromSeqString(receiver, position, is_one_byte));
         }
 
         if (BIND(external_string)) {
@@ -2634,9 +2635,10 @@ class MachineLoweringReducer : public Next {
         {.s = string, .search_string = search, .start = position});
   }
 
-  V<String> REDUCE(StringFromCodePointAt)(V<String> string, V<WordPtr> index) {
+  V<String> REDUCE(StringFromCodePointAt)(V<String> string,
+                                          V<MachineWord> index) {
     return __ template CallBuiltin<builtin::StringFromCodePointAt>(
-        {.receiver = string, .position = index});
+        {.receiver = string, .position = V<WordPtr>::Cast(index)});
   }
 
 #ifdef V8_INTL_SUPPORT
@@ -2675,20 +2677,21 @@ class MachineLoweringReducer : public Next {
     BIND(right_type);
     {
       V<Word32> length = __ Word32Sub(end, start);
-      V<WordPtr> length_ptr = __ ChangeInt32ToIntPtr(length);
-      GOTO_IF_NOT(__ IntPtrLessThan(length_ptr, SlicedString::kMinLength),
-                  slow);
-      GOTO_IF(__ WordPtrEqual(length_ptr, 1), single_char);
+      V<MachineWord> length_ptr = __ ChangeInt32ToMachineWord(length);
+      GOTO_IF_NOT(
+          __ MachineIntPtrLessThan(length_ptr, SlicedString::kMinLength), slow);
+      GOTO_IF(__ MachineWordEqual(length_ptr, 1), single_char);
 
       // Calculate the allocation size: Header + Length * 1 (kOneByteSize),
       // aligned to kObjectAlignment.
-      V<WordPtr> size = __ WordPtrAdd(
-          __ IntPtrConstant(ObjectTraits<SeqOneByteString>::kHeaderSize),
+      V<MachineWord> size = __ MachineWordAdd(
+          __ MachineIntPtrConstant(ObjectTraits<SeqOneByteString>::kHeaderSize),
           length_ptr);
       // Align: (size + kObjectAlignmentMask) & ~kObjectAlignmentMask
-      size = __ WordPtrBitwiseAnd(
-          __ WordPtrAdd(size, __ IntPtrConstant(kObjectAlignment - 1)),
-          __ IntPtrConstant(~(kObjectAlignment - 1)));
+      size = __ MachineWordBitwiseAnd(
+          __ MachineWordAdd(size,
+                            __ MachineIntPtrConstant(kObjectAlignment - 1)),
+          __ MachineIntPtrConstant(~(kObjectAlignment - 1)));
 
       auto new_string = __ template Allocate<SeqOneByteString>(
           size, AllocationType::kYoung, kTaggedAligned);
@@ -2701,30 +2704,29 @@ class MachineLoweringReducer : public Next {
 
       auto access = AccessBuilderTS::ForSeqOneByteStringCharacter();
 
-      V<WordPtr> start_ptr = __ ChangeInt32ToIntPtr(start);
-      ScopedVar<WordPtr> index(this, 0);
+      V<MachineWord> start_ptr = __ ChangeInt32ToMachineWord(start);
+      ScopedVar<MachineWord> index(this, 0);
       // TODO(marja): Loop 4 bytes at once.
-      WHILE(__ UintPtrLessThan(index, length_ptr)) {
+      WHILE(__ MachineUintPtrLessThan(index, length_ptr)) {
         V<Word32> char_code = __ template LoadNonArrayBufferElement<Word32>(
-            string, AccessBuilder::ForSeqOneByteStringCharacter(),
-            __ WordPtrAdd(index, start_ptr));
+            string, AccessBuilder::ForSeqOneByteStringCharacter(), index);
         __ InitializeElement(new_string, access, index, char_code);
-        index = __ WordPtrAdd(index, 1);
+        index = __ MachineWordAdd(index, 1);
       }
 
       // Padding must be zeroed.
-      V<WordPtr> payload_size =
-          __ WordPtrSub(size, __ IntPtrConstant(access.header_size));
-      WHILE(__ UintPtrLessThan(index, payload_size)) {
+      V<MachineWord> payload_size =
+          __ MachineWordSub(size, __ MachineIntPtrConstant(access.header_size));
+      WHILE(__ MachineUintPtrLessThan(index, payload_size)) {
         __ InitializeElement(new_string, access, index, __ Word32Constant(0));
-        index = __ WordPtrAdd(index, 1);
+        index = __ MachineWordAdd(index, 1);
       }
 
       GOTO(done, __ FinishInitialization(std::move(new_string)));
     }
     BIND(single_char);
     {
-      V<WordPtr> start_ptr = __ ChangeInt32ToIntPtr(start);
+      V<MachineWord> start_ptr = __ ChangeInt32ToMachineWord(start);
       V<Word32> char_code = __ template LoadNonArrayBufferElement<Word32>(
           string, AccessBuilder::ForSeqOneByteStringCharacter(), start_ptr);
       GOTO(done, StringFromSingleCharCode(char_code));
@@ -2909,7 +2911,7 @@ class MachineLoweringReducer : public Next {
   }
 
   V<Any> REDUCE(LoadTypedElement)(OpIndex buffer, V<Object> base,
-                                  V<WordPtr> external, V<WordPtr> index,
+                                  V<WordPtr> external, V<MachineWord> index,
                                   ExternalArrayType array_type) {
     V<WordPtr> data_ptr = BuildTypedArrayDataPointer(base, external);
 
@@ -2923,7 +2925,7 @@ class MachineLoweringReducer : public Next {
     return result;
   }
 
-  V<Object> REDUCE(LoadStackArgument)(V<WordPtr> base, V<WordPtr> index) {
+  V<Object> REDUCE(LoadStackArgument)(V<WordPtr> base, V<MachineWord> index) {
     // Note that this is a load of a Tagged value
     // (MemoryRepresentation::AnyTagged()), but since it's on the stack
     // where stack slots are all kSystemPointerSize, we use kSystemPointerSize
@@ -2943,7 +2945,7 @@ class MachineLoweringReducer : public Next {
   }
 
   V<None> REDUCE(StoreTypedElement)(OpIndex buffer, V<Object> base,
-                                    V<WordPtr> external, V<WordPtr> index,
+                                    V<WordPtr> external, V<MachineWord> index,
                                     V<Any> value,
                                     ExternalArrayType array_type) {
     V<WordPtr> data_ptr = BuildTypedArrayDataPointer(base, external);
@@ -2960,7 +2962,7 @@ class MachineLoweringReducer : public Next {
   }
 
   V<None> REDUCE(TransitionAndStoreArrayElement)(
-      V<JSArray> array, V<WordPtr> index, OpIndex value,
+      V<JSArray> array, V<MachineWord> index, OpIndex value,
       TransitionAndStoreArrayElementOp::Kind kind, MaybeHandle<Map> fast_map,
       MaybeHandle<Map> double_map) {
     V<Map> map = __ LoadMapField(array);
@@ -3745,33 +3747,38 @@ class MachineLoweringReducer : public Next {
             __ NoContextConstant(), {.table = data_structure, .key = key});
       case FindOrderedHashEntryOp::Kind::kFindOrderedHashMapEntryForInt32Key: {
         // Compute the integer hash code.
-        V<WordPtr> hash = __ ChangeUint32ToUintPtr(ComputeUnseededHash(key));
+        V<MachineWord> hash =
+            __ ChangeUint32ToMachineWord(ComputeUnseededHash(key));
 
-        V<WordPtr> number_of_buckets =
-            __ ChangeInt32ToIntPtr(__ UntagSmi(__ template LoadField<Smi>(
+        V<MachineWord> number_of_buckets =
+            __ ChangeInt32ToMachineWord(__ UntagSmi(__ template LoadField<Smi>(
                 data_structure,
                 AccessBuilder::ForOrderedHashMapOrSetNumberOfBuckets())));
-        hash = __ WordPtrBitwiseAnd(hash, __ WordPtrSub(number_of_buckets, 1));
-        V<WordPtr> first_entry = __ ChangeInt32ToIntPtr(__ UntagSmi(__ Load(
-            data_structure,
-            __ WordPtrAdd(__ WordPtrShiftLeft(hash, kTaggedSizeLog2),
-                          OrderedHashMap::HashTableStartOffset()),
-            LoadOp::Kind::TaggedBase(), MemoryRepresentation::TaggedSigned())));
+        hash = __ MachineWordBitwiseAnd(
+            hash, __ MachineWordSub(number_of_buckets, 1));
+        V<MachineWord> first_entry = __ ChangeInt32ToMachineWord(__ UntagSmi(
+            __ Load(data_structure,
+                    __ MachineWordAdd(
+                        __ MachineWordShiftLeft(hash, kTaggedSizeLog2),
+                        OrderedHashMap::HashTableStartOffset()),
+                    LoadOp::Kind::TaggedBase(),
+                    MemoryRepresentation::TaggedSigned())));
 
-        Label<WordPtr> done(this);
-        LoopLabel<WordPtr> loop(this);
+        Label<MachineWord> done(this);
+        LoopLabel<MachineWord> loop(this);
         GOTO(loop, first_entry);
 
         BIND_LOOP(loop, entry) {
-          GOTO_IF(__ WordPtrEqual(entry, OrderedHashMap::kNotFound), done,
+          GOTO_IF(__ MachineWordEqual(entry, OrderedHashMap::kNotFound), done,
                   entry);
-          V<WordPtr> candidate =
-              __ WordPtrAdd(__ WordPtrMul(entry, OrderedHashMap::kEntrySize),
-                            number_of_buckets);
+          V<MachineWord> candidate = __ MachineWordAdd(
+              __ MachineWordMul(entry, OrderedHashMap::kEntrySize),
+              number_of_buckets);
           V<Object> candidate_key = __ Load(
               data_structure,
-              __ WordPtrAdd(__ WordPtrShiftLeft(candidate, kTaggedSizeLog2),
-                            OrderedHashMap::HashTableStartOffset()),
+              __ MachineWordAdd(
+                  __ MachineWordShiftLeft(candidate, kTaggedSizeLog2),
+                  OrderedHashMap::HashTableStartOffset()),
               LoadOp::Kind::TaggedBase(), MemoryRepresentation::AnyTagged());
 
           IF (LIKELY(__ ObjectIsSmi(candidate_key))) {
@@ -3791,13 +3798,14 @@ class MachineLoweringReducer : public Next {
                     done, candidate);
           }
 
-          V<WordPtr> next_entry = __ ChangeInt32ToIntPtr(__ UntagSmi(__ Load(
-              data_structure,
-              __ WordPtrAdd(__ WordPtrShiftLeft(candidate, kTaggedSizeLog2),
-                            (OrderedHashMap::HashTableStartOffset() +
-                             OrderedHashMap::kChainOffset * kTaggedSize)),
-              LoadOp::Kind::TaggedBase(),
-              MemoryRepresentation::TaggedSigned())));
+          V<MachineWord> next_entry = __ ChangeInt32ToMachineWord(__ UntagSmi(
+              __ Load(data_structure,
+                      __ MachineWordAdd(
+                          __ MachineWordShiftLeft(candidate, kTaggedSizeLog2),
+                          (OrderedHashMap::HashTableStartOffset() +
+                           OrderedHashMap::kChainOffset * kTaggedSize)),
+                      LoadOp::Kind::TaggedBase(),
+                      MemoryRepresentation::TaggedSigned())));
           GOTO(loop, next_entry);
         }
 
@@ -3814,7 +3822,7 @@ class MachineLoweringReducer : public Next {
   // result encode in {encoding}. Note that UTF32 encoding is identical to the
   // code point. If the string's {length} is already available, it can be
   // passed, otherwise it will be loaded when required.
-  V<Word32> LoadSurrogatePairAt(V<String> string, OptionalV<WordPtr> length,
+  V<Word32> LoadSurrogatePairAt(V<String> string, OptionalV<MachineWord> length,
                                 V<MachineWord> index,
                                 UnicodeEncoding encoding) {
     Label<Word32> done(this);
@@ -3824,13 +3832,12 @@ class MachineLoweringReducer : public Next {
                     __ Word32BitwiseAnd(first_code_unit, 0xFC00), 0xD800)),
                 done, first_code_unit);
     if (!length.has_value()) {
-      length = __ ChangeUint32ToUintPtr(__ template LoadField<Word32>(
+      length = __ ChangeUint32ToMachineWord(__ template LoadField<Word32>(
           string, AccessBuilder::ForStringLength()));
     }
     V<MachineWord> next_index = __ MachineWordAdd(index, 1);
-    GOTO_IF_NOT(__ MachineIntPtrLessThan(next_index,
-                                         V<MachineWord>::Cast(length.value())),
-                done, first_code_unit);
+    GOTO_IF_NOT(__ MachineIntPtrLessThan(next_index, length.value()), done,
+                first_code_unit);
 
     V<Word32> second_code_unit = __ StringCharCodeAt(string, next_index);
     GOTO_IF_NOT(
@@ -3870,7 +3877,7 @@ class MachineLoweringReducer : public Next {
     // Check if the {code} is a one byte character.
     IF (LIKELY(__ Uint32LessThanOrEqual(code, String::kMaxOneByteCharCode))) {
       // Load the string for the {code} directly from the roots table.
-      V<WordPtr> index = __ ChangeUint32ToUintPtr(code);
+      V<MachineWord> index = __ ChangeUint32ToMachineWord(code);
       V<String> entry = __ LoadOffHeap(
           __ LoadRootRegister(), index,
           IsolateData::root_slot_offset(RootIndex::kFirstSingleCharacterString),
@@ -4013,7 +4020,7 @@ class MachineLoweringReducer : public Next {
 
     V<Map> map = __ HeapConstant(factory_->bigint_map());
     auto bigint = __ template Allocate<FreshlyAllocatedBigInt>(
-        __ IntPtrConstant(BigInt::SizeFor(digit.valid() ? 1 : 0)),
+        __ MachineIntPtrConstant(BigInt::SizeFor(digit.valid() ? 1 : 0)),
         AllocationType::kYoung, kTaggedAligned);
     __ InitializeField(bigint, AccessBuilder::ForMap(), map);
     __ InitializeField(
@@ -4153,7 +4160,7 @@ class MachineLoweringReducer : public Next {
         heap_object, AccessBuilder::ForHeapNumberOrOddballValue());
   }
 
-  V<Word32> LoadFromSeqString(V<Object> receiver, V<WordPtr> position,
+  V<Word32> LoadFromSeqString(V<Object> receiver, V<MachineWord> position,
                               V<Word32> onebyte) {
     Label<Word32> done(this);
 

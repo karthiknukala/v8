@@ -771,9 +771,18 @@ class MachineOptimizationReducer : public Next {
 
     using Kind = WordBinopOp::Kind;
 
-    DCHECK_EQ(rep, any_of(WordRepresentation::Word32(),
-                          WordRepresentation::Word64()));
-    bool is_64 = rep == WordRepresentation::Word64();
+    DCHECK_EQ(rep,
+              any_of(WordRepresentation::Word32(), WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+                                                       ,
+                     WordRepresentation::Capability64()
+#endif
+                         ));
+    bool is_64 = rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+                 || rep == WordRepresentation::Capability64()
+#endif
+        ;
 
     if (!is_64) {
       left = TryRemoveWord32ToWord64Conversion(left);
@@ -1309,7 +1318,11 @@ class MachineOptimizationReducer : public Next {
                             __ Word32Constant(overflow));
       }
     } else {
-      DCHECK_EQ(rep, WordRepresentation::Word64());
+      DCHECK(rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+             || rep == WordRepresentation::Capability64()
+#endif
+      );
       if (int64_t k1, k2; matcher_.MatchIntegralWord64Constant(left, &k1) &&
                           matcher_.MatchIntegralWord64Constant(right, &k2)) {
         bool overflow;
@@ -1485,10 +1498,13 @@ class MachineOptimizationReducer : public Next {
           const ConstantOp* r = matcher_.TryCast<ConstantOp>(right);
           if (l && r) {
             // We don't need to actually use the full capability here.
-            uint64_t k1 =
-                static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()));
-            uint64_t k2 =
-                static_cast<uint64_t>(V8_CHERI_ADDR_GET(r->capability64()));
+            // The constant might be kCapability64 or kWord64.
+            uint64_t k1 = (l->kind == ConstantOp::Kind::kCapability64)
+                              ? static_cast<uint64_t>(l->capability64())
+                              : l->integral();
+            uint64_t k2 = (r->kind == ConstantOp::Kind::kCapability64)
+                              ? static_cast<uint64_t>(r->capability64())
+                              : r->integral();
             switch (kind) {
               case ComparisonOp::Kind::kEqual:
                 return __ Word32Constant(k1 == k2);
@@ -1714,10 +1730,13 @@ class MachineOptimizationReducer : public Next {
           amount = amount & (rep.bit_width() - 1);
           // We don't want to be shifting valid capabilities because we're going
           // to invalidate them in the process, so better to fail early.
-          CHECK_IMPLIES(V8_CHERI_PURECAP_BOOL,
+          CHECK_IMPLIES(V8_CHERI_PURECAP_BOOL &&
+                            l->kind == ConstantOp::Kind::kCapability64,
                         !V8_CHERI_TAG_GET(l->capability64()));
           uint64_t addr =
-              static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()));
+              (l->kind == ConstantOp::Kind::kCapability64)
+                  ? static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()))
+                  : l->integral();
           switch (kind) {
             case Kind::kShiftRightArithmeticShiftOutZeros:
               if (base::bits::CountTrailingZeros(static_cast<int64_t>(addr)) <
@@ -2471,10 +2490,14 @@ class MachineOptimizationReducer : public Next {
             const ConstantOp* r = matcher_.TryCast<ConstantOp>(right);
             if (l && r) {
               // Don't need to use the full capability here.
-              uint64_t k1 =
-                  static_cast<uint64_t>(V8_CHERI_ADDR_GET(l->capability64()));
-              uint64_t k2 =
-                  static_cast<uint64_t>(V8_CHERI_ADDR_GET(r->capability64()));
+              uint64_t k1 = (l->kind == ConstantOp::Kind::kCapability64)
+                                ? static_cast<uint64_t>(
+                                      V8_CHERI_ADDR_GET(l->capability64()))
+                                : l->integral();
+              uint64_t k2 = (r->kind == ConstantOp::Kind::kCapability64)
+                                ? static_cast<uint64_t>(
+                                      V8_CHERI_ADDR_GET(r->capability64()))
+                                : r->integral();
               return __ Word32Constant(k1 == k2);
             }
             break;
@@ -2623,7 +2646,7 @@ class MachineOptimizationReducer : public Next {
     int64_t new_index;
     if (!base::bits::SignedAddOverflow64(offset, diff << element_scale,
                                          &new_index)) {
-      *index = __ IntPtrConstant(new_index);
+      *index = __ MachineIntPtrConstant(new_index);
       return true;
     }
     return false;
@@ -2786,7 +2809,11 @@ class MachineOptimizationReducer : public Next {
     if (rep == WordRepresentation::Word32()) {
       return static_cast<uint32_t>(value);
     } else {
-      DCHECK_EQ(rep, WordRepresentation::Word64());
+      DCHECK(rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+             || rep == WordRepresentation::Capability64()
+#endif
+      );
       return value;
     }
   }
@@ -2898,9 +2925,12 @@ class MachineOptimizationReducer : public Next {
       return LowerToMul(static_cast<int32_t>(right),
                         WordRepresentation::Word32());
     } else {
-      DCHECK_EQ(rep, WordRepresentation::Word64());
-      return LowerToMul(static_cast<int64_t>(right),
-                        WordRepresentation::Word64());
+      DCHECK(rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+             || rep == WordRepresentation::Capability64()
+#endif
+      );
+      return LowerToMul(static_cast<int64_t>(right), rep);
     }
   }
 
@@ -2950,9 +2980,12 @@ class MachineOptimizationReducer : public Next {
       return LowerToMul(static_cast<uint32_t>(right),
                         WordRepresentation::Word32());
     } else {
-      DCHECK_EQ(rep, WordRepresentation::Word64());
-      return LowerToMul(static_cast<uint64_t>(right),
-                        WordRepresentation::Word64());
+      DCHECK(rep == WordRepresentation::Word64()
+#if V8_TARGET_CHERI
+             || rep == WordRepresentation::Capability64()
+#endif
+      );
+      return LowerToMul(static_cast<uint64_t>(right), rep);
     }
   }
 

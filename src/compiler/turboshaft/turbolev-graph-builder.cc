@@ -2264,7 +2264,7 @@ class GraphBuildingNodeProcessor {
     IF_NOT (__ TaggedEqual(entry, __ SmiConstant(Smi::FromInt(-1)))) {
       result =
           __ LoadElement(table, AccessBuilderTS::ForOrderedHashMapEntryValue(),
-                         __ ChangeInt32ToIntPtr(__ UntagSmi(entry)));
+                         __ ChangeInt32ToMachineWord(__ UntagSmi(entry)));
     }
 
     SetMap(node, result);
@@ -2277,10 +2277,10 @@ class GraphBuildingNodeProcessor {
     V<Object> table = Map(node->TableInput());
     V<Word32> key = Map(node->KeyInput());
 
-    V<WordPtr> entry = __ FindOrderedHashMapEntryForInt32Key(table, key);
+    V<MachineWord> entry = __ FindOrderedHashMapEntryForInt32Key(table, key);
     ScopedVar<Object, AssemblerT> result(this, undefined_value_);
 
-    IF_NOT (__ Word32Equal(__ TruncateWordPtrToWord32(entry), -1)) {
+    IF_NOT (__ Word32Equal(__ TruncateMachineWordToWord32(entry), -1)) {
       result = __ LoadElement(
           table, AccessBuilderTS::ForOrderedHashMapEntryValue(), entry);
     }
