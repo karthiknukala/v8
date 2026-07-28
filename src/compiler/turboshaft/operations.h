@@ -2174,7 +2174,12 @@ struct ComparisonOp : FixedArityOperationT<2, ComparisonOp> {
                             RegisterRepresentation::Word64(),
                             RegisterRepresentation::Float32(),
                             RegisterRepresentation::Float64(),
-                            RegisterRepresentation::Tagged()));
+                            RegisterRepresentation::Tagged()
+#if V8_TARGET_CHERI
+                                ,
+                            RegisterRepresentation::Capability64()
+#endif
+                                ));
 
       RegisterRepresentation input_rep = rep;
 #ifdef V8_COMPRESS_POINTERS
@@ -2193,7 +2198,12 @@ struct ComparisonOp : FixedArityOperationT<2, ComparisonOp> {
       DCHECK_EQ(rep, any_of(RegisterRepresentation::Word32(),
                             RegisterRepresentation::Word64(),
                             RegisterRepresentation::Float32(),
-                            RegisterRepresentation::Float64()));
+                            RegisterRepresentation::Float64()
+#if V8_TARGET_CHERI
+                                ,
+                            RegisterRepresentation::Capability64()
+#endif
+                                ));
       DCHECK_IMPLIES(
           rep == any_of(RegisterRepresentation::Float32(),
                         RegisterRepresentation::Float64()),
@@ -3143,9 +3153,9 @@ struct LoadOp : OperationT<LoadOp> {
     base::Vector<const MaybeRegisterRepresentation> result =
         kind.tagged_base
             ? MaybeRepVector<MaybeRegisterRepresentation::Tagged(),
-                             MaybeRegisterRepresentation::WordPtr()>()
+                             MaybeRegisterRepresentation::MachineWord()>()
             : MaybeRepVector<MaybeRegisterRepresentation::WordPtr(),
-                             MaybeRegisterRepresentation::WordPtr()>();
+                             MaybeRegisterRepresentation::MachineWord()>();
     return index().valid() ? result : base::VectorOf(result.data(), 1);
   }
 
@@ -3277,17 +3287,18 @@ struct AtomicRMWOp : OperationT<AtomicRMWOp> {
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     if (bin_op == BinOp::kCompareExchange) {
-      return InitVectorOf(storage, {base_rep, RegisterRepresentation::WordPtr(),
-                                    in_out_rep, in_out_rep});
+      return InitVectorOf(
+          storage, {base_rep, RegisterRepresentation::MachineWord(), in_out_rep,
+                    in_out_rep});
     }
     return InitVectorOf(
-        storage, {base_rep, RegisterRepresentation::WordPtr(), in_out_rep});
+        storage, {base_rep, RegisterRepresentation::MachineWord(), in_out_rep});
   }
 
   V<Any> base() const { return input<Any>(0); }
   // The offset from base. Note that for tagged bases this offset does include
   // the pointer untagging, differently to e.g. loads and stores!
-  V<WordPtr> index() const { return input<WordPtr>(1); }
+  V<MachineWord> index() const { return input<MachineWord>(1); }
   OpIndex value() const { return input(2); }
   OptionalOpIndex expected() const {
     return (input_count == 4) ? input(3) : OpIndex::Invalid();
@@ -3325,7 +3336,7 @@ struct AtomicRMWOp : OperationT<AtomicRMWOp> {
               memory_access_kind, base_rep);
   }
 
-  static AtomicRMWOp& New(Graph* graph, OpIndex base, V<WordPtr> index,
+  static AtomicRMWOp& New(Graph* graph, OpIndex base, V<MachineWord> index,
                           OpIndex value, OptionalOpIndex expected, BinOp bin_op,
                           RegisterRepresentation result_rep,
                           MemoryRepresentation input_rep, MemoryAccessKind kind,
@@ -3406,7 +3417,7 @@ struct AtomicWord32PairOp : OperationT<AtomicWord32PairOp> {
     const bool has_index = HasIndex();
     storage[0] = RegisterRepresentation::WordPtr();  // base
     if (has_index) {
-      storage[1] = RegisterRepresentation::WordPtr();  // index
+      storage[1] = RegisterRepresentation::MachineWord();  // index
     }
     if (kind != Kind::kLoad) {
       storage[1 + has_index] = RegisterRepresentation::Word32();  // value_low
@@ -3422,8 +3433,8 @@ struct AtomicWord32PairOp : OperationT<AtomicWord32PairOp> {
   }
 
   V<WordPtr> base() const { return input<WordPtr>(0); }
-  OptionalV<WordPtr> index() const {
-    return HasIndex() ? input<WordPtr>(1) : V<WordPtr>::Invalid();
+  OptionalV<MachineWord> index() const {
+    return HasIndex() ? input<MachineWord>(1) : V<MachineWord>::Invalid();
   }
   OptionalV<Word32> value_low() const {
     return kind != Kind::kLoad ? input<Word32>(1 + HasIndex())
@@ -3442,8 +3453,7 @@ struct AtomicWord32PairOp : OperationT<AtomicWord32PairOp> {
                                           : V<Word32>::Invalid();
   }
 
-
-  AtomicWord32PairOp(V<WordPtr> base, OptionalV<WordPtr> index,
+  AtomicWord32PairOp(V<WordPtr> base, OptionalOpIndex index,
                      OptionalV<Word32> value_low, OptionalV<Word32> value_high,
                      OptionalV<Word32> expected_low,
                      OptionalV<Word32> expected_high, Kind kind, int32_t offset)
@@ -3495,7 +3505,7 @@ struct AtomicWord32PairOp : OperationT<AtomicWord32PairOp> {
   bool HasIndex() const { return input_count == InputCount(kind, true); }
 
   static AtomicWord32PairOp& New(Graph* graph, V<WordPtr> base,
-                                 OptionalV<WordPtr> index,
+                                 OptionalOpIndex index,
                                  OptionalV<Word32> value_low,
                                  OptionalV<Word32> value_high,
                                  OptionalV<Word32> expected_low,
@@ -3630,7 +3640,7 @@ struct StoreOp : OperationT<StoreOp> {
     }
     return InitVectorOf(storage,
                         {base, stored_rep.ToRegisterRepresentationForStore(),
-                         RegisterRepresentation::WordPtr()});
+                         RegisterRepresentation::MachineWord()});
   }
 
   OpIndex base() const { return input(0); }
@@ -3721,12 +3731,12 @@ struct AllocateOp : FixedArityOperationT<1, AllocateOp> {
 
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
-    return MaybeRepVector<MaybeRegisterRepresentation::WordPtr()>();
+    return MaybeRepVector<MaybeRegisterRepresentation::MachineWord()>();
   }
 
-  V<WordPtr> size() const { return input<WordPtr>(0); }
+  V<MachineWord> size() const { return input<MachineWord>(0); }
 
-  AllocateOp(V<WordPtr> size, AllocationType type,
+  AllocateOp(V<MachineWord> size, AllocationType type,
              AllocationAlignment alignment)
       : Base(size), type(type), alignment(alignment) {}
 
@@ -4312,7 +4322,7 @@ struct MemoryCopyOp : FixedArityOperationT<3, MemoryCopyOp> {
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<MaybeRegisterRepresentation::WordPtr(),
                           MaybeRegisterRepresentation::WordPtr(),
-                          MaybeRegisterRepresentation::WordPtr()>();
+                          MaybeRegisterRepresentation::MachineWord()>();
   }
 
   MemoryCopyOp(OpIndex dst_base, OpIndex src_base, OpIndex num_bytes)
@@ -4322,7 +4332,7 @@ struct MemoryCopyOp : FixedArityOperationT<3, MemoryCopyOp> {
 
   V<WordPtr> dst_base() const { return input<WordPtr>(0); }
   V<WordPtr> src_base() const { return input<WordPtr>(1); }
-  V<WordPtr> num_bytes() const { return input<WordPtr>(2); }
+  V<MachineWord> num_bytes() const { return input<MachineWord>(2); }
 };
 
 struct MemoryFillOp : FixedArityOperationT<3, MemoryFillOp> {
@@ -4336,17 +4346,17 @@ struct MemoryFillOp : FixedArityOperationT<3, MemoryFillOp> {
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<MaybeRegisterRepresentation::WordPtr(),
                           MaybeRegisterRepresentation::Word32(),
-                          MaybeRegisterRepresentation::WordPtr()>();
+                          MaybeRegisterRepresentation::MachineWord()>();
   }
 
-  MemoryFillOp(V<WordPtr> dst_base, V<Word32> value, V<WordPtr> num_bytes)
+  MemoryFillOp(V<WordPtr> dst_base, V<Word32> value, V<MachineWord> num_bytes)
       : Base(dst_base, value, num_bytes) {}
 
   std::tuple<> options() const { return {}; }
 
   V<WordPtr> dst_base() const { return input<WordPtr>(0); }
   V<Word32> value() const { return input<Word32>(1); }
-  V<WordPtr> num_bytes() const { return input<WordPtr>(2); }
+  V<MachineWord> num_bytes() const { return input<MachineWord>(2); }
 };
 
 // Materialize the arg buffer passed from the suspend instruction to the
@@ -5713,7 +5723,7 @@ struct NewArrayOp : FixedArityOperationT<1, NewArrayOp> {
 
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
-    return MaybeRepVector<MaybeRegisterRepresentation::WordPtr()>();
+    return MaybeRepVector<MaybeRegisterRepresentation::MachineWord()>();
   }
 
   OpIndex length() const { return Base::input(0); }
@@ -6008,15 +6018,14 @@ struct StringAtOp : FixedArityOperationT<2, StringAtOp> {
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<MaybeRegisterRepresentation::Tagged(),
-                          MaybeRegisterRepresentation::WordPtr()>();
+                          MaybeRegisterRepresentation::MachineWord()>();
   }
 
   V<String> string() const { return Base::input<String>(0); }
-  V<WordPtr> position() const { return Base::input<WordPtr>(1); }
+  V<MachineWord> position() const { return Base::input<MachineWord>(1); }
 
-  StringAtOp(V<String> string, V<WordPtr> position, Kind kind)
+  StringAtOp(V<String> string, V<MachineWord> position, Kind kind)
       : Base(string, position), kind(kind) {}
-
 
   auto options() const { return std::tuple{kind}; }
 };
@@ -6098,7 +6107,7 @@ struct TypedArrayLengthOp : FixedArityOperationT<1, TypedArrayLengthOp> {
           // We rely on the input being a JSTypedArray.
           .CanDependOnChecks();
   base::Vector<const RegisterRepresentation> outputs_rep() const {
-    return RepVector<RegisterRepresentation::WordPtr()>();
+    return RepVector<RegisterRepresentation::MachineWord()>();
   }
 
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
@@ -6163,15 +6172,14 @@ struct StringFromCodePointAtOp
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<MaybeRegisterRepresentation::Tagged(),
-                          MaybeRegisterRepresentation::WordPtr()>();
+                          MaybeRegisterRepresentation::MachineWord()>();
   }
 
   V<String> string() const { return Base::input<String>(0); }
-  V<WordPtr> index() const { return Base::input<WordPtr>(1); }
+  V<MachineWord> index() const { return Base::input<MachineWord>(1); }
 
-  StringFromCodePointAtOp(V<String> string, V<WordPtr> index)
+  StringFromCodePointAtOp(V<String> string, V<MachineWord> index)
       : Base(string, index) {}
-
 
   auto options() const { return std::tuple{}; }
 };
@@ -6437,7 +6445,7 @@ struct LoadTypedElementOp : FixedArityOperationT<4, LoadTypedElementOp> {
     return MaybeRepVector<MaybeRegisterRepresentation::Tagged(),
                           MaybeRegisterRepresentation::Tagged(),
                           MaybeRegisterRepresentation::WordPtr(),
-                          MaybeRegisterRepresentation::WordPtr()>();
+                          MaybeRegisterRepresentation::MachineWord()>();
   }
 
   OpIndex buffer() const { return Base::input(0); }
@@ -6469,7 +6477,7 @@ struct LoadDataViewElementOp : FixedArityOperationT<4, LoadDataViewElementOp> {
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<MaybeRegisterRepresentation::Tagged(),
                           MaybeRegisterRepresentation::WordPtr(),
-                          MaybeRegisterRepresentation::WordPtr(),
+                          MaybeRegisterRepresentation::MachineWord(),
                           MaybeRegisterRepresentation::Word32()>();
   }
 
@@ -6501,7 +6509,7 @@ struct LoadStackArgumentOp : FixedArityOperationT<2, LoadStackArgumentOp> {
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<MaybeRegisterRepresentation::WordPtr(),
-                          MaybeRegisterRepresentation::WordPtr()>();
+                          MaybeRegisterRepresentation::MachineWord()>();
   }
 
   OpIndex base() const { return Base::input(0); }
@@ -6530,7 +6538,8 @@ struct StoreTypedElementOp : FixedArityOperationT<5, StoreTypedElementOp> {
     return InitVectorOf(
         storage,
         {RegisterRepresentation::Tagged(), RegisterRepresentation::Tagged(),
-         RegisterRepresentation::WordPtr(), RegisterRepresentation::WordPtr(),
+         RegisterRepresentation::WordPtr(),
+         RegisterRepresentation::MachineWord(),
          RegisterRepresentationForArrayType(array_type)});
   }
 
@@ -6567,7 +6576,7 @@ struct StoreDataViewElementOp
     return InitVectorOf(
         storage,
         {RegisterRepresentation::Tagged(), RegisterRepresentation::WordPtr(),
-         RegisterRepresentation::WordPtr(),
+         RegisterRepresentation::MachineWord(),
          RegisterRepresentationForArrayType(element_type),
          RegisterRepresentation::Word32()});
   }
@@ -6612,16 +6621,16 @@ struct TransitionAndStoreArrayElementOp
 
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
-    return InitVectorOf(
-        storage, {RegisterRepresentation::Tagged(),
-                  RegisterRepresentation::WordPtr(), value_representation()});
+    return InitVectorOf(storage, {RegisterRepresentation::Tagged(),
+                                  RegisterRepresentation::MachineWord(),
+                                  value_representation()});
   }
 
   V<JSArray> array() const { return Base::input<JSArray>(0); }
-  V<WordPtr> index() const { return Base::input<WordPtr>(1); }
+  V<MachineWord> index() const { return Base::input<MachineWord>(1); }
   V<Any> value() const { return Base::input<Any>(2); }
 
-  TransitionAndStoreArrayElementOp(V<JSArray> array, V<WordPtr> index,
+  TransitionAndStoreArrayElementOp(V<JSArray> array, V<MachineWord> index,
                                    V<Any> value, Kind kind,
                                    MaybeIndirectHandle<Map> fast_map,
                                    MaybeIndirectHandle<Map> double_map)
@@ -6629,7 +6638,6 @@ struct TransitionAndStoreArrayElementOp
         kind(kind),
         fast_map(fast_map),
         double_map(double_map) {}
-
 
   RegisterRepresentation value_representation() const {
     switch (kind) {
@@ -7229,7 +7237,7 @@ struct FindOrderedHashEntryOp
       case Kind::kFindOrderedHashSetEntry:
         return RepVector<RegisterRepresentation::Tagged()>();
       case Kind::kFindOrderedHashMapEntryForInt32Key:
-        return RepVector<RegisterRepresentation::WordPtr()>();
+        return RepVector<RegisterRepresentation::MachineWord()>();
     }
   }
 
@@ -9000,7 +9008,7 @@ struct Simd128LaneMemoryOp : FixedArityOperationT<3, Simd128LaneMemoryOp> {
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<RegisterRepresentation::WordPtr(),
-                          RegisterRepresentation::WordPtr(),
+                          RegisterRepresentation::MachineWord(),
                           RegisterRepresentation::Simd128()>();
   }
 
@@ -9098,18 +9106,19 @@ struct Simd128LoadTransformOp
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<RegisterRepresentation::WordPtr(),
-                          RegisterRepresentation::WordPtr()>();
+                          RegisterRepresentation::MachineWord()>();
   }
 
-  Simd128LoadTransformOp(V<WordPtr> base, V<WordPtr> index, LoadKind load_kind,
-                         TransformKind transform_kind, int offset)
+  Simd128LoadTransformOp(V<WordPtr> base, V<MachineWord> index,
+                         LoadKind load_kind, TransformKind transform_kind,
+                         int offset)
       : Base(base, index),
         load_kind(load_kind),
         transform_kind(transform_kind),
         offset(offset) {}
 
   V<WordPtr> base() const { return input<WordPtr>(0); }
-  V<WordPtr> index() const { return input<WordPtr>(1); }
+  V<MachineWord> index() const { return input<MachineWord>(1); }
 
   void Validate(const Graph& graph) { DCHECK(!load_kind.tagged_base); }
 
@@ -9220,15 +9229,15 @@ struct Simd128LoadPairDeinterleaveOp
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<RegisterRepresentation::WordPtr(),
-                          RegisterRepresentation::WordPtr()>();
+                          RegisterRepresentation::MachineWord()>();
   }
 
-  Simd128LoadPairDeinterleaveOp(V<WordPtr> base, V<WordPtr> index,
+  Simd128LoadPairDeinterleaveOp(V<WordPtr> base, V<MachineWord> index,
                                 LoadKind load_kind, Kind kind)
       : Base(base, index), load_kind(load_kind), kind(kind) {}
 
   V<WordPtr> base() const { return Base::input<WordPtr>(0); }
-  V<WordPtr> index() const { return Base::input<WordPtr>(1); }
+  V<MachineWord> index() const { return Base::input<MachineWord>(1); }
 
   uint32_t lane_size() const {
     switch (kind) {
@@ -9355,18 +9364,19 @@ struct Simd256LoadTransformOp
   base::Vector<const MaybeRegisterRepresentation> inputs_rep(
       ZoneVector<MaybeRegisterRepresentation>& storage) const {
     return MaybeRepVector<RegisterRepresentation::WordPtr(),
-                          RegisterRepresentation::WordPtr()>();
+                          RegisterRepresentation::MachineWord()>();
   }
 
-  Simd256LoadTransformOp(V<WordPtr> base, V<WordPtr> index, LoadKind load_kind,
-                         TransformKind transform_kind, int offset)
+  Simd256LoadTransformOp(V<WordPtr> base, V<MachineWord> index,
+                         LoadKind load_kind, TransformKind transform_kind,
+                         int offset)
       : Base(base, index),
         load_kind(load_kind),
         transform_kind(transform_kind),
         offset(offset) {}
 
   V<WordPtr> base() const { return input<WordPtr>(0); }
-  V<WordPtr> index() const { return input<WordPtr>(1); }
+  V<MachineWord> index() const { return input<MachineWord>(1); }
 
   void Validate(const Graph& graph) { DCHECK(!load_kind.tagged_base); }
 
