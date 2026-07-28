@@ -14,7 +14,8 @@ Address EmbeddedData::InstructionStartOf(Builtin builtin) const {
   DCHECK(Builtins::IsBuiltinId(builtin));
   const struct LayoutDescription& desc = LayoutDescription(builtin);
   const uint8_t* raw_code = RawCode();
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   const uint8_t* result = reinterpret_cast<const uint8_t*>(
       V8_CHERI_SEALED(code_)
           ? V8_CHERI_TO_SENTRY(

@@ -2381,7 +2381,9 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
 #ifdef V8_CHERI_BENCHMARK_ABI
   Register BenchmarkAbiBranchScratch(const Register& capability_target) const;
 #endif
+#if V8_TARGET_CHERI && !defined(V8_CHERI_BENCHMARK_ABI)
   void PrepareC64JumpHelper(const Register& cd, const Register& tempC);
+#endif
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
 };

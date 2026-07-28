@@ -314,20 +314,28 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
   Gcseal(xd, cn);
   Tbz(xd, 0, &not_sentry);
   Add(xn, xn, operand);
+#ifndef V8_CHERI_BENCHMARK_ABI
   Orr(xn, xn, 0x1);  // C64 bit
+#endif
   adr(cd, 0);
   Scvalue(cd, cd, xn);
   B(&sentry_done);
 
   Bind(&not_sentry);
   Add(cn, cn, operand);
-  Orr(xd, cn.X(), 0x1); // C64 bit
+#ifdef V8_CHERI_BENCHMARK_ABI
+  Mov(cd, cn);
+#else
+  Orr(xd, cn.X(), 0x1);  // C64 bit
   Scvalue(cd, cn, xd);
+#endif
 
   Bind(&sentry_done);
 }
 
-void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& tempC) {
+#ifndef V8_CHERI_BENCHMARK_ABI
+void MacroAssembler::PrepareC64JumpHelper(const Register& cd,
+                                          const Register& tempC) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
   Label not_sentry, done, ok;
@@ -344,10 +352,16 @@ void MacroAssembler::PrepareC64JumpHelper(const Register& cd, const Register& te
   }
   bind(&ok);
 }
+#endif
 
 void MacroAssembler::PrepareC64Jump(const Register& cd) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
+#ifdef V8_CHERI_BENCHMARK_ABI
+  // Integer Benchmark ABI branches require aligned targets. The final branch
+  // helper still clears bit 0 defensively in case a target arrived marked.
+  return;
+#else
   UseScratchRegisterScope temps(this);
   if (temps.CanAcquire()) {
     Register scratch = temps.AcquireC();
@@ -361,6 +375,7 @@ void MacroAssembler::PrepareC64Jump(const Register& cd) {
     PrepareC64JumpHelper(cd, scratch);
     Pop(czr, scratch);
   }
+#endif
 }
 #else   // !V8_TARGET_CHERI
 void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
@@ -2701,8 +2716,10 @@ void MacroAssembler::JumpHelper(int64_t offset, RelocInfo::Mode rmode,
     UseScratchRegisterScope temps(this);
     Register temp = temps.AcquireC();
 #if V8_TARGET_CHERI
-    uintptr_t imm =
-        (reinterpret_cast<uintptr_t>(pc_) + offset * kInstrSize) | 0x1;
+    uintptr_t imm = reinterpret_cast<uintptr_t>(pc_) + offset * kInstrSize;
+#ifndef V8_CHERI_BENCHMARK_ABI
+    imm |= 0x1;
+#endif
 #else   // !V8_TARGET_CHERI
     uint64_t imm = reinterpret_cast<uint64_t>(pc_) + offset * kInstrSize;
 #endif  // V8_TARGET_CHERI
@@ -2754,11 +2771,11 @@ void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
     DCHECK(is_int32(index));
     JumpHelper(static_cast<int64_t>(index), rmode, cond);
   } else {
-#if V8_TARGET_CHERI
+#if V8_TARGET_CHERI && !defined(V8_CHERI_BENCHMARK_ABI)
     Jump(code.address() | 0x1, rmode, cond);
-#else   // !V8_TARGET_CHERI
+#else
     Jump(code.address(), rmode, cond);
-#endif  // V8_TARGET_CHERI
+#endif
   }
 }
 

@@ -46,7 +46,8 @@ Address FindNewPC(WasmFrame* frame, WasmCode* wasm_code, int byte_offset,
   // Find the size of the call instruction by computing the distance from the
   // source position entry to the return address.
   WasmCode* old_code = frame->wasm_code();
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   int pc_offset =
       static_cast<int>((frame->pc() & ~1) - old_code->instruction_start());
 #else
@@ -75,7 +76,8 @@ Address FindNewPC(WasmFrame* frame, WasmCode* wasm_code, int byte_offset,
     DCHECK_EQ(byte_offset, it.source_position().ScriptOffset());
     Address new_pc = wasm_code->instruction_start() + it.code_offset() +
                      call_instruction_size;
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
     new_pc |= 1; // C64 bit.
 #endif
     return new_pc;
@@ -89,7 +91,8 @@ Address FindNewPC(WasmFrame* frame, WasmCode* wasm_code, int byte_offset,
   } while (!it.done() && it.source_position().ScriptOffset() == byte_offset);
   Address new_pc =
       wasm_code->instruction_start() + code_offset + call_instruction_size;
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   new_pc |= 1;  // C64 bit.
 #endif
   return new_pc;
@@ -496,7 +499,8 @@ class DebugInfoImpl {
   struct FrameInspectionScope {
     FrameInspectionScope(DebugInfoImpl* debug_info, Address pc)
         : code(wasm::GetWasmCodeManager()->LookupCode(pc)),
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
           pc_offset(static_cast<int>((pc & ~1) - code->instruction_start())),
 #else
           pc_offset(static_cast<int>(pc - code->instruction_start())),

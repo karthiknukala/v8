@@ -1983,11 +1983,21 @@ Object Isolate::UnwindAndFindHandler() {
           V8_CHERI_ADDR_GET(reinterpret_cast<void*>(instruction_start))));
       instruction_start = reinterpret_cast<Address>(V8_CHERI_ADDR_SET(
           V8_CHERI_PCC, static_cast<ptraddr_t>(instruction_start)));
+#ifdef V8_CHERI_BENCHMARK_ABI
+      thread_local_top()->pending_handler_entrypoint_ =
+          V8_CHERI_TO_SENTRY(instruction_start + handler_offset);
+#else
       thread_local_top()->pending_handler_entrypoint_ =
           V8_CHERI_TO_SENTRY((instruction_start + handler_offset) | 1);
+#endif
     } else {
+#ifdef V8_CHERI_BENCHMARK_ABI
+      thread_local_top()->pending_handler_entrypoint_ =
+          instruction_start + handler_offset;
+#else
       thread_local_top()->pending_handler_entrypoint_ =
           (instruction_start + handler_offset) | 1;
+#endif
     }
 #else   // !(__CHERI_PURE_CAPABILITY__ && V8_TARGET_ARCH_ARM64)
     thread_local_top()->pending_handler_entrypoint_ =
@@ -2099,7 +2109,7 @@ Object Isolate::UnwindAndFindHandler() {
 
         // Jump directly to the optimized frames return, to immediately fall
         // into the deoptimizer.
-#ifdef __CHERI_PURE_CAPABILITY__
+#if defined(__CHERI_PURE_CAPABILITY__) && !defined(V8_CHERI_BENCHMARK_ABI)
         const int offset =
             static_cast<int>((frame->pc() & ~1) - code.instruction_start());
         DCHECK(IsAligned(offset, kInt32Size));
@@ -2152,7 +2162,8 @@ Object Isolate::UnwindAndFindHandler() {
         Code code = frame->LookupCode();
         HandlerTable table(code);
         Address instruction_start = code.instruction_start();
-#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64
+#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64 && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
         // Account for the C64 bit.
         int return_offset =
             static_cast<int>(frame->pc() - 1 - instruction_start);

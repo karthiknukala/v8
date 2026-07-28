@@ -1675,7 +1675,8 @@ int StubFrame::LookupExceptionHandlerInTable() {
   DCHECK_EQ(code.kind(), CodeKind::BUILTIN);
   HandlerTable table(code);
   int pc_offset = code.GetOffsetFromInstructionStart(isolate(), pc());
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   // FIXME(ds815): Hack for Morello's C64 bit.
   if (!IsAligned(pc_offset, kInt32Size)) ++pc_offset;
   DCHECK(IsAligned(pc_offset, kInt32Size));
@@ -2386,7 +2387,8 @@ int OptimizedFrame::LookupExceptionHandlerInTable(
   if (table.NumberOfReturnEntries() == 0) return -1;
 
   int pc_offset = code.GetOffsetFromInstructionStart(isolate(), pc());
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   // FIXME(ds815): Hack for Morello's C64 bit.
   if (!IsAligned(pc_offset, kInt32Size)) ++pc_offset;
   DCHECK(IsAligned(pc_offset, kInt32Size));
@@ -2679,7 +2681,8 @@ int WasmFrame::position() const {
 
 int WasmFrame::generated_code_offset() const {
   wasm::WasmCode* code = wasm_code();
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
   // The resulting capability could be invalid but it won't be
   // used as a pointer anyways.
@@ -2703,7 +2706,8 @@ void WasmFrame::Summarize(std::vector<FrameSummary>* functions) const {
   // since this code object is part of our stack.
   wasm::WasmCodeRefScope code_ref_scope;
   wasm::WasmCode* code = wasm_code();
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
   // The resulting capability could be invalid but it won't be
   // used as a pointer anyways.
@@ -2749,7 +2753,8 @@ bool WasmFrame::at_to_number_conversion() const {
           ? wasm::GetWasmCodeManager()->LookupCode(callee_pc())
           : nullptr;
   if (!code || code->kind() != wasm::WasmCode::kWasmToJsWrapper) return false;
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
   // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
   // The resulting capability could be invalid but it won't be
   // used as a pointer anyways.
@@ -2768,7 +2773,8 @@ int WasmFrame::LookupExceptionHandlerInTable() {
   wasm::WasmCode* code = wasm::GetWasmCodeManager()->LookupCode(pc());
   if (!code->IsAnonymous() && code->handler_table_size() > 0) {
     HandlerTable table(code);
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
+    !defined(V8_CHERI_BENCHMARK_ABI)
     // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
     // The resulting capability could be invalid but it won't be
     // used as a pointer anyways.
