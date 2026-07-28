@@ -24,6 +24,16 @@ void JSDispatchEntry::MakeJSDispatchEntry(Address object, Address entrypoint,
                                           uint16_t parameter_count,
                                           bool mark_as_alive) {
   DCHECK_EQ(object & kHeapObjectTag, 0);
+#if V8_TARGET_CHERI
+  // On CHERI, store the raw object capability in encoded_word_ without any
+  // bitwise encoding (which would strip the CHERI tag). Store the parameter
+  // count and marking flag in separate fields.
+  // XXX(cheri): Any race conditions here that I missed?
+  entrypoint_.store(entrypoint, std::memory_order_relaxed);
+  parameter_count_.store(parameter_count, std::memory_order_relaxed);
+  marking_.store(mark_as_alive, std::memory_order_relaxed);
+  encoded_word_.store(object, std::memory_order_release);
+#else
   DCHECK_EQ((((object - kObjectPointerOffset) << kObjectPointerShift) >>
              kObjectPointerShift) +
                 kObjectPointerOffset,
@@ -42,6 +52,7 @@ void JSDispatchEntry::MakeJSDispatchEntry(Address object, Address entrypoint,
 #endif
   entrypoint_.store(entrypoint, std::memory_order_relaxed);
   encoded_word_.store(payload, std::memory_order_release);
+#endif  // V8_TARGET_CHERI
   DCHECK(!IsFreelistEntry());
 }
 
@@ -52,12 +63,16 @@ Address JSDispatchEntry::GetEntrypoint() const {
 
 Address JSDispatchEntry::GetCodePointer() const {
   CHECK(!IsFreelistEntry());
+#if V8_TARGET_CHERI
+  return encoded_word_.load(std::memory_order_acquire) + kHeapObjectTag;
+#else
   // The pointer tag bit (LSB) of the object pointer is used as marking bit,
   // and so may be 0 or 1 here. As the return value is a tagged pointer, the
   // bit must be 1 when returned, so we need to set it here.
   Address payload = encoded_word_.load(std::memory_order_acquire);
   return ((payload >> kObjectPointerShift) + kObjectPointerOffset) |
          kHeapObjectTag;
+#endif  // V8_TARGET_CHERI
 }
 
 Tagged<Code> JSDispatchEntry::GetCode() const {
@@ -70,7 +85,7 @@ uint16_t JSDispatchEntry::GetParameterCount() const {
   // an integer (the parameter count), so we probably want to make sure that
   // we're not getting that from a freed entry.
   CHECK(!IsFreelistEntry());
-#ifdef V8_TARGET_ARCH_32_BIT
+#if V8_TARGET_CHERI || defined(V8_TARGET_ARCH_32_BIT)
   return parameter_count_.load(std::memory_order_relaxed);
 #else
   static_assert(kParameterCountMask != 0);
@@ -185,6 +200,12 @@ std::optional<JSDispatchHandle> JSDispatchTable::TryAllocateAndInitializeEntry(
 
 void JSDispatchEntry::SetCodeAndEntrypointPointer(Address new_object,
                                                   Address new_entrypoint) {
+#if V8_TARGET_CHERI
+  // On CHERI, just store the raw capability and the new entrypoint.
+  // The parameter_count_ and marking_ fields are not modified here.
+  entrypoint_.store(new_entrypoint, std::memory_order_relaxed);
+  encoded_word_.store(new_object, std::memory_order_release);
+#else
   Address old_payload = encoded_word_.load(std::memory_order_relaxed);
   Address marking_bit = old_payload & kMarkingBit;
   Address parameter_count = old_payload & kParameterCountMask;
@@ -196,6 +217,7 @@ void JSDispatchEntry::SetCodeAndEntrypointPointer(Address new_object,
   Address new_payload = object | marking_bit | parameter_count;
   entrypoint_.store(new_entrypoint, std::memory_order_relaxed);
   encoded_word_.store(new_payload, std::memory_order_release);
+#endif  // V8_TARGET_CHERI
   DCHECK(!IsFreelistEntry());
 }
 
@@ -219,7 +241,7 @@ void JSDispatchEntry::MakeFreelistEntry(uint32_t next_entry_index) {
 bool JSDispatchEntry::IsFreelistEntry() const {
 #ifdef V8_TARGET_ARCH_64_BIT
   auto entrypoint = entrypoint_.load(std::memory_order_relaxed);
-  return (entrypoint & kFreeEntryTag) == kFreeEntryTag;
+  return (static_cast<ptraddr_t>(entrypoint) & kFreeEntryTag) == kFreeEntryTag;
 #else
   return next_free_entry_.load(std::memory_order_relaxed) != 0;
 #endif
@@ -228,13 +250,18 @@ bool JSDispatchEntry::IsFreelistEntry() const {
 uint32_t JSDispatchEntry::GetNextFreelistEntryIndex() const {
   DCHECK(IsFreelistEntry());
 #ifdef V8_TARGET_ARCH_64_BIT
-  return static_cast<uint32_t>(entrypoint_.load(std::memory_order_relaxed));
+  auto entrypoint = entrypoint_.load(std::memory_order_relaxed);
+  return static_cast<uint32_t>(static_cast<uint64_t>(entrypoint));
 #else
   return next_free_entry_.load(std::memory_order_relaxed) - 1;
 #endif
 }
 
 void JSDispatchEntry::Mark() {
+#if V8_TARGET_CHERI
+  // XXX(cheri): Double-check this.
+  marking_.store(true, std::memory_order_relaxed);
+#else
   Address old_value = encoded_word_.load(std::memory_order_relaxed);
   Address new_value = old_value | kMarkingBit;
   // We don't need this cas to succeed. If marking races with
@@ -243,17 +270,27 @@ void JSDispatchEntry::Mark() {
   static_assert(JSDispatchTable::kWriteBarrierSetsEntryMarkBit);
   encoded_word_.compare_exchange_strong(old_value, new_value,
                                         std::memory_order_relaxed);
+#endif  // V8_TARGET_CHERI
 }
 
 void JSDispatchEntry::Unmark() {
+#if V8_TARGET_CHERI
+  // XXX(cheri): Double-check this.
+  marking_.store(false, std::memory_order_relaxed);
+#else
   Address value = encoded_word_.load(std::memory_order_relaxed);
   value &= ~kMarkingBit;
   encoded_word_.store(value, std::memory_order_relaxed);
+#endif  // V8_TARGET_CHERI
 }
 
 bool JSDispatchEntry::IsMarked() const {
+#if V8_TARGET_CHERI
+  return marking_.load(std::memory_order_relaxed);
+#else
   Address value = encoded_word_.load(std::memory_order_relaxed);
   return value & kMarkingBit;
+#endif  // V8_TARGET_CHERI
 }
 
 Address JSDispatchTable::GetEntrypoint(JSDispatchHandle handle) {

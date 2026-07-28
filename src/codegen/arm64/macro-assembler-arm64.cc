@@ -4638,8 +4638,13 @@ void MacroAssembler::LoadParameterCountFromJSDispatchTable(
   Ldr(scratch, ExternalReferenceAsOperand(IsolateFieldId::kJSDispatchTable));
   Mov(index.X(), Operand(dispatch_handle.X(), LSR, kJSDispatchHandleShift));
   Add(scratch, scratch, Operand(index, LSL, kJSDispatchTableEntrySizeLog2));
+#if V8_TARGET_CHERI
+  Ldrh(destination,
+       MemOperand(scratch, JSDispatchEntry::kParameterCountOffset));
+#else
   static_assert(JSDispatchEntry::kParameterCountMask == 0xffff);
   Ldrh(destination, MemOperand(scratch, JSDispatchEntry::kCodeObjectOffset));
+#endif
 }
 
 void MacroAssembler::LoadEntrypointAndParameterCountFromJSDispatchTable(
@@ -4654,9 +4659,14 @@ void MacroAssembler::LoadEntrypointAndParameterCountFromJSDispatchTable(
   Mov(index.X(), Operand(dispatch_handle.X(), LSR, kJSDispatchHandleShift));
   Add(scratch, scratch, Operand(index, LSL, kJSDispatchTableEntrySizeLog2));
   Ldr(entrypoint, MemOperand(scratch, JSDispatchEntry::kEntrypointOffset));
+#if V8_TARGET_CHERI
+  Ldrh(parameter_count,
+       MemOperand(scratch, JSDispatchEntry::kParameterCountOffset));
+#else
   static_assert(JSDispatchEntry::kParameterCountMask == 0xffff);
   Ldrh(parameter_count,
        MemOperand(scratch, JSDispatchEntry::kCodeObjectOffset));
+#endif
 }
 
 void MacroAssembler::LoadProtectedPointerField(Register destination,

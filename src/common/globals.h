@@ -593,8 +593,8 @@ using JSDispatchHandle = base::StrongAlias<JSDispatchHandleAliasTag, uint32_t>;
 constexpr JSDispatchHandle kNullJSDispatchHandle(0);
 
 #if V8_TARGET_CHERI
-constexpr int kJSDispatchTableEntrySize = 32;
-constexpr int kJSDispatchTableEntrySizeLog2 = 5;
+constexpr int kJSDispatchTableEntrySize = 64;
+constexpr int kJSDispatchTableEntrySizeLog2 = 6;
 #else
 constexpr int kJSDispatchTableEntrySize = 16;
 constexpr int kJSDispatchTableEntrySizeLog2 = 4;
@@ -612,7 +612,7 @@ constexpr size_t kMaxJSDispatchEntries =
 #ifdef V8_TARGET_ARCH_64_BIT
 
 #if V8_TARGET_CHERI
-constexpr uint32_t kJSDispatchHandleShift = V8_LOWER_LIMITS_MODE_BOOL ? 13 : 9;
+constexpr uint32_t kJSDispatchHandleShift = V8_LOWER_LIMITS_MODE_BOOL ? 14 : 10;
 #else
 constexpr uint32_t kJSDispatchHandleShift = V8_LOWER_LIMITS_MODE_BOOL ? 12 : 8;
 #endif

@@ -90,7 +90,11 @@ struct JSDispatchEntry {
   // Freelist entries contain the index of the next free entry in their lower 32
   // bits and are tagged with this tag.
   static constexpr Address kFreeEntryTag = 0xffff000000000000ull;
-#ifdef V8_TARGET_BIG_ENDIAN
+#if V8_TARGET_CHERI
+  // On CHERI, parameter_count_ is a separate field after entrypoint_ and
+  // encoded_word_.
+  static constexpr int kParameterCountOffset = 2 * kSystemPointerSize;
+#elif defined(V8_TARGET_BIG_ENDIAN)
   // 2-byte parameter count is on the least significant side of encoded_word_.
   static constexpr int kBigEndianParamCountOffset =
       sizeof(Address) - sizeof(uint16_t);
@@ -98,9 +102,18 @@ struct JSDispatchEntry {
       kCodeObjectOffset + kBigEndianParamCountOffset;
 #else
   static constexpr uintptr_t kParameterCountOffset = kCodeObjectOffset;
-#endif  // V8_TARGET_BIG_ENDIAN
+#endif  // V8_TARGET_CHERI / V8_TARGET_BIG_ENDIAN
+#if V8_TARGET_CHERI
+  // On CHERI, encoded_word_ stores a raw capability. Bitwise operations
+  // (shift, or, and) on capabilities strip the CHERI tag, so we cannot pack
+  // the object pointer and parameter count into a single word. Instead,
+  // parameter_count_ and marking_ are stored in separate fields.
+  static constexpr uint32_t kObjectPointerShift = 0;
+  static constexpr uint32_t kParameterCountMask = 0x0;
+#else
   static constexpr uint32_t kObjectPointerShift = 16;
   static constexpr uint32_t kParameterCountMask = 0xffff;
+#endif  // V8_TARGET_CHERI
 #elif defined(V8_TARGET_ARCH_32_BIT)
   static constexpr uintptr_t kParameterCountOffset =
       kCodeObjectOffset + kSystemPointerSize;
@@ -143,6 +156,17 @@ struct JSDispatchEntry {
 
   static constexpr Address kMarkingBit = 1 << kObjectPointerShift;
   std::atomic<Address> encoded_word_;
+
+#if V8_TARGET_CHERI
+  // On CHERI, we cannot pack the object pointer and parameter count into
+  // encoded_word_ using bitwise ops (which would strip the CHERI tag).
+  // Instead, store the raw capability in encoded_word_ and use separate
+  // fields for the parameter count and marking bit.
+  std::atomic<uint16_t> parameter_count_;
+  std::atomic<bool> marking_;
+  // Padding to reach kJSDispatchTableEntrySize (64 bytes).
+  uint8_t padding_[29];
+#endif  // V8_TARGET_CHERI
 
 #ifdef V8_TARGET_ARCH_32_BIT
   // TODO(olivf): Investigate if we could shrink the entry size on 32bit
