@@ -11,6 +11,26 @@
 namespace v8 {
 namespace internal {
 
+namespace {
+
+bool IsExpectedVisitorInstruction(Instruction* instr, Instr fmask,
+                                  Instr fixed) {
+  if (instr->Mask(fmask) == fixed) return true;
+#if V8_TARGET_CHERI
+  // A CHERI build decodes both Morello capability-register branches and the
+  // ordinary A64 X-register branches used by the Benchmark ABI through the
+  // same visitor.
+  return (fmask == UnconditionalBranchToRegisterFMask) &&
+         (fixed == UnconditionalBranchToRegisterFixed) &&
+         (instr->Mask(UnconditionalBranchToRegisterXFMask) ==
+          UnconditionalBranchToRegisterXFixed);
+#else
+  return false;
+#endif
+}
+
+}  // namespace
+
 void DispatchingDecoderVisitor::AppendVisitor(DecoderVisitor* new_visitor) {
   visitors_.remove(new_visitor);
   visitors_.push_back(new_visitor);
@@ -60,8 +80,10 @@ void DispatchingDecoderVisitor::RemoveVisitor(DecoderVisitor* visitor) {
 
 #define DEFINE_VISITOR_CALLERS(A)                                \
   void DispatchingDecoderVisitor::Visit##A(Instruction* instr) { \
-    if (!(instr->Mask(A##FMask) == A##Fixed)) {                  \
-      DCHECK(instr->Mask(A##FMask) == A##Fixed);                 \
+    if (!IsExpectedVisitorInstruction(instr, A##FMask,           \
+                                      A##Fixed)) {                \
+      DCHECK(IsExpectedVisitorInstruction(instr, A##FMask,       \
+                                          A##Fixed));             \
     }                                                            \
     std::list<DecoderVisitor*>::iterator it;                     \
     for (it = visitors_.begin(); it != visitors_.end(); it++) {  \

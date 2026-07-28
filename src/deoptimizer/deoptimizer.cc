@@ -330,8 +330,7 @@ class ActivationsFinder : public ThreadVisitor {
           // TODO(v8:10026): avoid replacing a signed pointer.
           Address* pc_addr = it.frame()->pc_address();
           Address new_pc = code.instruction_start() + trampoline_pc;
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(V8_TARGET_ARCH_ARM64) && \
-    !defined(V8_CHERI_BENCHMARK_ABI)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(V8_TARGET_ARCH_ARM64)
           new_pc |= 1;
 #endif
           PointerAuthentication::ReplacePC(pc_addr, new_pc, kSystemPointerSize);
@@ -559,8 +558,7 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction function,
   // the first deopt with resume entry.
   if (from_ <= lazy_deopt_start) {
     int offset = static_cast<int>(from_ - kEagerDeoptExitSize - deopt_start);
-#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64 && \
-    !defined(V8_CHERI_BENCHMARK_ABI)
+#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64
     // Account for the C64 bit.
     offset -= 1;
 #endif
@@ -569,8 +567,7 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction function,
   } else {
     int offset =
         static_cast<int>(from_ - kLazyDeoptExitSize - lazy_deopt_start);
-#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64 && \
-    !defined(V8_CHERI_BENCHMARK_ABI)
+#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64
     // Account for the C64 bit.
     offset -= 1;
 #endif
@@ -2101,8 +2098,7 @@ unsigned Deoptimizer::ComputeIncomingArgumentSize(SharedFunctionInfo shared) {
 }
 
 Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code code, Address pc) {
-#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64 && \
-    !defined(V8_CHERI_BENCHMARK_ABI)
+#if defined(__CHERI_PURE_CAPABILITY__) && V8_TARGET_ARCH_ARM64
   DCHECK_NE(pc & 1, 0);
   pc -= 1;
 #endif

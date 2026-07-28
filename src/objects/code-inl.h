@@ -174,8 +174,7 @@ Address Code::InstructionEnd(Isolate* isolate, Address pc) const {
 }
 
 int Code::GetOffsetFromInstructionStart(Isolate* isolate, Address pc) const {
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
-    !defined(V8_CHERI_BENCHMARK_ABI)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
   // NOTE(zyj20): Take into account that the LSB of sealed PCC is set.
   // The resulting capability could be invalid but it won't be
   // used as a pointer anyways.
@@ -277,8 +276,7 @@ int Code::GetBytecodeOffsetForBaselinePC(Address baseline_pc,
   baseline::BytecodeOffsetIterator offset_iterator(
       ByteArray::cast(bytecode_offset_table()), bytecodes);
   Address start = instruction_start();
-#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__) && \
-    !defined(V8_CHERI_BENCHMARK_ABI)
+#if defined(__CHERI_PURE_CAPABILITY__) && defined(__aarch64__)
   baseline_pc &= ~1;
   start &= ~1;
 #endif

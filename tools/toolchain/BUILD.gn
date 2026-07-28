@@ -48,25 +48,34 @@ gcc_toolchain("mips64el-bundled") {
   }
 }
 
-gcc_toolchain("morello-buildroot") {
-  toolprefix = "$clang_base_path/bin"
-  cc = "${toolprefix}/clang"
-  cxx = "${toolprefix}/clang++"
+template("morello_buildroot_toolchain") {
+  gcc_toolchain(target_name) {
+    toolprefix = "$clang_base_path/bin"
+    cc = "${toolprefix}/clang"
+    cxx = "${toolprefix}/clang++"
 
-  readelf = "${toolprefix}/llvm-readelf"
-  nm = "${toolprefix}/llvm-nm"
-  ar = "${toolprefix}/llvm-ar"
-  ld = cxx
+    readelf = "${toolprefix}/llvm-readelf"
+    nm = "${toolprefix}/llvm-nm"
+    ar = "${toolprefix}/llvm-ar"
+    ld = cxx
 
-  extra_cxxflags = "-mabi=purecap -march=morello -Xclang -morello-vararg=new -Xclang -morello-bounded-memargs -cheri-codeptr-relocs"
-  extra_cflags = "-mabi=purecap -march=morello -Xclang -morello-vararg=new -Xclang -morello-bounded-memargs -cheri-codeptr-relocs"
-  extra_ldflags = "-mabi=purecap -cheri-codeptr-relocs"
-  extra_asmflags = "-mabi=purecap -march=morello"
+    extra_cxxflags = "-mabi=${invoker.abi} -march=morello -Xclang -morello-vararg=new -Xclang -morello-bounded-memargs -cheri-codeptr-relocs"
+    extra_cflags = "-mabi=${invoker.abi} -march=morello -Xclang -morello-vararg=new -Xclang -morello-bounded-memargs -cheri-codeptr-relocs"
+    extra_ldflags = "-mabi=${invoker.abi} -cheri-codeptr-relocs"
+    extra_asmflags = "-mabi=${invoker.abi} -march=morello"
 
-  toolchain_args = {
-    current_cpu = "arm64"
-    current_os = "freebsd"
-    is_clang = true
+    toolchain_args = {
+      current_cpu = "arm64"
+      current_os = "freebsd"
+      is_clang = true
+    }
   }
 }
 
+morello_buildroot_toolchain("morello-buildroot") {
+  abi = "purecap"
+}
+
+morello_buildroot_toolchain("morello-buildroot-benchmark") {
+  abi = "purecap-benchmark"
+}

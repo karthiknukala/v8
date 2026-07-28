@@ -85,6 +85,15 @@ namespace internal {
 #endif
 
 // Determine whether CHERI Benchmark ABI control-flow emission is enabled.
+#if V8_TARGET_CHERI && defined(V8_CHERI_BENCHMARK_ABI) && \
+    !defined(__ARM_MORELLO_PURECAP_BENCHMARK_ABI)
+#error "V8 Benchmark ABI code requires the compiler Benchmark ABI"
+#endif
+#if V8_TARGET_CHERI && !defined(V8_CHERI_BENCHMARK_ABI) && \
+    defined(__ARM_MORELLO_PURECAP_BENCHMARK_ABI)
+#error "compiler Benchmark ABI requires V8 Benchmark ABI code generation"
+#endif
+
 #ifdef V8_CHERI_BENCHMARK_ABI
 #define V8_CHERI_BENCHMARK_ABI_BOOL true
 #else
@@ -590,6 +599,36 @@ constexpr int kExternalPointerSlotSize = sizeof(ExternalPointer_t);
 static_assert(kExternalPointerSlotSize == kTaggedSize);
 #else
 static_assert(kExternalPointerSlotSize == kSystemPointerSize);
+#endif
+
+#ifdef V8_CHERI_BENCHMARK_ABI
+// The Benchmark ABI changes only the instruction class used for the final
+// indirect control-flow transfer. All stored pointers and calling-convention
+// data must retain the normal purecap representation.
+static_assert(V8_TARGET_CHERI_BOOL,
+              "The CHERI Benchmark ABI requires a CHERI target");
+static_assert(V8_CHERI_PURECAP_BOOL,
+              "The CHERI Benchmark ABI requires a purecap target");
+static_assert(!COMPRESS_POINTERS_BOOL,
+              "The CHERI Benchmark ABI requires uncompressed pointers");
+static_assert(kSystemPointerSize == 16,
+              "Benchmark ABI storage must remain capability-width");
+static_assert(kSystemPointerAddrSize == kInt64Size,
+              "Benchmark ABI branch addresses must remain 64-bit");
+static_assert(sizeof(Address) == kSystemPointerSize,
+              "V8 addresses must remain capability-width");
+static_assert(sizeof(intptr_t) == kSystemPointerSize,
+              "Pointer-sized integers must retain capabilities");
+static_assert(sizeof(void (*)()) == kSystemPointerSize,
+              "Function pointers must remain capability-width");
+static_assert(kTaggedSize == kSystemPointerSize,
+              "Tagged slots must remain capability-width");
+static_assert(kPCOnStackSize == kSystemPointerSize,
+              "Stored return addresses must remain capability-width");
+static_assert(kFPOnStackSize == kSystemPointerSize,
+              "Stored frame pointers must remain capability-width");
+static_assert(kExternalPointerSlotSize == kSystemPointerSize,
+              "External pointer slots must remain capability-width");
 #endif
 
 constexpr int kEmbedderDataSlotSize = kSystemPointerSize;

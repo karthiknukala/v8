@@ -1696,8 +1696,14 @@ Simulator::BType Simulator::GetBTypeFromInstruction(
     const Instruction* instr) const {
   switch (instr->Mask(UnconditionalBranchToRegisterMask)) {
     case BLR:
+#if V8_TARGET_CHERI
+    case BLR_x:
+#endif
       return BranchAndLink;
     case BR:
+#if V8_TARGET_CHERI
+    case BR_x:
+#endif
       if (!PcIsInGuardedPage() || (instr->Rn() == 16) || (instr->Rn() == 17)) {
         return BranchFromUnguardedOrToIP;
       }
@@ -1709,7 +1715,11 @@ Simulator::BType Simulator::GetBTypeFromInstruction(
 void Simulator::VisitUnconditionalBranchToRegister(Instruction* instr) {
   Instruction* target = reg<Instruction*>(instr->Rn());
   switch (instr->Mask(UnconditionalBranchToRegisterMask)) {
-    case BLR: {
+    case BLR:
+#if V8_TARGET_CHERI
+    case BLR_x:
+#endif
+    {
       set_lr(instr->following());
       if (instr->Rn() == 31) {
         // BLR XZR is used as a guard for the constant pool. We should never hit
@@ -1719,7 +1729,13 @@ void Simulator::VisitUnconditionalBranchToRegister(Instruction* instr) {
       V8_FALLTHROUGH;
     }
     case BR:
+#if V8_TARGET_CHERI
+    case BR_x:
+#endif
     case RET:
+#if V8_TARGET_CHERI
+    case RET_x:
+#endif
       set_pc(target);
       break;
     default:

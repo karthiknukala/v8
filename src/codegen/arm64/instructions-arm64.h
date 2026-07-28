@@ -403,7 +403,12 @@ class Instruction {
   bool IsBranchAndLink() const { return Mask(UnconditionalBranchMask) == BL; }
 
   bool IsBranchAndLinkToRegister() const {
-    return Mask(UnconditionalBranchToRegisterMask) == BLR;
+    const Instr opcode = Mask(UnconditionalBranchToRegisterMask);
+    return (opcode == BLR)
+#if V8_TARGET_CHERI
+           || (opcode == BLR_x)
+#endif
+        ;
   }
 
   bool IsMovz() const {

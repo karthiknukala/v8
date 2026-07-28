@@ -289,6 +289,30 @@ class IsolateData final {
   // The entries in this array are tagged pointers to Code objects.
   Address builtin_table_[Builtins::kBuiltinCount] = {};
 
+#ifdef V8_CHERI_BENCHMARK_ABI
+  static_assert(sizeof(RootsTable) ==
+                    RootsTable::kEntriesCount * kSystemPointerSize,
+                "Root table entries must remain capability-width");
+  static_assert(sizeof(builtin_tier0_entry_table_) ==
+                    Builtins::kBuiltinTier0Count * kSystemPointerSize,
+                "Tier 0 builtin entries must remain capability-width");
+  static_assert(sizeof(builtin_tier0_table_) ==
+                    Builtins::kBuiltinTier0Count * kSystemPointerSize,
+                "Tier 0 builtin Code slots must remain capability-width");
+  static_assert(sizeof(builtin_entry_table_) ==
+                    Builtins::kBuiltinCount * kSystemPointerSize,
+                "Builtin entries must remain capability-width");
+  static_assert(sizeof(builtin_table_) ==
+                    Builtins::kBuiltinCount * kSystemPointerSize,
+                "Builtin Code slots must remain capability-width");
+  static_assert(sizeof(fast_c_call_caller_fp_) == kSystemPointerSize,
+                "Saved C-call frame pointers must remain capability-width");
+  static_assert(sizeof(fast_c_call_caller_pc_) == kSystemPointerSize,
+                "Saved C-call PCs must remain capability-width");
+  static_assert(sizeof(fast_api_call_target_) == kSystemPointerSize,
+                "Fast API targets must remain capability-width");
+#endif
+
   // Ensure the size is 8-byte aligned in order to make alignment of the field
   // following the IsolateData field predictable. This solves the issue with
   // C++ compilers for 32-bit platforms which are not consistent at aligning

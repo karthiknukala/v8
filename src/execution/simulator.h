@@ -158,16 +158,31 @@ class GeneratedCode {
       fn_ptr_ =
           reinterpret_cast<Signature*>(reinterpret_cast<Address>(fn_ptr_) | 1);
     }
-#endif
     DCHECK(V8_CHERI_TAG_GET(fn_ptr_));
     DCHECK(V8_CHERI_IS_EXECUTABLE(fn_ptr_));
-#ifdef V8_CHERI_BENCHMARK_ABI
-    DCHECK_EQ(reinterpret_cast<Address>(fn_ptr_) & 1, 0);
-#else
     DCHECK_EQ(reinterpret_cast<Address>(fn_ptr_) & 1, 1);
-#endif
-#endif
     return fn_ptr_(args...);
+#else
+    // Some V8 code entries retain the normal purecap C64 marker because their
+    // generated code uses it to recover its InstructionStream. Other entry
+    // kinds, such as generated RegExp code, remain aligned. The Benchmark ABI
+    // changes only the final native indirect transfer: call through an aligned
+    // local capability while leaving fn_ptr_ unchanged.
+    DCHECK(V8_CHERI_TAG_GET(fn_ptr_));
+    DCHECK(V8_CHERI_IS_EXECUTABLE(fn_ptr_));
+
+    // Aligning a sealed entry capability necessarily clears its tag. That is
+    // safe only for this transient final consumer: the compiler lowers the
+    // Benchmark ABI call to an integer branch through the capability cursor.
+    // No untagged value is written back to V8 code-pointer storage.
+    Signature* call_target = reinterpret_cast<Signature*>(V8_CHERI_ADDR_SET(
+        fn_ptr_, V8_CHERI_ADDR_GET(fn_ptr_) & ~ptraddr_t{1}));
+    DCHECK_EQ(V8_CHERI_ADDR_GET(call_target) & 1, 0);
+    return call_target(args...);
+#endif  // V8_CHERI_BENCHMARK_ABI
+#else
+    return fn_ptr_(args...);
+#endif  // __CHERI_PURE_CAPABILITY__
 #endif  // ABI_USES_FUNCTION_DESCRIPTORS
   }
 #endif  // USE_SIMULATOR

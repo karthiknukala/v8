@@ -5209,3 +5209,35 @@ TEST_F(DisasmArm64Test, neon_shift_immediate) {
 }  // namespace internal
 }  // namespace v8
 #endif  // !__CHERI_PURE_CAPABILITY__
+
+#ifdef __CHERI_PURE_CAPABILITY__
+namespace v8 {
+namespace internal {
+
+TEST(DisasmArm64CheriTest, BranchToRegister) {
+  Decoder<DispatchingDecoderVisitor> decoder;
+  DisassemblingDecoder disassembler;
+  decoder.AppendVisitor(&disassembler);
+
+  auto expect_disassembly = [&](Instr opcode, int rn, const char* expected) {
+    Instr encoding = opcode | (static_cast<Instr>(rn) << 5);
+    decoder.Decode(reinterpret_cast<Instruction*>(&encoding));
+    EXPECT_STREQ(expected, disassembler.GetOutput());
+  };
+
+  // Normal purecap and Benchmark ABI builds can encounter capability-register
+  // encodings in V8-generated code and ordinary A64 X-register encodings at
+  // Benchmark ABI transfer sites. The decoder must distinguish both forms.
+  expect_disassembly(BR, 0, "br c0");
+  expect_disassembly(BLR, 1, "blr c1");
+  expect_disassembly(RET, 2, "ret c2");
+  expect_disassembly(RET, kLinkRegCode, "ret");
+  expect_disassembly(BR_x, 3, "br x3");
+  expect_disassembly(BLR_x, 4, "blr x4");
+  expect_disassembly(RET_x, 5, "ret x5");
+  expect_disassembly(RET_x, kLinkRegCode, "ret");
+}
+
+}  // namespace internal
+}  // namespace v8
+#endif  // __CHERI_PURE_CAPABILITY__

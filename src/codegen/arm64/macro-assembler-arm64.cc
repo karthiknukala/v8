@@ -314,31 +314,24 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
   Gcseal(xd, cn);
   Tbz(xd, 0, &not_sentry);
   Add(xn, xn, operand);
-#ifndef V8_CHERI_BENCHMARK_ABI
   Orr(xn, xn, 0x1);  // C64 bit
-#endif
   adr(cd, 0);
   Scvalue(cd, cd, xn);
   B(&sentry_done);
 
   Bind(&not_sentry);
   Add(cn, cn, operand);
-#ifdef V8_CHERI_BENCHMARK_ABI
-  Mov(cd, cn);
-#else
   Orr(xd, cn.X(), 0x1);  // C64 bit
   Scvalue(cd, cn, xd);
-#endif
 
   Bind(&sentry_done);
 }
 
-#ifndef V8_CHERI_BENCHMARK_ABI
 void MacroAssembler::PrepareC64JumpHelper(const Register& cd,
                                           const Register& tempC) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
-  Label not_sentry, done, ok;
+  Label done, ok;
   // We need to OR the C64 bit.
   Gcseal(tempC.X(), cd);
   Tbnz(tempC.X(), 0, &done);
@@ -346,22 +339,29 @@ void MacroAssembler::PrepareC64JumpHelper(const Register& cd,
   Scvalue(cd, cd, tempC.X());
   bind(&done);
   if (v8_flags.debug_code) {
+#ifdef V8_CHERI_BENCHMARK_ABI
+    // Linker-created Benchmark ABI function sentries legitimately have a
+    // clear low bit. Only unsealed V8/JIT code pointers use the internal C64
+    // marker; the final Benchmark ABI branch helper aligns both forms.
+    Gcseal(tempC.X(), cd);
+    Tbnz(tempC.X(), 0, &ok);
+#endif
     Tbnz(cd.X(), 0, &ok);
     // Can't call Abort here because it will call back into this helper.
     Trap();
   }
   bind(&ok);
 }
-#endif
 
 void MacroAssembler::PrepareC64Jump(const Register& cd) {
   DCHECK(allow_macro_instructions());
   DCHECK(cd.IsC());
-#ifdef V8_CHERI_BENCHMARK_ABI
-  // Integer Benchmark ABI branches require aligned targets. The final branch
-  // helper still clears bit 0 defensively in case a target arrived marked.
-  return;
-#else
+  // Keep the normal purecap marker on unsealed V8 code pointers in both ABI
+  // modes. V8 uses it for more than capability branches; for example,
+  // code-start registers recover their InstructionStream with offsets that
+  // account for bit 0. Benchmark linker-created sentries may remain clear.
+  // The final Benchmark branch helper aligns either form in its integer
+  // scratch operand.
   UseScratchRegisterScope temps(this);
   if (temps.CanAcquire()) {
     Register scratch = temps.AcquireC();
@@ -375,7 +375,6 @@ void MacroAssembler::PrepareC64Jump(const Register& cd) {
     PrepareC64JumpHelper(cd, scratch);
     Pop(czr, scratch);
   }
-#endif
 }
 #else   // !V8_TARGET_CHERI
 void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
@@ -409,12 +408,28 @@ Register MacroAssembler::BenchmarkAbiBranchScratch(
   return AreAliased(capability_target, ip0) ? ip1.X() : ip0.X();
 }
 
+void MacroAssembler::DebugAssertBenchmarkAbiBranchTargetAligned(
+    const Register& integer_target) {
+  DCHECK(integer_target.IsX());
+  if (!v8_flags.debug_code) return;
+
+  // Do not use Check here: its abort path emits indirect control flow and
+  // would recurse back into the Benchmark ABI branch helper while generating
+  // code. A local trap still reports the first bad target at its consumer.
+  Label aligned;
+  Tst(integer_target, kInstrSize - 1);
+  B(eq, &aligned);
+  Trap();
+  Bind(&aligned);
+}
+
 void MacroAssembler::BenchmarkAbiBr(const Register& capability_target,
                                     const Register& scratch) {
   DCHECK(allow_macro_instructions());
   CheckBenchmarkAbiBranchRegisters(capability_target, scratch);
   DebugAssertCapabilityIsTagged(capability_target);
   Bic(scratch, capability_target.X(), 1);
+  DebugAssertBenchmarkAbiBranchTargetAligned(scratch);
   br(scratch);
 }
 
@@ -424,6 +439,7 @@ void MacroAssembler::BenchmarkAbiBlr(const Register& capability_target,
   CheckBenchmarkAbiBranchRegisters(capability_target, scratch);
   DebugAssertCapabilityIsTagged(capability_target);
   Bic(scratch, capability_target.X(), 1);
+  DebugAssertBenchmarkAbiBranchTargetAligned(scratch);
   blr(scratch);
 }
 
@@ -433,6 +449,7 @@ void MacroAssembler::BenchmarkAbiRet(const Register& capability_target,
   CheckBenchmarkAbiBranchRegisters(capability_target, scratch);
   DebugAssertCapabilityIsTagged(capability_target);
   Bic(scratch, capability_target.X(), 1);
+  DebugAssertBenchmarkAbiBranchTargetAligned(scratch);
   ret(scratch);
 }
 #endif  // V8_CHERI_BENCHMARK_ABI
@@ -2695,12 +2712,8 @@ void MacroAssembler::Jump(Register target, Condition cond) {
   if (cond == nv) return;
   Label done;
   if (cond != al) B(NegateCondition(cond), &done);
-#ifdef V8_CHERI_BENCHMARK_ABI
-  BenchmarkAbiBr(target, BenchmarkAbiBranchScratch(target));
-#else
   PrepareC64Jump(target);
   Br(target);
-#endif
   Bind(&done);
 }
 
@@ -2717,9 +2730,7 @@ void MacroAssembler::JumpHelper(int64_t offset, RelocInfo::Mode rmode,
     Register temp = temps.AcquireC();
 #if V8_TARGET_CHERI
     uintptr_t imm = reinterpret_cast<uintptr_t>(pc_) + offset * kInstrSize;
-#ifndef V8_CHERI_BENCHMARK_ABI
     imm |= 0x1;
-#endif
 #else   // !V8_TARGET_CHERI
     uint64_t imm = reinterpret_cast<uint64_t>(pc_) + offset * kInstrSize;
 #endif  // V8_TARGET_CHERI
@@ -2771,7 +2782,7 @@ void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
     DCHECK(is_int32(index));
     JumpHelper(static_cast<int64_t>(index), rmode, cond);
   } else {
-#if V8_TARGET_CHERI && !defined(V8_CHERI_BENCHMARK_ABI)
+#if V8_TARGET_CHERI
     Jump(code.address() | 0x1, rmode, cond);
 #else
     Jump(code.address(), rmode, cond);
@@ -2800,9 +2811,7 @@ void MacroAssembler::Call(Register target) {
     Bind(&ok);
     Pop(padregc, temp);
   }
-#ifndef V8_CHERI_BENCHMARK_ABI
   PrepareC64Jump(target);
-#endif
 #endif  // V8_TARGET_CHERI
 #ifdef V8_CHERI_BENCHMARK_ABI
   BenchmarkAbiBlr(target, BenchmarkAbiBranchScratch(target));

@@ -797,6 +797,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
                        const Register& scratch);
   void BenchmarkAbiRet(const Register& capability_target,
                        const Register& scratch);
+  void DebugAssertBenchmarkAbiBranchTargetAligned(
+      const Register& integer_target);
 #endif
   inline void Cmp(const Register& rn, const Operand& operand);
   inline void CmpTagged(const Register& rn, const Operand& operand);
@@ -2381,7 +2383,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
 #ifdef V8_CHERI_BENCHMARK_ABI
   Register BenchmarkAbiBranchScratch(const Register& capability_target) const;
 #endif
-#if V8_TARGET_CHERI && !defined(V8_CHERI_BENCHMARK_ABI)
+#if V8_TARGET_CHERI
   void PrepareC64JumpHelper(const Register& cd, const Register& tempC);
 #endif
 

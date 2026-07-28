@@ -69,6 +69,12 @@ constexpr int kCRegSizeInBitsLog2 = kXRegSizeInBitsLog2;
 constexpr int kCRegSize = kXRegSize;
 constexpr int kCRegSizeLog2 = kXRegSizeLog2;
 #endif
+#ifdef V8_CHERI_BENCHMARK_ABI
+static_assert(kCRegSize == kSystemPointerSize,
+              "Stored targets and return addresses must use capabilities");
+static_assert(kXRegSize == kSystemPointerAddrSize,
+              "Integer branch operands must use address-width registers");
+#endif
 constexpr int kSRegSizeInBits = 32;
 constexpr int kSRegSizeInBitsLog2 = 5;
 constexpr int kSRegSize = kSRegSizeInBits >> 3;
@@ -803,6 +809,10 @@ constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFMask =
     0xFFFF9C1F;
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterMask =
     0xFFFFFC1F;
+constexpr UnconditionalBranchToRegisterOp
+    UnconditionalBranchToRegisterXFixed = 0xD6000000;
+constexpr UnconditionalBranchToRegisterOp
+    UnconditionalBranchToRegisterXFMask = 0xFE000000;
 // 4.4.14 BR (indirect)
 // Branch to capability Regsiter branches unconditionally to an address in a
 // Capability register, with a hint that this is not a subroutine return.

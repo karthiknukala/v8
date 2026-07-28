@@ -1,4 +1,5 @@
 import("//cheri/cheri-uncompressed-cross.gn")
 
 # Benchmark ABI build: see 2023 Cambridge Performance Analysis TR for details
+custom_toolchain = "//tools/toolchain:morello-buildroot-benchmark"
 v8_enable_cheri_benchmark_abi = true

@@ -577,17 +577,33 @@ void DisassemblingDecoder::VisitConditionalBranch(Instruction* instr) {
 
 void DisassemblingDecoder::VisitUnconditionalBranchToRegister(
     Instruction* instr) {
+  const Instr opcode = instr->Mask(UnconditionalBranchToRegisterMask);
   const char* mnemonic = "unimplemented";
+#if V8_TARGET_CHERI
+  const bool is_x_register_branch =
+      (opcode == BR_x) || (opcode == BLR_x) || (opcode == RET_x);
+  const char* form = is_x_register_branch ? "'Xn" : "'Yn";
+#else
   const char* form = "'Xn";
+#endif
 
-  switch (instr->Mask(UnconditionalBranchToRegisterMask)) {
+  switch (opcode) {
     case BR:
+#if V8_TARGET_CHERI
+    case BR_x:
+#endif
       mnemonic = "br";
       break;
     case BLR:
+#if V8_TARGET_CHERI
+    case BLR_x:
+#endif
       mnemonic = "blr";
       break;
     case RET: {
+#if V8_TARGET_CHERI
+    case RET_x:
+#endif
       mnemonic = "ret";
       if (instr->Rn() == kLinkRegCode) {
         form = nullptr;
