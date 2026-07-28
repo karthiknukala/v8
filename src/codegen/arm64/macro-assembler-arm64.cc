@@ -386,6 +386,14 @@ void CheckBenchmarkAbiBranchRegisters(const Register& capability_target,
 
 }  // namespace
 
+Register MacroAssembler::BenchmarkAbiBranchScratch(
+    const Register& capability_target) const {
+  DCHECK(capability_target.IsC());
+  // x16 and x17 are non-allocatable intra-procedure-call temporaries. Use the
+  // register that does not alias the capability branch target.
+  return AreAliased(capability_target, ip0) ? ip1.X() : ip0.X();
+}
+
 void MacroAssembler::BenchmarkAbiBr(const Register& capability_target,
                                     const Register& scratch) {
   DCHECK(allow_macro_instructions());
@@ -2672,8 +2680,12 @@ void MacroAssembler::Jump(Register target, Condition cond) {
   if (cond == nv) return;
   Label done;
   if (cond != al) B(NegateCondition(cond), &done);
+#ifdef V8_CHERI_BENCHMARK_ABI
+  BenchmarkAbiBr(target, BenchmarkAbiBranchScratch(target));
+#else
   PrepareC64Jump(target);
   Br(target);
+#endif
   Bind(&done);
 }
 
@@ -2771,9 +2783,15 @@ void MacroAssembler::Call(Register target) {
     Bind(&ok);
     Pop(padregc, temp);
   }
+#ifndef V8_CHERI_BENCHMARK_ABI
   PrepareC64Jump(target);
+#endif
 #endif  // V8_TARGET_CHERI
+#ifdef V8_CHERI_BENCHMARK_ABI
+  BenchmarkAbiBlr(target, BenchmarkAbiBranchScratch(target));
+#else
   Blr(target);
+#endif
 }
 
 void MacroAssembler::Call(Address target, RelocInfo::Mode rmode) {

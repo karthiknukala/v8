@@ -2378,6 +2378,9 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
                                 uint8_t* pc);
 
   void JumpHelper(int64_t offset, RelocInfo::Mode rmode, Condition cond = al);
+#ifdef V8_CHERI_BENCHMARK_ABI
+  Register BenchmarkAbiBranchScratch(const Register& capability_target) const;
+#endif
   void PrepareC64JumpHelper(const Register& cd, const Register& tempC);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);

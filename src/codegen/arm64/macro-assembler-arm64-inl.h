@@ -791,16 +791,24 @@ void MacroAssembler::Blr(const Register& rn) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, rn.IsC());
+#ifdef V8_CHERI_BENCHMARK_ABI
+  BenchmarkAbiBlr(rn, BenchmarkAbiBranchScratch(rn));
+#else
   DebugAssertCapabilityIsTagged(rn);
   blr(rn);
+#endif
 }
 
 void MacroAssembler::Br(const Register& rn) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, rn.IsC());
+#ifdef V8_CHERI_BENCHMARK_ABI
+  BenchmarkAbiBr(rn, BenchmarkAbiBranchScratch(rn));
+#else
   DebugAssertCapabilityIsTagged(rn);
   br(rn);
+#endif
 }
 
 void MacroAssembler::Brk(int code) {
@@ -1336,8 +1344,12 @@ void MacroAssembler::Rbit(const Register& rd, const Register& rn) {
 void MacroAssembler::Ret(const Register& rn) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rn.IsZero());
+#ifdef V8_CHERI_BENCHMARK_ABI
+  BenchmarkAbiRet(rn, BenchmarkAbiBranchScratch(rn));
+#else
   DebugAssertCapabilityIsTagged(rn);
   ret(rn);
+#endif
   CheckVeneerPool(false, false);
 }
 
