@@ -473,7 +473,7 @@ class BasicSlotSet {
     *(reinterpret_cast<size_t*>(this) - 1) = num_buckets;
   }
 
-  static constexpr int kNumBucketsSize = sizeof(size_t);
+  static constexpr int kNumBucketsSize = kSystemPointerSize;
 
   // For kNumBucketsSize.
   friend class v8::internal::WriteBarrierCodeStubAssembler;
