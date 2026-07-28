@@ -819,6 +819,10 @@ constexpr UnconditionalBranchToRegisterOp BLR =
 // return.
 constexpr UnconditionalBranchToRegisterOp RET =
     UnconditionalBranchToRegisterFixed | 0x00004000;
+
+constexpr UnconditionalBranchToRegisterOp BR_x = 0xD61F0000;
+constexpr UnconditionalBranchToRegisterOp BLR_x = 0xD63F0000;
+constexpr UnconditionalBranchToRegisterOp RET_x = 0xD65F0000;
 #else   // !V8_TARGET_CHERI
 constexpr UnconditionalBranchToRegisterOp UnconditionalBranchToRegisterFixed =
     0xD6000000;
@@ -832,6 +836,9 @@ constexpr UnconditionalBranchToRegisterOp BLR =
     UnconditionalBranchToRegisterFixed | 0x003F0000;
 constexpr UnconditionalBranchToRegisterOp RET =
     UnconditionalBranchToRegisterFixed | 0x005F0000;
+constexpr UnconditionalBranchToRegisterOp BR_x = BR;
+constexpr UnconditionalBranchToRegisterOp BLR_x = BLR;
+constexpr UnconditionalBranchToRegisterOp RET_x = RET;
 #endif  // V8_TARGET_CHERI
 
 // Compare and branch.

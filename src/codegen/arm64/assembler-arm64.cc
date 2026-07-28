@@ -807,32 +807,32 @@ void Assembler::EndBlockVeneerPool() {
 
 void Assembler::br(const Register& rn) {
 #if V8_TARGET_CHERI
-  DCHECK(rn.Is128Bits());
+  DCHECK(rn.Is128Bits() || (V8_CHERI_BENCHMARK_ABI_BOOL && rn.Is64Bits()));
 #else
   DCHECK(rn.Is64Bits());
 #endif
-  Emit(BR | Rn(rn));
+  Emit((rn.Is64Bits() ? BR_x : BR) | Rn(rn));
 }
 
 void Assembler::blr(const Register& rn) {
 #if V8_TARGET_CHERI
-  DCHECK(rn.Is128Bits());
+  DCHECK(rn.Is128Bits() || (V8_CHERI_BENCHMARK_ABI_BOOL && rn.Is64Bits()));
 #else
   DCHECK(rn.Is64Bits());
 #endif
   // The pattern 'blr czr' is used as a guard to detect when execution falls
   // through the constant pool. It should not be emitted.
-  DCHECK_NE(rn, czr);
-  Emit(BLR | Rn(rn));
+  DCHECK(!rn.IsZero());
+  Emit((rn.Is64Bits() ? BLR_x : BLR) | Rn(rn));
 }
 
 void Assembler::ret(const Register& rn) {
 #if V8_TARGET_CHERI
-  DCHECK(rn.Is128Bits());
+  DCHECK(rn.Is128Bits() || (V8_CHERI_BENCHMARK_ABI_BOOL && rn.Is64Bits()));
 #else
   DCHECK(rn.Is64Bits());
 #endif
-  Emit(RET | Rn(rn));
+  Emit((rn.Is64Bits() ? RET_x : RET) | Rn(rn));
 }
 
 void Assembler::b(int imm26) { Emit(B | ImmUncondBranch(imm26)); }

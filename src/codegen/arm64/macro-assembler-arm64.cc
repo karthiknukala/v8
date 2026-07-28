@@ -370,6 +370,50 @@ void MacroAssembler::CheriSentryAdd(const Register& cd, const Register& cn,
 void MacroAssembler::PrepareC64Jump(const Register& cd) {}
 #endif  // V8_TARGET_CHERI
 
+#ifdef V8_CHERI_BENCHMARK_ABI
+namespace {
+
+void CheckBenchmarkAbiBranchRegisters(const Register& capability_target,
+                                      const Register& scratch) {
+  DCHECK(capability_target.IsC());
+  DCHECK(!capability_target.IsZero());
+  DCHECK(!capability_target.IsSP());
+  DCHECK(scratch.IsX());
+  DCHECK(!scratch.IsZero());
+  DCHECK(!scratch.IsSP());
+  DCHECK(!AreAliased(capability_target, scratch));
+}
+
+}  // namespace
+
+void MacroAssembler::BenchmarkAbiBr(const Register& capability_target,
+                                    const Register& scratch) {
+  DCHECK(allow_macro_instructions());
+  CheckBenchmarkAbiBranchRegisters(capability_target, scratch);
+  DebugAssertCapabilityIsTagged(capability_target);
+  Bic(scratch, capability_target.X(), 1);
+  br(scratch);
+}
+
+void MacroAssembler::BenchmarkAbiBlr(const Register& capability_target,
+                                     const Register& scratch) {
+  DCHECK(allow_macro_instructions());
+  CheckBenchmarkAbiBranchRegisters(capability_target, scratch);
+  DebugAssertCapabilityIsTagged(capability_target);
+  Bic(scratch, capability_target.X(), 1);
+  blr(scratch);
+}
+
+void MacroAssembler::BenchmarkAbiRet(const Register& capability_target,
+                                     const Register& scratch) {
+  DCHECK(allow_macro_instructions());
+  CheckBenchmarkAbiBranchRegisters(capability_target, scratch);
+  DebugAssertCapabilityIsTagged(capability_target);
+  Bic(scratch, capability_target.X(), 1);
+  ret(scratch);
+}
+#endif  // V8_CHERI_BENCHMARK_ABI
+
 void MacroAssembler::Mov(const Register& rd, uint64_t imm) {
   DCHECK(allow_macro_instructions());
 #if V8_TARGET_CHERI

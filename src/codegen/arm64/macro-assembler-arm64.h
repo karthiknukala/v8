@@ -787,6 +787,17 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   inline void Bic(const Register& rd, const Register& rn,
                   const Operand& operand);
   inline void Blr(const Register& xn);
+#ifdef V8_CHERI_BENCHMARK_ABI
+  // Emit an integer indirect transfer from a capability-valued code pointer.
+  // The explicit scratch register receives the aligned integer address so the
+  // source capability, including its bounds and tag, remains unchanged.
+  void BenchmarkAbiBr(const Register& capability_target,
+                      const Register& scratch);
+  void BenchmarkAbiBlr(const Register& capability_target,
+                       const Register& scratch);
+  void BenchmarkAbiRet(const Register& capability_target,
+                       const Register& scratch);
+#endif
   inline void Cmp(const Register& rn, const Operand& operand);
   inline void CmpTagged(const Register& rn, const Operand& operand);
   inline void Subs(const Register& rd, const Register& rn,
