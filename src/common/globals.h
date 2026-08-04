@@ -1020,8 +1020,8 @@ static_assert(SmiValuesAre31Bits() == kIsSmiValueInLower32Bits,
               "Unsupported Smi tagging scheme");
 
 // Mask for the sign bit in a smi.
-constexpr intptr_t kSmiSignMask = static_cast<intptr_t>(
-    uintptr_t{1} << (kSmiValueSize + kSmiShiftSize + kSmiTagSize - 1));
+constexpr ScaledInt kSmiSignMask = static_cast<ScaledInt>(
+    ScaledUint{1} << (kSmiValueSize + kSmiShiftSize + kSmiTagSize - 1));
 
 // Desired alignment for tagged pointers.
 constexpr int kObjectAlignmentBits = kTaggedSizeLog2;

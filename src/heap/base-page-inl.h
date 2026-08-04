@@ -32,8 +32,8 @@ void BasePage::UpdateHighWaterMark(Address mark) {
   // to another chunk. See the comment to
   // NormalPage::FromAllocationAreaAddress.
   BasePage* chunk = BasePage::FromAddress(Isolate::Current(), mark - 1);
-  intptr_t new_mark = static_cast<intptr_t>(mark - chunk->ChunkAddress());
-  intptr_t old_mark = chunk->high_water_mark_.load(std::memory_order_relaxed);
+  ScaledInt new_mark = static_cast<ScaledInt>(mark - chunk->ChunkAddress());
+  ScaledInt old_mark = chunk->high_water_mark_.load(std::memory_order_relaxed);
   while ((new_mark > old_mark) &&
          !chunk->high_water_mark_.compare_exchange_weak(
              old_mark, new_mark, std::memory_order_acq_rel)) {

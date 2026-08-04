@@ -12,6 +12,12 @@
 namespace heap {
 namespace base {
 
+#if V8_TARGET_CHERI
+using ScaledUint = uint64_t;
+#else
+using ScaledUint = uintptr_t;
+#endif
+
 size_t ActiveSystemPages::Init(size_t header_size, size_t page_size_bits,
                                size_t user_page_size) {
 #if DEBUG
@@ -31,14 +37,14 @@ size_t ActiveSystemPages::Add(uintptr_t start, uintptr_t end,
   DCHECK_LE(end, kMaxPages * page_size);
 
   // Make sure we actually get the bitcount as argument.
-  DCHECK_LT(page_size_bits, sizeof(uintptr_t) * CHAR_BIT);
+  DCHECK_LT(page_size_bits, sizeof(ptraddr_t) * CHAR_BIT);
 
-  const uintptr_t start_page_bit =
+  const ScaledUint start_page_bit =
       RoundDown(start, page_size) >> page_size_bits;
-  const uintptr_t end_page_bit = RoundUp(end, page_size) >> page_size_bits;
+  const ScaledUint end_page_bit = RoundUp(end, page_size) >> page_size_bits;
   DCHECK_LE(start_page_bit, end_page_bit);
 
-  const uintptr_t bits = end_page_bit - start_page_bit;
+  const ScaledUint bits = end_page_bit - start_page_bit;
   DCHECK_LE(bits, kMaxPages);
   const bitset_t mask = bits == kMaxPages
                             ? int64_t{-1}
@@ -63,7 +69,7 @@ size_t ActiveSystemPages::Clear() {
 
 size_t ActiveSystemPages::Size(size_t page_size_bits) const {
   // Make sure we don't get the full page size as argument.
-  DCHECK_LT(page_size_bits, sizeof(uintptr_t) * CHAR_BIT);
+  DCHECK_LT(page_size_bits, sizeof(ptraddr_t) * CHAR_BIT);
   return value_.count() * (size_t{1} << page_size_bits);
 }
 

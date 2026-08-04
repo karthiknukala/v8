@@ -264,7 +264,7 @@ class BasePage {
 
   // Assuming the initial allocation on a page is sequential, count highest
   // number of bytes ever allocated on the page.
-  std::atomic<intptr_t> high_water_mark_;
+  std::atomic<ScaledInt> high_water_mark_;
 
   // Overall size of the chunk, including the header and guards.
   size_t size_;

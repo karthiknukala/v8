@@ -67,12 +67,12 @@ class MemoryAllocator final {
   // Initialize page sizes field in V8::Initialize.
   static void InitializeOncePerProcess();
 
-  V8_INLINE static intptr_t GetCommitPageSize() {
+  V8_INLINE static size_t GetCommitPageSize() {
     DCHECK_LT(0, commit_page_size_);
     return commit_page_size_;
   }
 
-  V8_INLINE static intptr_t GetCommitPageSizeBits() {
+  V8_INLINE static size_t GetCommitPageSizeBits() {
     DCHECK_LT(0, commit_page_size_bits_);
     return commit_page_size_bits_;
   }

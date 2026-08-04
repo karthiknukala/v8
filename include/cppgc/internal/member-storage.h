@@ -226,10 +226,10 @@ void CompressedPointer::VisitPossiblePointers(const void* address,
   // don't assume sign extension is stored and recover that part.
   //
   // Note that this case conveniently also recovers the full pointer.
-  static constexpr uintptr_t kBitForIntermediateValue =
+  static constexpr size_t kBitForIntermediateValue =
       (sizeof(uint32_t) * CHAR_BIT) + api_constants::kPointerCompressionShift;
-  static constexpr uintptr_t kSignExtensionMask =
-      ~((uintptr_t{1} << kBitForIntermediateValue) - 1);
+  static constexpr size_t kSignExtensionMask =
+      ~((size_t{1} << kBitForIntermediateValue) - 1);
   const uintptr_t intermediate_sign_extended =
       reinterpret_cast<uintptr_t>(address) | kSignExtensionMask;
   callback(reinterpret_cast<void*>(intermediate_sign_extended & base));
