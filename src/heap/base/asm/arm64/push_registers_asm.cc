@@ -16,6 +16,17 @@
 // Calling convention source:
 // https://en.wikipedia.org/wiki/Calling_convention#ARM_(A64)
 
+// This translation unit intentionally includes no V8 headers, so duplicate
+// the Benchmark ABI/compiler-mode consistency checks from globals.h here.
+#if defined(V8_CHERI_BENCHMARK_ABI) && \
+    !defined(__ARM_MORELLO_PURECAP_BENCHMARK_ABI)
+#error "V8 Benchmark ABI assembly requires the compiler Benchmark ABI"
+#endif
+#if !defined(V8_CHERI_BENCHMARK_ABI) && \
+    defined(__ARM_MORELLO_PURECAP_BENCHMARK_ABI)
+#error "compiler Benchmark ABI requires V8 Benchmark ABI assembly"
+#endif
+
 asm(
 #if defined(__APPLE__)
     ".globl _PushAllRegistersAndIterateStack            \n"
@@ -47,7 +58,15 @@ asm(
     "  mov c7, c2                                       \n"
     // Pass 3rd parameter as sp (stack pointer).
     "  mov c2, csp                                       \n"
+#if defined(V8_CHERI_BENCHMARK_ABI)
+    // The Benchmark ABI retains capability-width function pointers and stack
+    // state, but consumes the aligned cursor with an integer branch. Clear the
+    // normal purecap C64 marker defensively at this final transfer boundary.
+    "  and x16, x7, #0xfffffffffffffffe                  \n"
+    "  blr x16                                           \n"
+#else
     "  blr c7                                           \n"
+#endif
     // Load return address and frame pointer.
     "  ldp cfp, clr, [csp], #32                        \n"
     // Drop all callee-saved registers.
@@ -82,4 +101,13 @@ asm(
     // Drop all callee-saved registers.
     "  add sp, sp, #80                                  \n"
 #endif    // !__CHERI_PURE_CAPABILITY__
-    "  ret                                              \n");
+#if defined(__CHERI_PURE_CAPABILITY__) && \
+    defined(V8_CHERI_BENCHMARK_ABI)
+    // Preserve clr at capability width through the transfer boundary, then
+    // use the aligned cursor in the ABI-reserved integer scratch register.
+    "  and x16, x30, #0xfffffffffffffffe                 \n"
+    "  ret x16                                           \n"
+#else
+    "  ret                                              \n"
+#endif
+);
