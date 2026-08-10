@@ -388,16 +388,19 @@ size_t HeapVisitor<ConcreteVisitor>::VisitWithBodyDescriptor(
 #ifdef DEBUG
   if (!SupportsRightTrim<visitor_id>() ||
       !ConcreteVisitor::EnableConcurrentVisitation()) {
-    DCHECK_EQ(object->SizeFromMap(map), TBodyDescriptor::SizeOf(map, object));
+    DCHECK_EQ(
+        object->SizeFromMap(map),
+        ALIGN_TO_ALLOCATION_ALIGNMENT(TBodyDescriptor::SizeOf(map, object)));
   }
 #endif  // DEBUG
   DCHECK(!map->IsInobjectSlackTrackingInProgress());
 
   ConcreteVisitor* visitor = static_cast<ConcreteVisitor*>(this);
   visitor->template VisitMapPointerIfNeeded<visitor_id>(object);
-  const int size = ConcreteVisitor::UsePrecomputedObjectSize()
-                       ? static_cast<int>(maybe_object_size.AssumeSize())
-                       : TBodyDescriptor::SizeOf(map, object);
+  const int size =
+      ConcreteVisitor::UsePrecomputedObjectSize()
+          ? static_cast<int>(maybe_object_size.AssumeSize())
+          : ALIGN_TO_ALLOCATION_ALIGNMENT(TBodyDescriptor::SizeOf(map, object));
   TBodyDescriptor::IterateBody(map, object, size, visitor);
   return size;
 }

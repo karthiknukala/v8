@@ -93,7 +93,12 @@ constexpr int SwissNameDictionary::CtrlTableSize(int capacity) {
 // static
 constexpr int SwissNameDictionary::SizeFor(int capacity) {
   DCHECK(IsValidCapacity(capacity));
-  return PropertyDetailsTableStartOffset(capacity) + capacity;
+  if (V8_TARGET_CHERI_BOOL) {
+    return RoundUp(PropertyDetailsTableStartOffset(capacity) + capacity,
+                   kSystemPointerSize);
+  } else {
+    return PropertyDetailsTableStartOffset(capacity) + capacity;
+  }
 }
 
 // We use 7/8th as maximum load factor for non-special cases.
@@ -130,7 +135,8 @@ int SwissNameDictionary::CapacityFor(int at_least_space_for) {
   }
 
   int non_normalized = at_least_space_for + at_least_space_for / 7;
-  return base::bits::RoundUpToPowerOfTwo32(non_normalized);
+  int rounded = base::bits::RoundUpToPowerOfTwo32(non_normalized);
+  return V8_TARGET_CHERI_BOOL ? RoundUp(rounded, kSystemPointerSize) : rounded;
 }
 
 int SwissNameDictionary::EntryForEnumerationIndex(int enumeration_index) {
