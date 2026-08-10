@@ -2637,6 +2637,7 @@ template("run_mksnapshot") {
           rebase_path("$root_out_dir/snapshot_blob${suffix}.bin", root_build_dir),
           rebase_path("$target_gen_dir/embedded${suffix}.S", root_build_dir),
           rebase_path("$target_gen_dir/snapshot${suffix}.cc", root_build_dir),
+          rebase_path("$target_gen_dir/src/builtins/builtins-effects${suffix}.cc", root_build_dir),
 
           # Start of command
           "./" + rebase_path(get_label_info(":mksnapshot($v8_cheri_snapshot_toolchain)",
@@ -2665,6 +2666,14 @@ template("run_mksnapshot") {
           "--embedded_src",
           rebase_path("$target_gen_dir/embedded${suffix}.S", root_build_dir),
         ]
+        if (is_DEBUG_defined && name == "default") {
+          print("Adding --builtins-effects-src")
+          args += [
+            "--builtins-effects-src",
+            rebase_path("$target_gen_dir/src/builtins/builtins-effects.cc",
+                        root_build_dir),
+          ]
+        }
       } else {
         # Use QEMU usermode
         assert(qemu_user_bin != "")
@@ -2700,6 +2709,13 @@ template("run_mksnapshot") {
 
           rebase_path("$target_gen_dir/embedded${suffix}.S", root_build_dir),
         ]
+        if (is_DEBUG_defined && name == "default") {
+          args += [
+            "--builtins-effects-src",
+            rebase_path("$target_gen_dir/src/builtins/builtins-effects.cc",
+                        root_build_dir),
+          ]
+        }
       }
       ext = "S"
     } else {

@@ -92,6 +92,7 @@ def main() -> int:
     parser.add_argument("snapshot_blob", type=clean_and_expand_path, help="Path to snapshot_blob.bin")
     parser.add_argument("embedded_s", type=clean_and_expand_path, help="Path to embedded.S")
     parser.add_argument("snapshot_cc", type=clean_and_expand_path, help="Path to snapshot.cc")
+    parser.add_argument("builtins_effects_cc", type=clean_and_expand_path, help="Path to builtin-effects.cc")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Command to run on the remote host")
 
     args = parser.parse_args()
@@ -113,6 +114,7 @@ def main() -> int:
         ssh_run(f"mkdir -p {args.remote_dir}/{args.snapshot_blob.parent}", args.keyfile, args.hostname, args.port)
         ssh_run(f"mkdir -p {args.remote_dir}/{args.snapshot_cc.parent}", args.keyfile, args.hostname, args.port)
         ssh_run(f"mkdir -p {args.remote_dir}/{args.embedded_s.parent}", args.keyfile, args.hostname, args.port)
+        ssh_run(f"mkdir -p {args.remote_dir}/{args.builtins_effects_cc.parent}", args.keyfile, args.hostname, args.port)
         if args.snapshot_blob.exists():
             scp_to_remote([args.snapshot_blob], args.keyfile, args.hostname, args.port, f"{args.remote_dir}/{args.snapshot_blob.parent}")
         if args.snapshot_cc.exists():
@@ -136,6 +138,10 @@ def main() -> int:
         scp_from_remote([
             f"{args.remote_dir}/{args.snapshot_cc}",
         ], args.keyfile, args.hostname, args.port, str(args.snapshot_cc.parent))
+        print(f"copying {args.remote_dir}/{args.builtins_effects_cc} from remote to {args.builtins_effects_cc.parent}")
+        scp_from_remote([
+            f"{args.remote_dir}/{args.builtins_effects_cc}",
+        ], args.keyfile, args.hostname, args.port, str(args.builtins_effects_cc.parent))
 
         return 0
     except Exception as e:
