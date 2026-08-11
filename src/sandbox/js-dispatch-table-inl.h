@@ -64,7 +64,7 @@ Address JSDispatchEntry::GetEntrypoint() const {
 Address JSDispatchEntry::GetCodePointer() const {
   CHECK(!IsFreelistEntry());
 #if V8_TARGET_CHERI
-  return encoded_word_.load(std::memory_order_acquire) + kHeapObjectTag;
+  return encoded_word_.load(std::memory_order_acquire) | kHeapObjectTag;
 #else
   // The pointer tag bit (LSB) of the object pointer is used as marking bit,
   // and so may be 0 or 1 here. As the return value is a tagged pointer, the
