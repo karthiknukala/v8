@@ -205,16 +205,36 @@ void MacroAssembler::Add(const Register& rd, const Register& rn,
   DCHECK(allow_macro_instructions());
   if (operand.IsImmediate()) {
     int64_t imm = operand.ImmediateValue();
+#if V8_TARGET_CHERI
+    if ((imm > 0) && IsImmAddSubCapability(imm) && rd.IsC()) {
+      DataProcImmediateCap(rd, rn, static_cast<int>(imm), ADD_c);
+      return;
+    } else if ((imm < 0) && IsImmAddSubCapability(-imm) && rd.IsC()) {
+      DataProcImmediateCap(rd, rn, static_cast<int>(-imm), SUB_c);
+      return;
+    }
+#endif
     if ((imm > 0) && IsImmAddSub(imm)) {
+      DCHECK(!rd.IsC());
       DataProcImmediate(rd, rn, static_cast<int>(imm), AddOpFor(rd));
       return;
     } else if ((imm < 0) && IsImmAddSub(-imm)) {
+      DCHECK(!rd.IsC());
       DataProcImmediate(rd, rn, static_cast<int>(-imm), SubOpFor(rd));
       return;
     }
   } else if (operand.IsShiftedRegister() && (operand.shift_amount() == 0)) {
+#if V8_TARGET_CHERI
+    if (rd.IsC() && !rd.IsSP() && !rn.IsSP() && !operand.reg().IsSP() &&
+        !operand.reg().IsZero()) {
+      DCHECK(rn.IsC());
+      CheriAddSub(rd, rn, operand, FlagsUpdate::LeaveFlags, ADD);
+      return;
+    }
+#endif
     if (!rd.IsSP() && !rn.IsSP() && !operand.reg().IsSP() &&
         !operand.reg().IsZero()) {
+      DCHECK(!rd.IsC());
       DataProcPlainRegister(rd, rn, operand.reg(), AddOpFor(rd));
       return;
     }
@@ -476,6 +496,13 @@ void MacroAssembler::Sub(const Register& rd, const Register& rn,
   DCHECK(allow_macro_instructions());
   if (operand.IsImmediate()) {
     int64_t imm = operand.ImmediateValue();
+#if V8_TARGET_CHERI
+    if ((imm > 0) && IsImmAddSubCapability(imm) && rd.IsC()) {
+      DataProcImmediateCap(rd, rn, static_cast<int>(imm), SUB_c);
+      return;
+    }
+    DCHECK(!rd.IsC());
+#endif
     if ((imm > 0) && IsImmAddSub(imm)) {
       DataProcImmediate(rd, rn, static_cast<int>(imm), SubOpFor(rd));
       return;
@@ -484,8 +511,17 @@ void MacroAssembler::Sub(const Register& rd, const Register& rn,
       return;
     }
   } else if (operand.IsShiftedRegister() && (operand.shift_amount() == 0)) {
+#if V8_TARGET_CHERI
+    if (rd.IsC() && !rd.IsSP() && !rn.IsSP() && !operand.reg().IsSP() &&
+        !operand.reg().IsZero()) {
+      DCHECK(rn.IsC());
+      CheriAddSub(rd, rn, operand, FlagsUpdate::LeaveFlags, SUB);
+      return;
+    }
+#endif
     if (!rd.IsSP() && !rn.IsSP() && !operand.reg().IsSP() &&
         !operand.reg().IsZero()) {
+      DCHECK(!rd.IsC());
       DataProcPlainRegister(rd, rn, operand.reg(), SubOpFor(rd));
       return;
     }

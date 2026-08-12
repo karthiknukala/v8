@@ -3439,6 +3439,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline void CmpPlainRegister(const Register& rn, const Register& rm);
   inline void DataProcImmediate(const Register& rd, const Register& rn,
                                 int immediate, Instr op);
+#if V8_TARGET_CHERI
+  inline void DataProcImmediateCap(const Register& rd, const Register& rn,
+                                   int immediate, Instr op);
+#endif
 
   static bool IsImmFP32(uint32_t bits);
   static bool IsImmFP64(uint64_t bits);

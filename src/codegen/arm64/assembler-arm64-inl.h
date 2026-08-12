@@ -1114,6 +1114,17 @@ inline void Assembler::DataProcImmediate(const Register& rd, const Register& rn,
        RnSP(rn));
 }
 
+#if V8_TARGET_CHERI
+inline void Assembler::DataProcImmediateCap(const Register& rd,
+                                            const Register& rn, int immediate,
+                                            Instr op) {
+  DCHECK(AreSameSizeAndType(rd, rn));
+  DCHECK(IsImmAddSubCapability(immediate));
+  Emit(AddSubCapImmediateFixed | op | ImmAddSubCapability(immediate) |
+       CdCSP(rd) | CnCSP(rn));
+}
+#endif
+
 int Assembler::LinkAndGetBranchInstructionOffsetTo(Label* label) {
   DCHECK_EQ(kStartOfLabelLinkChain, 0);
   int offset = LinkAndGetByteOffsetTo(label);
