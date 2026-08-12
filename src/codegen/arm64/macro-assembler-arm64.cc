@@ -931,10 +931,18 @@ void MacroAssembler::CheriAddSub(const Register& rd, const Register& rn,
   // that case.
   if (rd.IsSP() || rn.code() == rd.code()) {
     UseScratchRegisterScope temps(this);
+    bool needs_pop = false;
+    Register pushed_temp = rd == c0 ? c1 : c0;
+    if (!temps.CanAcquire()) {
+      Push(pushed_temp);
+      temps.Include(pushed_temp);
+      needs_pop = true;
+    }
     Register temp = temps.AcquireX();
     DCHECK(!AreAliased(rn, temp));
     AddSub(temp, rn.X(), operand.reg().IsC() ? operand.ToX() : operand, S, op);
     Scvalue(rd, rn, temp);
+    if (needs_pop) Pop(pushed_temp);
   } else {
     AddSub(rd.X(), rn.X(), operand.reg().IsC() ? operand.ToX() : operand, S,
            op);
