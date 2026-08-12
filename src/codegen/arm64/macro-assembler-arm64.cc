@@ -1112,14 +1112,56 @@ void MacroAssembler::LoadStoreMacro(const CPURegister& rt,
     int64_t offset = addr.offset();
     unsigned size_log2 = CalcLSDataSizeLog2(op, rt.IsC());
     if (IsImmLSScaled(offset, size_log2)) {
+#if V8_TARGET_CHERI
+      if (rt.IsC()) {
+        if (offset >= 0) {
+          LoadStoreCapScaledImmOffset(memop, static_cast<int>(offset),
+                                      size_log2);
+        } else {
+          UseScratchRegisterScope temps(this);
+          bool needs_pop = false;
+          if (!temps.CanAcquire()) {
+            Push(fp);
+            temps.Include(fp);
+            needs_pop = true;
+          }
+          Register offset_reg = temps.AcquireX();
+          Mov(offset_reg, offset);
+          LoadStoreMacroComplex(rt, MemOperand(addr.base(), offset_reg), op);
+          if (needs_pop) Pop(fp);
+        }
+        return;
+      }
+#endif
       LoadStoreScaledImmOffset(memop, static_cast<int>(offset), size_log2);
       return;
     } else if (IsImmLSUnscaled(offset)) {
+#if V8_TARGET_CHERI
+      if (rt.IsC()) {
+        if (offset >= 0) {
+          LoadStoreCapUnscaledImmOffset(memop, static_cast<int>(offset));
+        } else {
+          UseScratchRegisterScope temps(this);
+          bool needs_pop = false;
+          if (!temps.CanAcquire()) {
+            Push(fp);
+            temps.Include(fp);
+            needs_pop = true;
+          }
+          Register offset_reg = temps.AcquireX();
+          Mov(offset_reg, offset);
+          LoadStoreMacroComplex(rt, MemOperand(addr.base(), offset_reg), op);
+          if (needs_pop) Pop(fp);
+        }
+        return;
+      }
+#endif
       LoadStoreUnscaledImmOffset(memop, static_cast<int>(offset));
       return;
     }
   } else if (addr.IsRegisterOffset() && (addr.extend() == UXTW) &&
              (addr.shift_amount() == 0)) {
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, !rt.IsC());
     LoadStoreWRegOffset(memop, addr.regoffset());
     return;
   }

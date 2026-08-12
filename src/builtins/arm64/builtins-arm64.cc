@@ -2284,7 +2284,7 @@ void Builtins::Generate_BaselineOnStackReplacement(MacroAssembler* masm) {
   using D = OnStackReplacementDescriptor;
   static_assert(D::kParameterCount == 2);
 
-  __ ldr(kContextRegister,
+  __ Ldr(kContextRegister,
          MemOperand(fp, BaselineFrameConstants::kContextOffset));
   __ DebugAssertValidContext(kContextRegister);
   OnStackReplacement(masm, OsrSourceTier::kBaseline,
