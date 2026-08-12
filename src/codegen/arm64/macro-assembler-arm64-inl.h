@@ -1318,6 +1318,7 @@ void MacroAssembler::Isb() {
 
 void MacroAssembler::Ldr(const CPURegister& rt, const Operand& operand) {
   DCHECK(allow_macro_instructions());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, !rt.IsC());
   ldr(rt, operand);
 }
 
