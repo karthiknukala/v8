@@ -931,18 +931,15 @@ void MacroAssembler::CheriAddSub(const Register& rd, const Register& rn,
   // that case.
   if (rd.IsSP() || rn.code() == rd.code()) {
     UseScratchRegisterScope temps(this);
-    bool needs_pop = false;
-    Register pushed_temp = rd == c0 ? c1 : c0;
-    if (!temps.CanAcquire()) {
-      Push(pushed_temp);
-      temps.Include(pushed_temp);
-      needs_pop = true;
-    }
-    Register temp = temps.AcquireX();
+    CPURegList conflict(operand.reg().C());
+    if (!rd.IsSP()) conflict.Combine(CPURegList(rd.C()));
+    if (!rn.IsSP()) conflict.Combine(CPURegList(rn.C()));
+    Register temp = temps.PushAndAcquireFirstAvailable(conflict).X();
     DCHECK(!AreAliased(rn, temp));
+    DCHECK(!AreAliased(rd, temp));
+    DCHECK(!AreAliased(operand.reg(), temp));
     AddSub(temp, rn.X(), operand.reg().IsC() ? operand.ToX() : operand, S, op);
     Scvalue(rd, rn, temp);
-    if (needs_pop) Pop(pushed_temp);
   } else {
     AddSub(rd.X(), rn.X(), operand.reg().IsC() ? operand.ToX() : operand, S,
            op);
@@ -1127,16 +1124,12 @@ void MacroAssembler::LoadStoreMacro(const CPURegister& rt,
                                       size_log2);
         } else {
           UseScratchRegisterScope temps(this);
-          bool needs_pop = false;
-          if (!temps.CanAcquire()) {
-            Push(fp);
-            temps.Include(fp);
-            needs_pop = true;
-          }
-          Register offset_reg = temps.AcquireX();
+          Register offset_reg =
+              temps
+                  .PushAndAcquireFirstAvailable(CPURegList(rt.C(), addr.base()))
+                  .X();
           Mov(offset_reg, offset);
           LoadStoreMacroComplex(rt, MemOperand(addr.base(), offset_reg), op);
-          if (needs_pop) Pop(fp);
         }
         return;
       }
@@ -1150,16 +1143,12 @@ void MacroAssembler::LoadStoreMacro(const CPURegister& rt,
           LoadStoreCapUnscaledImmOffset(memop, static_cast<int>(offset));
         } else {
           UseScratchRegisterScope temps(this);
-          bool needs_pop = false;
-          if (!temps.CanAcquire()) {
-            Push(fp);
-            temps.Include(fp);
-            needs_pop = true;
-          }
-          Register offset_reg = temps.AcquireX();
+          Register offset_reg =
+              temps
+                  .PushAndAcquireFirstAvailable(CPURegList(rt.C(), addr.base()))
+                  .X();
           Mov(offset_reg, offset);
           LoadStoreMacroComplex(rt, MemOperand(addr.base(), offset_reg), op);
-          if (needs_pop) Pop(fp);
         }
         return;
       }

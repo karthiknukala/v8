@@ -2700,8 +2700,10 @@ class V8_NODISCARD UseScratchRegisterScope {
   explicit UseScratchRegisterScope(MacroAssembler* masm)
       : available_(masm->TmpList()),
         availablefp_(masm->FPTmpList()),
+        pushed_(kCRegSizeInBits, RegList({})),
         old_available_(available_->bits()),
-        old_availablefp_(availablefp_->bits()) {
+        old_availablefp_(availablefp_->bits()),
+        masm_(masm) {
     DCHECK_EQ(available_->type(), CPURegister::kRegister);
     DCHECK_EQ(availablefp_->type(), CPURegister::kVRegister);
   }
@@ -2709,6 +2711,11 @@ class V8_NODISCARD UseScratchRegisterScope {
   V8_EXPORT_PRIVATE ~UseScratchRegisterScope() {
     available_->set_bits(old_available_);
     availablefp_->set_bits(old_availablefp_);
+    // TODO(cheri): Be smarter about this, this is a nasty workaround.
+    CPURegister reg = NoCPUReg;
+    while ((reg = pushed_.PopLowestIndex()) != NoCPUReg) {
+      masm_->Pop(reg);
+    }
   }
 
   // Take a register from the appropriate temps list. It will be returned
@@ -2778,6 +2785,15 @@ class V8_NODISCARD UseScratchRegisterScope {
   CPURegList* AvailableFP() { return availablefp_; }
   void SetAvailableFP(const CPURegList& list) { *availablefp_ = list; }
 
+  Register PushAndAcquireFirstAvailable(CPURegList unavailable) {
+    if (CanAcquire()) return AcquireC();
+    Register acquired = Register::cap_from_code(
+        __builtin_ctz(~unavailable.bits() & 0x1FFFFFFF));
+    masm_->Push(acquired);
+    pushed_.Combine({acquired});
+    return acquired;
+  }
+
  private:
   V8_EXPORT_PRIVATE static CPURegister AcquireNextAvailable(
       CPURegList* available) {
@@ -2790,10 +2806,12 @@ class V8_NODISCARD UseScratchRegisterScope {
   // Available scratch registers.
   CPURegList* available_;    // kRegister
   CPURegList* availablefp_;  // kVRegister
+  CPURegList pushed_;        // kRegister
 
   // The state of the available lists at the start of this scope.
   uint64_t old_available_;    // kRegister
   uint64_t old_availablefp_;  // kVRegister
+  MacroAssembler* masm_;
 };
 
 struct MoveCycleState {
