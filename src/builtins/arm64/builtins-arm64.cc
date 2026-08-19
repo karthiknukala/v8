@@ -1765,6 +1765,7 @@ void NewImplicitReceiver(MacroAssembler* masm) {
 
   // Restore context.
   __ Ldr(cp, MemOperand(fp, FastConstructFrameConstants::kContextOffset));
+  __ DebugAssertValidContext(cp);
 }
 
 }  // namespace
@@ -1886,6 +1887,7 @@ void Builtins::Generate_InterpreterPushArgsThenFastConstructFunction(
   __ Bind(&do_throw);
   // Restore the context from the frame.
   __ Ldr(cp, MemOperand(fp, FastConstructFrameConstants::kContextOffset));
+  __ DebugAssertValidContext(cp);
   __ CallRuntime(Runtime::kThrowConstructorReturnedNonObject);
   __ Unreachable();
 
@@ -4745,6 +4747,7 @@ void Builtins::Generate_WasmHandleStackOverflow(MacroAssembler* masm) {
     __ LoadTaggedField(
         cp, FieldMemOperand(kWasmImplicitArgRegister,
                             WasmTrustedInstanceData::kNativeContextOffset));
+    __ DebugAssertValidContext(cp);
     FrameScope scope(masm, StackFrame::MANUAL);
     __ EnterFrame(StackFrame::INTERNAL);
     __ SmiTag(gap.X());
