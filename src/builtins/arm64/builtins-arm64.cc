@@ -554,7 +554,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     Label ok, is_baseline, is_unavailable;
     Register sfi = c10;
     Register bytecode = c10;
-    Register scratch = x11;
+    Register scratch = c11;
     __ LoadTaggedField(
         sfi, FieldMemOperand(c5, JSFunction::kSharedFunctionInfoOffset));
     GetSharedFunctionInfoBytecodeOrBaseline(masm, sfi, bytecode, scratch,
@@ -565,7 +565,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ Abort(AbortReason::kMissingBytecodeArray);
 
     __ Bind(&is_baseline);
-    __ IsObjectType(bytecode, scratch.C(), scratch, CODE_TYPE);
+    __ IsObjectType(bytecode, scratch, scratch.X(), CODE_TYPE);
     __ Assert(eq, AbortReason::kMissingBytecodeArray);
 
     __ Bind(&ok);
@@ -1185,7 +1185,7 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
         BaselineOutOfLinePrologueDescriptor::kClosure);
     {
       UseScratchRegisterScope temps(masm);
-      ResetJSFunctionAge(masm, callee_js_function, temps.AcquireX());
+      ResetJSFunctionAge(masm, callee_js_function, temps.AcquireC());
     }
     __ Push(callee_context, callee_js_function);
     DCHECK_EQ(callee_js_function, kJavaScriptCallTargetRegister);
@@ -1779,12 +1779,12 @@ void Builtins::Generate_InterpreterPushArgsThenFastConstructFunction(
   // -- x4 : address of the first argument
   // -- cp : context pointer
   // -----------------------------------
-  __ AssertFunction(x1);
+  __ AssertFunction(c1);
 
   // Check if target has a [[Construct]] internal method.
   Label non_constructor;
-  __ LoadMap(x2, x1);
-  __ Ldrb(x2, FieldMemOperand(x2, Map::kBitFieldOffset));
+  __ LoadMap(c2, c1);
+  __ Ldrb(x2, FieldMemOperand(c2, Map::kBitFieldOffset));
   __ TestAndBranchIfAllClear(x2, Map::Bits1::IsConstructorBit::kMask,
                              &non_constructor);
 
@@ -1812,8 +1812,8 @@ void Builtins::Generate_InterpreterPushArgsThenFastConstructFunction(
   // Check if it is a builtin call.
   Label builtin_call;
   __ LoadTaggedField(
-      x2, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
-  __ Ldr(w2, FieldMemOperand(x2, SharedFunctionInfo::kFlagsOffset));
+      c2, FieldMemOperand(c1, JSFunction::kSharedFunctionInfoOffset));
+  __ Ldr(w2, FieldMemOperand(c2, SharedFunctionInfo::kFlagsOffset));
   __ TestAndBranchIfAnySet(w2, SharedFunctionInfo::ConstructAsBuiltinBit::kMask,
                            &builtin_call);
 
@@ -1874,7 +1874,7 @@ void Builtins::Generate_InterpreterPushArgsThenFastConstructFunction(
   __ JumpIfSmi(x0, &use_receiver);
 
   // Check if the type of the result is not an object in the ECMA sense.
-  __ JumpIfJSAnyIsNotPrimitive(x0, x4, &leave_and_return);
+  __ JumpIfJSAnyIsNotPrimitive(c0, c4, &leave_and_return);
   __ B(&use_receiver);
 
   __ bind(&builtin_call);
@@ -2325,7 +2325,7 @@ void Builtins::Generate_MaglevFunctionEntryStackCheck(MacroAssembler* masm,
 static void GenerateCall(MacroAssembler* masm, Register argc, Register target,
                          ConvertReceiverMode mode,
                          std::optional<RootIndex> error_string_root) {
-  Register map = x4;
+  Register map = c4;
   Register instance_type = x5;
 
   DCHECK(!AreAliased(argc, target, map, instance_type));
@@ -3556,7 +3556,7 @@ void ReloadParentStack(MacroAssembler* masm, Register return_reg,
 
   // Set a null pointer in the jump buffer's SP slot to indicate to the stack
   // frame iterator that this stack is empty.
-  __ Str(xzr, MemOperand(active_stack, wasm::kStackSpOffset));
+  __ Str(czr, MemOperand(active_stack, wasm::kStackSpOffset));
   Register parent = tmp2;
   __ Ldr(parent, MemOperand(active_stack, wasm::kStackParentOffset));
 
@@ -4065,7 +4065,7 @@ void SwitchToAllocatedStack(MacroAssembler* masm, RegisterAllocator& regs,
   FREE_REG(stack);
   // Save the old stack's fp in x9, and use it to access the parameters in
   // the parent frame.
-  regs.Pinned(x9, &original_fp);
+  regs.Pinned(c9, &original_fp);
   __ Mov(original_fp, fp);
   DEFINE_REG_C(target_stack);
   __ LoadRootRelative(target_stack, IsolateData::active_stack_offset());
@@ -4081,8 +4081,8 @@ void SwitchToAllocatedStack(MacroAssembler* masm, RegisterAllocator& regs,
                   JSToWasmWrapperFrameConstants::kWrapperBufferSize,
               16);
   __ Sub(sp, sp, Immediate(stack_space));
-  ASSIGN_REG(new_wrapper_buffer)
-  __ Mov(new_wrapper_buffer, sp);
+  ASSIGN_REG_C(new_wrapper_buffer)
+  __ Mov(new_wrapper_buffer, csp);
   // Copy data needed for return handling from old wrapper buffer to new one.
   // kWrapperBufferRefReturnCount will be copied too, because 8 bytes are copied
   // at the same time.
@@ -4169,7 +4169,8 @@ void GenerateExceptionHandlingLandingPad(MacroAssembler* masm,
   DEFINE_SCOPED_C(tmp2);
   DEFINE_SCOPED_C(tmp3);
   GetContextFromImplicitArg(masm, kContextRegister, tmp.C());
-  ReloadParentStack(masm, promise, reason, kContextRegister, tmp, tmp2, tmp3);
+  ReloadParentStack(masm, promise, reason, kContextRegister, tmp.C(), tmp2,
+                    tmp3);
   RestoreParentSuspender(masm, tmp.C());
 
   __ Mov(tmp, 1);
@@ -4214,6 +4215,7 @@ void JSToWasmWrapperHelper(MacroAssembler* masm, wasm::Promise mode) {
     new_wrapper_buffer = wrapper_buffer;
   }
 
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, original_fp.IsC());
   regs.ResetExcept(original_fp, wrapper_buffer, implicit_arg,
                    new_wrapper_buffer);
 
@@ -4675,6 +4677,7 @@ void Builtins::Generate_CEntry(MacroAssembler* masm, int result_size,
   // the context will be set to (cp == 0) for non-JS frames.
   Label not_js_frame;
   __ Cbz(cp, &not_js_frame);
+  __ DebugAssertValidContext(cp);
   __ Str(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   __ Bind(&not_js_frame);
 

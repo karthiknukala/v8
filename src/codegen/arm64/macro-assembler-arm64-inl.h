@@ -27,7 +27,7 @@ MemOperand ExitFrameStackSlotOperand(int offset) {
   // address before doing the actual call, it's necessary for frame iteration
   // (see StoreReturnAddressAndCall for details).
   static constexpr int kSPOffset = 1 * kSystemPointerSize;
-  return MemOperand(sp, kSPOffset + offset);
+  return MemOperand(csp, kSPOffset + offset);
 }
 
 // Provides access to exit frame parameters (GC-ed).
@@ -1354,7 +1354,7 @@ void MacroAssembler::Isb() {
 
 void MacroAssembler::Ldr(const CPURegister& rt, const Operand& operand) {
   DCHECK(allow_macro_instructions());
-  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, !rt.IsC());
+  DCHECK(!rt.IsC());
   ldr(rt, operand);
 }
 
@@ -1942,7 +1942,7 @@ void MacroAssembler::Peek(const CPURegister& dst, const Operand& offset) {
     Check(le, AbortReason::kStackAccessBelowStackPointer);
   }
 
-  Ldr(dst, MemOperand(sp, offset));
+  Ldr(dst, MemOperand(csp, offset));
 
   DCHECK_IMPLIES((lr_mode == kAuthLR), (dst == lr));
   DCHECK_IMPLIES((lr_mode == kDontLoadLR), (dst != lr));

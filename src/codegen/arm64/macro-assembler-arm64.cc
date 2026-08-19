@@ -3112,7 +3112,7 @@ void MacroAssembler::CallWasmCodePointer(Register target,
 void MacroAssembler::CallWasmCodePointerNoSignatureCheck(Register target) {
   ASM_CODE_COMMENT(this);
   UseScratchRegisterScope temps(this);
-  Register scratch = temps.AcquireX();
+  Register scratch = temps.AcquireC();
   Mov(scratch, ExternalReference::wasm_code_pointer_table());
 
   static constexpr int kNumRelevantBits = base::bits::WhichPowerOfTwo(
@@ -3443,7 +3443,7 @@ void MacroAssembler::InvokeFunctionCode(
     LoadRoot(c3, RootIndex::kUndefinedValue);
   }
 
-  Register scratch = x20;
+  Register scratch = c20;
   if (argument_adaption_mode == ArgumentAdaptionMode::kAdapt) {
     Register expected_parameter_count = x2;
     LoadParameterCountFromJSDispatchTable(expected_parameter_count,
@@ -3938,7 +3938,7 @@ void MacroAssembler::LoadFeedbackVector(Register dst, Register closure,
 
   // Check if feedback vector is valid.
   LoadTaggedField(scratch, FieldMemOperand(dst, HeapObject::kMapOffset));
-  Ldrh(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+  Ldrh(scratch.W(), FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   Cmp(scratch, FEEDBACK_VECTOR_TYPE);
   B(eq, &done);
 
@@ -3981,7 +3981,7 @@ void MacroAssembler::CompareInstanceTypeRange(Register map, Register type_reg,
   DCHECK(!type_reg.IsC());
   UseScratchRegisterScope temps(this);
   Register scratch = temps.AcquireX();
-  Ldrh(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  Ldrh(type_reg, FieldMemOperand(map.C(), Map::kInstanceTypeOffset));
   CompareRange(type_reg, scratch, lower_limit, higher_limit);
 }
 
@@ -4501,7 +4501,7 @@ void MacroAssembler::LoadTrustedUnknownPointerField(
   }
 #else
   LoadMap(scratch, destination);
-  Ldrh(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+  Ldrh(scratch.W(), FieldMemOperand(scratch, Map::kInstanceTypeOffset));
   for (auto& [type, label] : cases) {
     if (V8_ENABLE_SANDBOX_BOOL && type == CODE_TYPE) {
       continue;
@@ -5570,7 +5570,7 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, bool with_profiling,
   MemOperand limit_mem_op = __ AsMemOperand(IsolateFieldId::kHandleScopeLimit);
   MemOperand level_mem_op = __ AsMemOperand(IsolateFieldId::kHandleScopeLevel);
 
-  Register return_value = x0;
+  Register return_value = c0;
   Register scratch = c4;
   Register scratch2 = x5;
 

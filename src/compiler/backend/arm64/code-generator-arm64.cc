@@ -282,12 +282,14 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
       case kMode_Root:
         return MemOperand(kRootRegister, InputInt64(index));
       case kMode_Operand2_R_LSL_I:
-        return MemOperand(InputRegister(index + 0), InputRegister(index + 1),
-                          LSL, InputInt32(index + 2));
+        return MemOperand(InputRegisterCapability(index + 0),
+                          InputRegister(index + 1), LSL, InputInt32(index + 2));
       case kMode_MRI:
-        return MemOperand(InputRegister(index + 0), InputInt32(index + 1));
+        return MemOperand(InputRegisterCapability(index + 0),
+                          InputInt32(index + 1));
       case kMode_MRR:
-        return MemOperand(InputRegister(index + 0), InputRegister(index + 1));
+        return MemOperand(InputRegisterCapability(index + 0),
+                          InputRegister(index + 1));
     }
     UNREACHABLE();
   }
