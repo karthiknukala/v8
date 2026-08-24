@@ -98,7 +98,8 @@ void ConstantPool::EmitAndClear(Jump require_jump) {
 
   assm_->RecordComment("[ Constant Pool");
   EmitPrologue(require_alignment);
-  if (require_alignment == Alignment::kRequired) assm_->Align(kInt64Size);
+  if (require_alignment == Alignment::kRequired)
+    assm_->Align(kSystemPointerSize);
   EmitEntries();
   assm_->RecordComment("]");
 
@@ -240,10 +241,9 @@ int ConstantPool::ComputeSize(Jump require_jump,
                               Alignment require_alignment) const {
   int size_up_to_marker = PrologueSize(require_jump);
   const size_t size = size_up_to_marker + assm_->pc_offset();
-  const size_t alignment =
-      require_alignment == Alignment::kRequired
-          ? RoundUp(size, kSystemPointerSize) - size_up_to_marker
-          : 0;
+  const size_t alignment = require_alignment == Alignment::kRequired
+                               ? RoundUp(size, kSystemPointerSize) - size
+                               : 0;
   size_t size_after_marker = Entry32Count() * kInt32Size +
                              Entry64Count() * kInt64Size + alignment +
                              EntryPtrCount() * kSystemPointerSize;
