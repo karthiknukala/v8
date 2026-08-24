@@ -58,6 +58,8 @@ void JSTrampolineAssembler::CompileLazy(TNode<JSFunction> function,
 
   CSA_DCHECK(this, SafeNotEqual(sfi_code, HeapConstantNoHole(BUILTIN_CODE(
                                               isolate(), CompileLazy))));
+  CSA_DCHECK(this,
+             CapabilityIsTagged(ReinterpretCast<RawPtrT>(feedback_cell_value)));
   USE(sfi_code);
 
   Label maybe_use_sfi_code(this);

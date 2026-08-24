@@ -259,6 +259,7 @@ TF_BUILTIN(CallWrappedFunction, ShadowRealmBuiltinsAssembler) {
       CallBuiltin(Builtin::kShadowRealmGetWrappedValue, caller_context,
                   target_context, caller_context, receiver);
   StoreFixedArrayElement(wrapped_args, 0, wrapped_receiver);
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, wrapped_args.IsCapability());
   // 7. For each element arg of argumentsList, do
   BuildFastLoop<IntPtrT>(
       IntPtrConstant(0), args.GetLengthWithoutReceiver(),
