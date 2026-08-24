@@ -265,7 +265,7 @@ deps = {
     'condition': 'checkout_fuchsia',
   },
   'third_party/simdutf':
-    Var('chromium_url') + '/chromium/src/third_party/simdutf' + '@' + '75bea7342fdac6b57f7e3099ddf4dc84d77384f6',
+    Var('chromium_cheri_url') + '/simdutf' + '@' + '0314610cbebca38865c1e016122836ec8956ba73',
   # Exists for rolling the Fuchsia SDK. Check out of the SDK should always
   # rely on the hook running |update_sdk.py| script below.
   'third_party/fuchsia-sdk/sdk': {
@@ -559,13 +559,13 @@ deps = {
     'condition': 'not build_with_chromium and host_cpu != "s390x" and host_os != "zos" and host_cpu != "ppc64"',
   },
   'third_party/zlib':
-    Var('chromium_cheri_url') + '/chromium/src/third_party/zlib.git'+ '@' + '348bf057230b1da12c074a98451924c1d9d5f54d',
+    Var('chromium_cheri_url') + '/zlib.git'+ '@' + '348bf057230b1da12c074a98451924c1d9d5f54d',
   'tools/clang':
     Var('chromium_url') + '/chromium/src/tools/clang.git' + '@' + '3240f2283a294839cf928f7329fe1a89230fa74e',
   'tools/protoc_wrapper':
     Var('chromium_url') + '/chromium/src/tools/protoc_wrapper.git' + '@' + '3438d4183bfc7c0d6850e8b970204cc8189f0323',
   'third_party/abseil-cpp': {
-    'url': Var('ctsrd_cheri_url') + '/abseil-cpp.git' + '@' + 'a8ed9dcca9792764f1442aa03ac4c266fca56a54',
+    'url': Var('ctsrd_cheri_url') + '/abseil-cpp.git' + '@' + 'a5d66ba7f93566ed018f1b57301623047ff662af',
     'condition': 'not build_with_chromium',
   },
   'third_party/zoslib': {
