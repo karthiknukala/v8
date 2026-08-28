@@ -1479,12 +1479,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         DCHECK_EQ(addressing_mode, kMode_MRR);
         offset = Operand(i.InputRegister(1));
       }
-      Register value = i.InputRegister(2);
+      Register value = i.InputCapabilityRegister(2);
 
       if (v8_flags.debug_code) {
         // Checking that |value| is not a cleared weakref: our write barrier
         // does not support that for now.
-        __ cmp(value, Operand(kClearedWeakHeapObjectLower32));
+        __ cmp(value.X(), Operand(kClearedWeakHeapObjectLower32));
         __ Check(ne, AbortReason::kOperandIsCleared);
       }
 
@@ -2786,7 +2786,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 #endif
     case kArm64StrCompressTagged:
       RecordTrapInfoIfNeeded(zone(), this, opcode, instr, __ pc_offset());
-      __ StoreTaggedField(i.InputOrZeroRegister64(0), i.MemoryOperand(1));
+      __ StoreTaggedField(i.InputOrZeroRegisterCapability(0),
+                          i.MemoryOperand(1));
       break;
     case kArm64StlrCompressTagged:
       // To be consistent with other STLR instructions, the value is stored at
