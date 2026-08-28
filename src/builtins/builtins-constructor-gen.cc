@@ -402,6 +402,7 @@ TNode<Context> ConstructorBuiltinsAssembler::FastNewFunctionContext(
   // Create a new closure from the given function info in new space
   TNode<Context> function_context =
       UncheckedCast<Context>(AllocateInNewSpace(size));
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, function_context.IsCapability());
 
   TNode<NativeContext> native_context = LoadNativeContext(context);
   Context::Field index;
@@ -417,6 +418,8 @@ TNode<Context> ConstructorBuiltinsAssembler::FastNewFunctionContext(
   }
   TNode<Map> map = CAST(LoadContextElementNoCell(native_context, index));
   // Set up the header.
+  CSA_DCHECK(this,
+             CapabilityIsTagged(ReinterpretCast<RawPtrT>(function_context)));
   StoreMapNoWriteBarrier(function_context, map);
   TNode<IntPtrT> min_context_slots = IntPtrConstant(Context::MIN_CONTEXT_SLOTS);
   // TODO(ishell): for now, length also includes MIN_CONTEXT_SLOTS.
