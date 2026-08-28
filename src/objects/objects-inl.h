@@ -1543,6 +1543,8 @@ MapWord HeapObjectLayout::map_word(RelaxedLoadTag) const {
 
 void HeapObjectLayout::set_map(Isolate* isolate, Tagged<Map> value) {
   // TODO(leszeks): Support MapWord members and access via that instead.
+  DCHECK_IMPLIES(V8_CHERI_PURECAP_BOOL && !COMPRESS_POINTERS_BOOL,
+                 V8_CHERI_TAG_GET(value.ptr()));
   return Tagged<HeapObject>(this)->set_map(isolate, value);
 }
 
