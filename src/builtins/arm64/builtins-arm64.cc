@@ -4852,7 +4852,7 @@ void Builtins::Generate_CallApiCallbackImpl(MacroAssembler* masm,
   Register func_templ = no_reg;
   Register topmost_script_having_context = no_reg;
   Register scratch = c4;
-  Register undef = x5;
+  Register undef = c5;
 
   switch (mode) {
     case CallApiCallbackMode::kGeneric:
@@ -4904,12 +4904,15 @@ void Builtins::Generate_CallApiCallbackImpl(MacroAssembler* masm,
                        topmost_script_having_context);
 
   __ Mov(scratch, ER::isolate_address());
+  __ DebugAssertCapabilityIsTagged(scratch);
   __ LoadRoot(undef, RootIndex::kUndefinedValue);
+  __ DebugAssertCapabilityIsTagged(undef);
+  __ DebugAssertCapabilityIsTagged(func_templ);
 
   DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, func_templ.IsC());
   __ Push(func_templ,  // kTargetIndex
           cp,          // kContextIndex
-          undef.C(),   // kReturnValueIndex
+          undef,       // kReturnValueIndex
           scratch);    // kIsolateIndex
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
@@ -4996,7 +4999,7 @@ void Builtins::Generate_CallApiGetter(MacroAssembler* masm) {
   Register api_function_address = c2;
   Register callback = ApiGetterDescriptor::CallbackRegister();
   Register scratch = c4;
-  Register undef = x5;
+  Register undef = c5;
   Register scratch2 = c6;
 
   DCHECK(!AreAliased(name_arg, property_callback_info_arg, callback, scratch,
@@ -5032,7 +5035,7 @@ void Builtins::Generate_CallApiGetter(MacroAssembler* masm) {
 
   __ Push(padregc,    // kUnusedIndex
           callback,   // kCallbackInfoIndex
-          undef.C(),  // kReturnValueIndex,
+          undef,      // kReturnValueIndex,
           scratch2);  // kIsolateIndex
 
   __ RecordComment("Load api_function_address");
