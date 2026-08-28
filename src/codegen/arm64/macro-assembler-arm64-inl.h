@@ -1354,7 +1354,6 @@ void MacroAssembler::Isb() {
 
 void MacroAssembler::Ldr(const CPURegister& rt, const Operand& operand) {
   DCHECK(allow_macro_instructions());
-  DCHECK(!rt.IsC());
   ldr(rt, operand);
 }
 
