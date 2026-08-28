@@ -3003,7 +3003,7 @@ void MacroAssembler::CallJSFunction(Register function_object,
   Register code = kJavaScriptCallCodeStartRegister;
   Register dispatch_handle = kJavaScriptCallDispatchHandleRegister;
   Register parameter_count = x20;
-  Register scratch = x21;
+  Register scratch = c21;
 
   Ldr(dispatch_handle.W(),
       FieldMemOperand(function_object, JSFunction::kDispatchHandleOffset));
@@ -3021,7 +3021,7 @@ void MacroAssembler::CallJSFunction(Register function_object,
 void MacroAssembler::CallJSDispatchEntry(JSDispatchHandle dispatch_handle,
                                          uint16_t argument_count) {
   Register code = kJavaScriptCallCodeStartRegister;
-  Register scratch = x21;
+  Register scratch = c21;
   Mov(kJavaScriptCallDispatchHandleRegister.W(),
       Immediate(dispatch_handle.value(), RelocInfo::JS_DISPATCH_HANDLE));
   // WARNING: This entrypoint load is only safe because we are storing a
@@ -3053,7 +3053,7 @@ void MacroAssembler::ResolveWasmCodePointer(Register target,
                                             uint64_t signature_hash) {
   ASM_CODE_COMMENT(this);
   UseScratchRegisterScope temps(this);
-  Register scratch = temps.AcquireX();
+  Register scratch = temps.AcquireC();
   Mov(scratch, ExternalReference::wasm_code_pointer_table());
 #ifdef V8_ENABLE_SANDBOX
   static constexpr int kNumRelevantBits = base::bits::WhichPowerOfTwo(
@@ -3064,9 +3064,9 @@ void MacroAssembler::ResolveWasmCodePointer(Register target,
   // Keep `kNumRelevantBits` bits, shifted by `kLeftShift`.
   Ubfiz(target.W(), target.W(), kLeftShift, kNumRelevantBits);
 
-  Add(target, scratch, target);
+  Add(target.C(), scratch, target);
 
-  Ldr(scratch,
+  Ldr(scratch.X(),
       MemOperand(target, wasm::WasmCodePointerTable::kOffsetOfSignatureHash));
   bool has_second_tmp = temps.CanAcquire();
   Register signature_hash_register = has_second_tmp ? temps.AcquireX() : target;
@@ -3081,10 +3081,10 @@ void MacroAssembler::ResolveWasmCodePointer(Register target,
   }
 #else
   static_assert(sizeof(wasm::WasmCodePointerTableEntry) == kSystemPointerSize);
-  Add(target, scratch, Operand(target, LSL, 3));
+  Add(target.C(), scratch, Operand(target, LSL, 3));
 #endif
 
-  Ldr(target, MemOperand(target));
+  Ldr(target.C(), MemOperand(target.C()));
 }
 
 void MacroAssembler::CallWasmCodePointer(Register target,
@@ -4105,6 +4105,7 @@ void MacroAssembler::AtomicStoreTaggedField(const Register& value,
   if (COMPRESS_POINTERS_BOOL) {
     Stlr(value.W(), temp);
   } else {
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, value.IsC());
     Stlr(value, temp);
   }
 }
@@ -5570,8 +5571,8 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, bool with_profiling,
   // Allocate HandleScope in callee-saved registers.
   // We will need to restore the HandleScope after the call to the API function,
   // by allocating it in callee-saved registers it'll be preserved by C code.
-  Register prev_next_address_reg = x19;
-  Register prev_limit_reg = x20;
+  Register prev_next_address_reg = c19;
+  Register prev_limit_reg = c20;
   Register prev_level_reg = w21;
 
   // C arguments (kCArgRegs[0/1]) are expected to be initialized outside, so
@@ -5648,7 +5649,7 @@ void CallApiFunctionAndReturn(MacroAssembler* masm, bool with_profiling,
   __ RecordComment("Leave the API exit frame.");
   __ Bind(&leave_exit_frame);
 
-  Register argc_reg = prev_limit_reg;
+  Register argc_reg = prev_limit_reg.X();
   if (argc_operand != nullptr) {
     // Load the number of stack slots to drop before LeaveExitFrame modifies sp.
     __ Ldr(argc_reg, *argc_operand);

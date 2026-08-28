@@ -2792,8 +2792,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArm64StlrCompressTagged:
       // To be consistent with other STLR instructions, the value is stored at
       // the 3rd input register instead of the 1st.
-      __ AtomicStoreTaggedField(i.InputRegister(2), i.InputRegister(0),
-                                i.InputRegister(1), i.TempRegister(0));
+      __ AtomicStoreTaggedField(
+          i.InputRegisterCapability(2), i.InputRegisterCapability(0),
+          i.InputRegister(1), i.TempRegisterCapability(0));
       break;
     case kArm64StrIndirectPointer:
       __ StoreIndirectPointerField(i.InputOrZeroRegister64(0),
