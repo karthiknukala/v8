@@ -4050,6 +4050,7 @@ void MacroAssembler::LoadTaggedField(const Register& destination,
   if (COMPRESS_POINTERS_BOOL) {
     DecompressTagged(destination, field_operand);
   } else {
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, destination.IsC());
     Ldr(destination, field_operand);
   }
 }
@@ -4081,6 +4082,7 @@ void MacroAssembler::StoreTwoTaggedFields(const Register& value,
   if (COMPRESS_POINTERS_BOOL) {
     Stp(value.W(), value.W(), dst_field_operand);
   } else {
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, value.IsC());
     Stp(value, value, dst_field_operand);
   }
 }
@@ -4090,6 +4092,7 @@ void MacroAssembler::StoreTaggedField(const Register& value,
   if (COMPRESS_POINTERS_BOOL) {
     Str(value.W(), dst_field_operand);
   } else {
+    DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, value.IsC());
     Str(value, dst_field_operand);
   }
 }
@@ -4694,6 +4697,7 @@ void MacroAssembler::LoadEntrypointAndParameterCountFromJSDispatchTable(
 
   Register index = parameter_count;
   CHECK(root_array_available());
+  DCHECK_IMPLIES(V8_TARGET_CHERI_BOOL, scratch.IsC());
   Ldr(scratch, ExternalReferenceAsOperand(IsolateFieldId::kJSDispatchTable));
   Mov(index.X(), Operand(dispatch_handle.X(), LSR, kJSDispatchHandleShift));
   Add(scratch, scratch, Operand(index, LSL, kJSDispatchTableEntrySizeLog2));
