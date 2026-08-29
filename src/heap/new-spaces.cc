@@ -237,8 +237,9 @@ bool SemiSpace::AdvancePage(size_t target_capacity) {
   }
 
   current_page_ = next_page;
-  base::AsAtomicWord::Relaxed_Store(&current_capacity_,
-                                    current_capacity_ + NormalPage::kPageSize);
+  base::AsAtomic64::Relaxed_Store(&current_capacity_,
+                                  current_capacity_ + NormalPage::kPageSize);
+
   DCHECK_IMPLIES(current_capacity_ > target_capacity,
                  heap()->IsNewSpaceAllowedToGrowAboveTargetCapacity());
   return true;

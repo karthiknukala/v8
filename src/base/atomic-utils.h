@@ -251,9 +251,7 @@ class AsAtomicImpl {
 using AsAtomic8 = AsAtomicImpl<base::Atomic8>;
 using AsAtomic16 = AsAtomicImpl<base::Atomic16>;
 using AsAtomic32 = AsAtomicImpl<base::Atomic32>;
-#ifdef __CHERI_PURE_CAPABILITY__
 using AsAtomic64 = AsAtomicImpl<base::Atomic64>;
-#endif  // __CHERI_PURE_CAPABILITY__
 using AsAtomicWord = AsAtomicImpl<base::AtomicWord>;
 
 template <int Width>
