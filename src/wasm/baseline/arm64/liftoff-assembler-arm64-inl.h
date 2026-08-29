@@ -1709,7 +1709,7 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
     switch (remainder) {
 #if V8_TARGET_CHERI
       case 16:
-        str(czr, liftoff::GetStackSlot(start + remainder));
+        Str(czr, liftoff::GetStackSlot(start + remainder));
         break;
 #endif
       case 12:
