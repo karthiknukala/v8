@@ -2911,14 +2911,26 @@ void InstructionSelector::VisitNode(OpIndex node) {
           return VisitFloat64ExtractLowWord32(node);
         case ChangeOp::Kind::kZeroExtend:
           DCHECK_EQ(change.from, Rep::Word32());
-          DCHECK_EQ(change.to, Rep::Word64());
+          DCHECK(change.to == Rep::Word64()
+#if V8_TARGET_CHERI
+                 || change.to == Rep::Capability64()
+#endif
+          );
           return VisitChangeUint32ToUint64(node);
         case ChangeOp::Kind::kSignExtend:
           DCHECK_EQ(change.from, Rep::Word32());
-          DCHECK_EQ(change.to, Rep::Word64());
+          DCHECK(change.to == Rep::Word64()
+#if V8_TARGET_CHERI
+                 || change.to == Rep::Capability64()
+#endif
+          );
           return VisitChangeInt32ToInt64(node);
         case ChangeOp::Kind::kTruncate:
-          DCHECK_EQ(change.from, Rep::Word64());
+          DCHECK(change.from == Rep::Word64()
+#if V8_TARGET_CHERI
+                 || change.from == Rep::Capability64()
+#endif
+          );
           DCHECK_EQ(change.to, Rep::Word32());
           MarkAsWord32(node);
           return VisitTruncateInt64ToInt32(node);
